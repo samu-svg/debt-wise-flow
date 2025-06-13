@@ -20,10 +20,8 @@ const BackupStatus = () => {
     isConfigured, 
     isConnected, 
     folderName,
-    configureFolder,
-    setShowConfigModal,
+    configureDirectory,
     isInIframe,
-    forceConfiguration,
     isFirstAccess
   } = useFileSystemBackup();
 
@@ -86,16 +84,10 @@ const BackupStatus = () => {
 
   const handleReconnect = async () => {
     if (!isSupported || isInIframe) {
-      setShowConfigModal(true);
       return;
     }
     
-    if (isFirstAccess) {
-      forceConfiguration();
-      return;
-    }
-    
-    await configureFolder();
+    await configureDirectory();
   };
 
   return (
@@ -170,12 +162,11 @@ const BackupStatus = () => {
           )}
           
           <div className="flex gap-2">
-            {(isFirstAccess || !isConfigured || !isConnected) && (
+            {(isFirstAccess || !isConfigured || !isConnected) && !isInIframe && (
               <Button 
                 onClick={handleReconnect} 
                 size="sm"
                 className="flex items-center gap-2"
-                disabled={isInIframe}
                 variant={isFirstAccess ? "default" : "outline"}
               >
                 <Folder className="w-4 h-4" />
@@ -184,17 +175,14 @@ const BackupStatus = () => {
               </Button>
             )}
             
-            {!isFirstAccess && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowConfigModal(true)}
-                className="flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                {isInIframe ? 'Info' : 'Configurações'}
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              {isInIframe ? 'Info' : 'Configurações'}
+            </Button>
           </div>
         </div>
       </PopoverContent>

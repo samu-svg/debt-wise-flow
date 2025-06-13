@@ -1,6 +1,15 @@
 
 import { useState, useEffect } from 'react';
 
+// Extend Window interface for File System Access API
+declare global {
+  interface Window {
+    showDirectoryPicker?: (options?: {
+      mode?: 'read' | 'readwrite';
+    }) => Promise<FileSystemDirectoryHandle>;
+  }
+}
+
 // Função para abrir IndexedDB
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
@@ -54,13 +63,17 @@ export const useFileSystemBackup = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFirstAccess, setIsFirstAccess] = useState(false);
+
+  // Check if running in iframe (development mode)
+  const isInIframe = window.self !== window.top;
 
   useEffect(() => {
     const checkSupport = () => {
-      const supported = 'showDirectoryPicker' in window;
+      const supported = 'showDirectoryPicker' in window && !isInIframe;
       setIsSupported(supported);
       
-      if (!supported) {
+      if (!supported && !isInIframe) {
         console.warn('File System Access API não suportado neste navegador');
         setLoading(false);
         return;
@@ -69,36 +82,48 @@ export const useFileSystemBackup = () => {
 
     const checkConfiguration = async () => {
       try {
+        const hasConfigured = localStorage.getItem('pastaConfigurada') === 'true';
+        
+        if (!hasConfigured) {
+          setIsFirstAccess(true);
+          setIsConfigured(false);
+          setLoading(false);
+          return;
+        }
+
         const handle = await getDirectoryHandle();
         if (handle) {
-          // Verificar se ainda temos permissão
           try {
+            // Test if we still have permission
             await handle.getDirectoryHandle('test', { create: false }).catch(() => {});
             setDirectoryHandle(handle);
             setIsConfigured(true);
-            localStorage.setItem('pastaConfigurada', 'true');
+            setIsFirstAccess(false);
           } catch (error) {
             console.log('Permissão de pasta perdida, precisa reconfigurar');
             localStorage.removeItem('pastaConfigurada');
             setIsConfigured(false);
+            setIsFirstAccess(true);
           }
         } else {
           setIsConfigured(false);
+          setIsFirstAccess(true);
           localStorage.removeItem('pastaConfigurada');
         }
       } catch (error) {
         console.error('Erro ao verificar configuração:', error);
         setIsConfigured(false);
+        setIsFirstAccess(true);
       } finally {
         setLoading(false);
       }
     };
 
     checkSupport();
-    if (isSupported) {
+    if (isSupported || isInIframe) {
       checkConfiguration();
     }
-  }, [isSupported]);
+  }, [isSupported, isInIframe]);
 
   const configureDirectory = async (): Promise<boolean> => {
     if (!isSupported) {
@@ -106,19 +131,20 @@ export const useFileSystemBackup = () => {
     }
 
     try {
-      const handle = await window.showDirectoryPicker({
+      const handle = await window.showDirectoryPicker!({
         mode: 'readwrite'
       });
 
       await saveDirectoryHandle(handle);
       setDirectoryHandle(handle);
       setIsConfigured(true);
+      setIsFirstAccess(false);
       localStorage.setItem('pastaConfigurada', 'true');
       
       console.log('Pasta configurada com sucesso:', handle.name);
       return true;
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if ((error as Error).name === 'AbortError') {
         console.log('Usuário cancelou a seleção de pasta');
       } else {
         console.error('Erro ao configurar pasta:', error);
@@ -147,7 +173,7 @@ export const useFileSystemBackup = () => {
   };
 
   const getBackupStatus = () => {
-    if (!isSupported) {
+    if (!isSupported && !isInIframe) {
       return 'Navegador não suportado';
     }
     
@@ -162,13 +188,26 @@ export const useFileSystemBackup = () => {
     return 'Não configurado';
   };
 
+  const forceConfiguration = () => {
+    setIsFirstAccess(true);
+    setIsConfigured(false);
+    localStorage.removeItem('pastaConfigurada');
+  };
+
   return {
     isSupported,
     isConfigured,
+    isConnected: isConfigured && directoryHandle !== null,
     loading,
     directoryHandle,
+    folderName: directoryHandle?.name || '',
+    isInIframe,
+    isFirstAccess,
     configureDirectory,
+    configureFolder: configureDirectory,
     saveBackup,
-    getBackupStatus
+    getBackupStatus,
+    forceConfiguration,
+    setShowConfigModal: () => {} // Placeholder function
   };
 };

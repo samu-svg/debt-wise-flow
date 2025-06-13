@@ -13,7 +13,7 @@ interface BackupConfigModalProps {
 }
 
 const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
-  const { isSupported, configureDirectory, loading } = useFileSystemBackup();
+  const { isSupported, configureDirectory, loading, isInIframe } = useFileSystemBackup();
   const [configuring, setConfiguring] = useState(false);
 
   const handleConfigure = async () => {
@@ -35,7 +35,7 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
       });
       onConfigured();
     } catch (error) {
-      if (error.name !== 'AbortError') {
+      if ((error as Error).name !== 'AbortError') {
         console.error('Erro ao configurar pasta:', error);
         toast({
           title: "Erro na configuração",
@@ -54,19 +54,36 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" hideCloseButton>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FolderOpen className="w-5 h-5 text-blue-600" />
-            Configuração Obrigatória
+            {isInIframe ? 'Modo Desenvolvimento' : 'Configuração Obrigatória'}
           </DialogTitle>
           <DialogDescription>
-            Para usar o sistema, você deve configurar uma pasta local para salvar os backups automaticamente.
+            {isInIframe 
+              ? 'No modo desenvolvimento, use backup manual nos Relatórios. Após publicação, configure uma pasta para backup automático.'
+              : 'Para usar o sistema, você deve configurar uma pasta local para salvar os backups automaticamente.'
+            }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {!isSupported ? (
+          {isInIframe ? (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Chrome className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-800">Modo Desenvolvimento Ativo</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Backup automático disponível após publicação do site.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : !isSupported ? (
             <Card className="border-red-200 bg-red-50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -97,19 +114,31 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
           )}
 
           <div className="flex flex-col gap-3">
-            <Button 
-              onClick={handleConfigure}
-              disabled={!isSupported || configuring}
-              className="w-full"
-            >
-              <FolderOpen className="w-4 h-4 mr-2" />
-              {configuring ? 'Configurando...' : 'Selecionar Pasta'}
-            </Button>
-            
-            {!isSupported && (
-              <p className="text-xs text-center text-gray-600">
-                Você não poderá usar o sistema sem configurar uma pasta de backup.
-              </p>
+            {isInIframe ? (
+              <Button 
+                onClick={onConfigured}
+                className="w-full"
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Continuar (Modo Desenvolvimento)
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  onClick={handleConfigure}
+                  disabled={!isSupported || configuring}
+                  className="w-full"
+                >
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  {configuring ? 'Configurando...' : 'Selecionar Pasta'}
+                </Button>
+                
+                {!isSupported && (
+                  <p className="text-xs text-center text-gray-600">
+                    Você não poderá usar o sistema sem configurar uma pasta de backup.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
