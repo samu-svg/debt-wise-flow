@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useWhatsAppConnection } from '@/hooks/useWhatsAppConnection';
+import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { 
   Trash2, 
   Download, 
@@ -12,7 +12,8 @@ import {
   MessageSquare,
   Zap,
   AlertTriangle,
-  Info
+  Info,
+  Webhook
 } from 'lucide-react';
 import { WhatsAppLog } from '@/types/whatsapp';
 
@@ -20,11 +21,12 @@ const logTypeConfig = {
   connection: { icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50', variant: 'secondary' as const },
   message: { icon: MessageSquare, color: 'text-green-500', bg: 'bg-green-50', variant: 'default' as const },
   error: { icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50', variant: 'destructive' as const },
-  system: { icon: Info, color: 'text-gray-500', bg: 'bg-gray-50', variant: 'outline' as const }
+  system: { icon: Info, color: 'text-gray-500', bg: 'bg-gray-50', variant: 'outline' as const },
+  webhook: { icon: Webhook, color: 'text-purple-500', bg: 'bg-purple-50', variant: 'secondary' as const }
 };
 
 const WhatsAppLogs = () => {
-  const { logs, clearLogs } = useWhatsAppConnection();
+  const { logs, clearLogs } = useWhatsAppCloudAPI();
   const [filter, setFilter] = useState<WhatsAppLog['type'] | 'all'>('all');
 
   const filteredLogs = filter === 'all' 
@@ -35,6 +37,7 @@ const WhatsAppLogs = () => {
     const logData = {
       exportDate: new Date().toISOString(),
       totalLogs: logs.length,
+      systemType: 'whatsapp-cloud-api',
       logs: logs
     };
 
@@ -43,7 +46,7 @@ const WhatsAppLogs = () => {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `whatsapp-logs-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `whatsapp-cloud-logs-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -61,10 +64,10 @@ const WhatsAppLogs = () => {
           <div>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
-              Logs do WhatsApp
+              Logs da WhatsApp Cloud API
             </CardTitle>
             <CardDescription>
-              {logs.length} registros • Últimas atividades e eventos
+              {logs.length} registros • Atividades da API e eventos do sistema
             </CardDescription>
           </div>
           
@@ -128,7 +131,7 @@ const WhatsAppLogs = () => {
             <div className="text-center py-8 text-gray-500">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>Nenhum log encontrado</p>
-              <p className="text-sm">Os eventos do WhatsApp aparecerão aqui</p>
+              <p className="text-sm">Os eventos da WhatsApp Cloud API aparecerão aqui</p>
             </div>
           ) : (
             <div className="space-y-3">

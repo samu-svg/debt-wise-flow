@@ -1,15 +1,17 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import WhatsAppQRCode from '@/components/WhatsAppQRCode';
+import WhatsAppCloudStatus from '@/components/WhatsAppCloudStatus';
+import WhatsAppCloudConfig from '@/components/WhatsAppCloudConfig';
 import WhatsAppLogs from '@/components/WhatsAppLogs';
-import WhatsAppConfig from '@/components/WhatsAppConfig';
 import AutomationConfig from '@/components/AutomationConfig';
 import CommunicationMonitor from '@/components/CommunicationMonitor';
 import CobrancaDashboard from '@/components/CobrancaDashboard';
 import AlertasConfig from '@/components/AlertasConfig';
-import { useWhatsAppConnection } from '@/hooks/useWhatsAppConnection';
+import MessageTemplates from '@/components/MessageTemplates';
+import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useCobrancaMetrics } from '@/hooks/useCobrancaMetrics';
 import { 
@@ -17,26 +19,26 @@ import {
   Users, 
   FileText, 
   Settings,
-  Smartphone,
+  Cloud,
   Activity,
   TrendingUp,
   BarChart3,
   Bell,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
-import MessageTemplates from '@/components/MessageTemplates';
 
 const WhatsApp = () => {
-  const { connection, logs } = useWhatsAppConnection();
+  const { connection, logs } = useWhatsAppCloudAPI();
   const { getDashboardMetrics } = useLocalStorage();
   const { metrics } = useCobrancaMetrics();
   const basicMetrics = getDashboardMetrics();
 
   const getStatsCards = () => [
     {
-      title: 'Status da Conexão',
+      title: 'Status da API',
       value: connection.isConnected ? 'Online' : 'Offline',
-      icon: Smartphone,
+      icon: Cloud,
       color: connection.isConnected ? 'text-green-600' : 'text-red-600',
       bg: connection.isConnected ? 'bg-green-50' : 'bg-red-50'
     },
@@ -77,16 +79,18 @@ const WhatsApp = () => {
     }
   ];
 
+  const hasValidConfig = connection.isConnected || (connection.status === 'error');
+
   return (
     <div className="space-y-6 bg-white min-h-screen">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-green-600" />
-            Sistema de Cobrança WhatsApp
+            <Cloud className="w-8 h-8 text-blue-600" />
+            Sistema WhatsApp Cloud API
           </h1>
           <p className="text-gray-600 mt-2">
-            Plataforma completa de automação de cobranças via WhatsApp
+            Plataforma completa de automação usando WhatsApp Business Cloud API
           </p>
         </div>
         
@@ -98,7 +102,7 @@ const WhatsApp = () => {
             <div className={`w-2 h-2 rounded-full ${
               connection.isConnected ? 'bg-green-500' : 'bg-gray-400'
             }`} />
-            {connection.isConnected ? 'WhatsApp Online' : 'WhatsApp Offline'}
+            {connection.isConnected ? 'API Online' : 'API Offline'}
           </Badge>
         </div>
       </div>
@@ -125,16 +129,25 @@ const WhatsApp = () => {
         })}
       </div>
 
-      {/* Aviso de Conexão */}
+      {/* Aviso de Configuração */}
       {!connection.isConnected && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-blue-200 bg-blue-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
+              {hasValidConfig ? (
+                <AlertTriangle className="w-5 h-5 text-blue-600" />
+              ) : (
+                <Settings className="w-5 h-5 text-blue-600" />
+              )}
               <div>
-                <p className="font-medium text-red-800">WhatsApp não conectado</p>
-                <p className="text-sm text-red-700">
-                  Para usar o sistema de cobrança automática, você precisa conectar seu WhatsApp usando o QR Code.
+                <p className="font-medium text-blue-800">
+                  {hasValidConfig ? 'WhatsApp Cloud API com problemas' : 'Configure a WhatsApp Cloud API'}
+                </p>
+                <p className="text-sm text-blue-700">
+                  {hasValidConfig 
+                    ? 'Verifique suas credenciais na aba de configuração e teste a conexão novamente.'
+                    : 'Para usar o sistema de cobrança automática, configure suas credenciais da Meta Business na aba de configuração.'
+                  }
                 </p>
               </div>
             </div>
@@ -142,16 +155,35 @@ const WhatsApp = () => {
         </Card>
       )}
 
+      {/* Sucesso da Migração */}
+      <Card className="border-green-200 bg-green-50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <div>
+              <p className="font-medium text-green-800">Sistema Atualizado!</p>
+              <p className="text-sm text-green-700">
+                Migração concluída! Agora usando WhatsApp Cloud API - mais estável, oficial e sem dependência do Node.js.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Tabs Principais */}
-      <Tabs defaultValue="dashboard" className="space-y-6">
+      <Tabs defaultValue="status" className="space-y-6">
         <TabsList className="grid w-full grid-cols-8 bg-white border border-gray-200">
+          <TabsTrigger value="status" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+            <Cloud className="w-4 h-4" />
+            Status
+          </TabsTrigger>
+          <TabsTrigger value="config" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+            <Settings className="w-4 h-4" />
+            Config
+          </TabsTrigger>
           <TabsTrigger value="dashboard" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <BarChart3 className="w-4 h-4" />
             Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="connection" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-            <Smartphone className="w-4 h-4" />
-            Conexão
           </TabsTrigger>
           <TabsTrigger value="logs" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <FileText className="w-4 h-4" />
@@ -173,58 +205,20 @@ const WhatsApp = () => {
             <Bell className="w-4 h-4" />
             Alertas
           </TabsTrigger>
-          <TabsTrigger value="config" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-            <Settings className="w-4 h-4" />
-            Config
-          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="status" className="space-y-6">
+          <div className="flex justify-center">
+            <WhatsAppCloudStatus />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="config" className="space-y-6">
+          <WhatsAppCloudConfig />
+        </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-6">
           <CobrancaDashboard />
-        </TabsContent>
-
-        <TabsContent value="connection" className="space-y-6">
-          <div className="flex justify-center">
-            <WhatsAppQRCode />
-          </div>
-          
-          {connection.isConnected && (
-            <Card className="bg-white shadow-sm border border-gray-200">
-              <CardHeader>
-                <CardTitle className="text-gray-900">Informações da Conexão</CardTitle>
-                <CardDescription className="text-gray-600">
-                  Detalhes sobre a conexão ativa do WhatsApp
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p className="font-medium text-gray-900">Número Conectado:</p>
-                    <p className="text-gray-600">{connection.phoneNumber}</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p className="font-medium text-gray-900">Última Atividade:</p>
-                    <p className="text-gray-600">
-                      {connection.lastSeen 
-                        ? new Date(connection.lastSeen).toLocaleString('pt-BR')
-                        : 'N/A'
-                      }
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p className="font-medium text-gray-900">Status:</p>
-                    <Badge variant="default" className="bg-green-100 text-green-800">
-                      Conectado e Ativo
-                    </Badge>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p className="font-medium text-gray-900">Tentativas de Reconexão:</p>
-                    <p className="text-gray-600">{connection.retryCount}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="logs">
@@ -245,10 +239,6 @@ const WhatsApp = () => {
 
         <TabsContent value="alertas">
           <AlertasConfig />
-        </TabsContent>
-
-        <TabsContent value="config">
-          <WhatsAppConfig />
         </TabsContent>
       </Tabs>
     </div>
