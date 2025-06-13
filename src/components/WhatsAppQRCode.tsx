@@ -9,41 +9,55 @@ import {
   RefreshCw, 
   CheckCircle, 
   AlertCircle,
-  X
+  X,
+  Clock,
+  Scan
 } from 'lucide-react';
 
 const WhatsAppQRCode = () => {
-  const { connection, connect, disconnect, retry, isLoading } = useWhatsAppConnection();
+  const { 
+    connection, 
+    connect, 
+    disconnect, 
+    retry, 
+    generateNewQR, 
+    simulateManualConnection, 
+    isLoading 
+  } = useWhatsAppConnection();
 
   const getStatusInfo = () => {
     switch (connection.status) {
       case 'connected':
         return {
           icon: CheckCircle,
-          color: 'bg-green-500',
+          color: 'text-green-500',
           text: 'Conectado',
-          variant: 'default' as const
+          variant: 'default' as const,
+          description: `Conectado: ${connection.phoneNumber}`
         };
       case 'connecting':
         return {
-          icon: RefreshCw,
-          color: 'bg-yellow-500',
-          text: 'Conectando',
-          variant: 'secondary' as const
+          icon: Clock,
+          color: 'text-blue-500',
+          text: 'Aguardando Escaneamento',
+          variant: 'secondary' as const,
+          description: 'Escaneie o QR Code com seu WhatsApp'
         };
       case 'error':
         return {
           icon: AlertCircle,
-          color: 'bg-red-500',
-          text: 'Erro',
-          variant: 'destructive' as const
+          color: 'text-red-500',
+          text: 'Erro na Conexão',
+          variant: 'destructive' as const,
+          description: connection.lastError || 'Erro desconhecido'
         };
       default:
         return {
-          icon: X,
-          color: 'bg-gray-500',
+          icon: Smartphone,
+          color: 'text-gray-500',
           text: 'Desconectado',
-          variant: 'outline' as const
+          variant: 'outline' as const,
+          description: 'Clique em "Conectar WhatsApp" para iniciar'
         };
     }
   };
@@ -52,121 +66,182 @@ const WhatsAppQRCode = () => {
   const StatusIcon = statusInfo.icon;
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-lg mx-auto">
       <CardHeader className="text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Smartphone className="w-6 h-6 text-green-600" />
-          <CardTitle>WhatsApp Web</CardTitle>
+          <CardTitle>WhatsApp Web Connection</CardTitle>
         </div>
         <div className="flex items-center justify-center gap-2">
-          <StatusIcon className={`w-4 h-4 ${
-            connection.status === 'connected' ? 'text-green-500' :
-            connection.status === 'connecting' ? 'text-yellow-500 animate-spin' :
-            connection.status === 'error' ? 'text-red-500' :
-            'text-gray-500'
-          }`} />
+          <StatusIcon className={`w-4 h-4 ${statusInfo.color}`} />
           <Badge variant={statusInfo.variant}>
             {statusInfo.text}
           </Badge>
         </div>
-        <CardDescription>
-          {connection.isConnected 
-            ? `Conectado: ${connection.phoneNumber}`
-            : 'Escaneie o QR Code com seu WhatsApp'
-          }
+        <CardDescription className="mt-2">
+          {statusInfo.description}
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        {/* QR Code Display */}
         {connection.status === 'connecting' && connection.qrCode && (
           <div className="flex flex-col items-center space-y-4">
-            <div className="p-4 bg-white rounded-lg shadow-inner">
+            <div className="p-6 bg-white rounded-xl shadow-inner border-2 border-gray-100">
               <img 
                 src={connection.qrCode} 
                 alt="QR Code WhatsApp" 
-                className="w-48 h-48"
+                className="w-64 h-64 block"
               />
             </div>
-            <div className="text-center text-sm text-gray-600">
-              <p className="flex items-center gap-2 justify-center">
-                <QrCode className="w-4 h-4" />
-                Abra o WhatsApp no seu celular
-              </p>
-              <p>Vá em Configurações → Aparelhos conectados</p>
-              <p>Toque em "Conectar um aparelho" e escaneie</p>
+            
+            <div className="text-center space-y-3">
+              <div className="flex items-center gap-2 justify-center text-blue-600">
+                <Scan className="w-5 h-5" />
+                <span className="font-medium">Escaneie com seu WhatsApp</span>
+              </div>
+              
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>1. Abra o WhatsApp no seu celular</p>
+                <p>2. Vá em Menu → Aparelhos conectados</p>
+                <p>3. Toque em "Conectar um aparelho"</p>
+                <p>4. Escaneie este QR Code</p>
+              </div>
+              
+              <div className="flex items-center gap-2 justify-center text-xs text-gray-500">
+                <Clock className="w-3 h-3" />
+                <span>QR Code válido por 5 minutos</span>
+              </div>
             </div>
           </div>
         )}
 
+        {/* Connected Status */}
         {connection.isConnected && (
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2 text-green-800">
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="flex items-center gap-2 text-green-800 mb-2">
               <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">WhatsApp Conectado!</span>
+              <span className="font-medium">WhatsApp Conectado com Sucesso!</span>
             </div>
-            <p className="text-sm text-green-600 mt-1">
-              Número: {connection.phoneNumber}
-            </p>
-            {connection.lastSeen && (
-              <p className="text-xs text-green-600">
-                Última atividade: {new Date(connection.lastSeen).toLocaleString('pt-BR')}
+            <div className="space-y-1 text-sm text-green-700">
+              <p><strong>Número:</strong> {connection.phoneNumber}</p>
+              {connection.lastSeen && (
+                <p><strong>Última atividade:</strong> {new Date(connection.lastSeen).toLocaleString('pt-BR')}</p>
+              )}
+              <p className="text-xs text-green-600 mt-2">
+                ✓ Conexão ativa e pronta para envio de mensagens
               </p>
-            )}
+            </div>
           </div>
         )}
 
+        {/* Error Status */}
         {connection.status === 'error' && (
-          <div className="bg-red-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2 text-red-800">
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="flex items-center gap-2 text-red-800 mb-2">
               <AlertCircle className="w-5 h-5" />
               <span className="font-medium">Erro na Conexão</span>
             </div>
             {connection.lastError && (
-              <p className="text-sm text-red-600 mt-1">{connection.lastError}</p>
+              <p className="text-sm text-red-600 mb-2">{connection.lastError}</p>
             )}
             {connection.retryCount > 0 && (
               <p className="text-xs text-red-600">
-                Tentativas: {connection.retryCount}
+                Tentativas realizadas: {connection.retryCount}
               </p>
             )}
           </div>
         )}
 
-        <div className="flex gap-2 justify-center">
-          {!connection.isConnected ? (
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-3">
+          {connection.status === 'disconnected' && (
             <Button 
               onClick={connect} 
-              disabled={isLoading || connection.status === 'connecting'}
-              className="flex items-center gap-2"
+              disabled={isLoading}
+              className="flex items-center gap-2 w-full"
+              size="lg"
             >
-              {connection.status === 'connecting' ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <QrCode className="w-4 h-4" />
-              )}
-              {connection.status === 'connecting' ? 'Conectando...' : 'Conectar'}
+              <QrCode className="w-5 h-5" />
+              Conectar WhatsApp
             </Button>
-          ) : (
+          )}
+
+          {connection.status === 'connecting' && (
+            <div className="flex gap-2">
+              <Button 
+                onClick={generateNewQR} 
+                variant="outline"
+                className="flex items-center gap-2 flex-1"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Gerar Novo QR
+              </Button>
+              <Button 
+                onClick={disconnect} 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Cancelar
+              </Button>
+            </div>
+          )}
+
+          {connection.isConnected && (
             <Button 
               onClick={disconnect} 
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full"
             >
               <X className="w-4 h-4" />
-              Desconectar
+              Desconectar WhatsApp
             </Button>
           )}
 
           {connection.status === 'error' && (
+            <div className="flex gap-2">
+              <Button 
+                onClick={retry} 
+                variant="outline"
+                className="flex items-center gap-2 flex-1"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Tentar Novamente
+              </Button>
+              <Button 
+                onClick={disconnect} 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Cancelar
+              </Button>
+            </div>
+          )}
+
+          {/* Botão de teste para simular conexão - REMOVER EM PRODUÇÃO */}
+          {connection.status === 'connecting' && process.env.NODE_ENV === 'development' && (
             <Button 
-              onClick={retry} 
-              variant="outline"
-              className="flex items-center gap-2"
+              onClick={simulateManualConnection}
+              variant="secondary"
+              className="flex items-center gap-2 w-full text-xs"
+              size="sm"
             >
-              <RefreshCw className="w-4 h-4" />
-              Tentar Novamente
+              🧪 Simular Conexão Manual (Teste)
             </Button>
           )}
+        </div>
+
+        {/* Info Box */}
+        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+          <div className="flex items-start gap-2">
+            <QrCode className="w-4 h-4 text-blue-600 mt-0.5" />
+            <div className="text-xs text-blue-700">
+              <p className="font-medium mb-1">Dica:</p>
+              <p>Mantenha esta aba aberta durante o escaneamento. O QR Code é renovado automaticamente a cada 5 minutos por segurança.</p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
