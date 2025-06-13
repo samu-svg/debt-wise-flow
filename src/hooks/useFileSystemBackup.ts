@@ -50,11 +50,18 @@ export const useFileSystemBackup = (): BackupHook => {
       const db = await openDB();
       const transaction = db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
-      await store.put(handle, 'backup_folder');
-      setFolderHandle(handle);
-      setFolderName(handle.name);
-      setIsConfigured(true);
-      setIsConnected(true);
+      
+      return new Promise<void>((resolve, reject) => {
+        const request = store.put(handle, 'backup_folder');
+        request.onsuccess = () => {
+          setFolderHandle(handle);
+          setFolderName(handle.name);
+          setIsConfigured(true);
+          setIsConnected(true);
+          resolve();
+        };
+        request.onerror = () => reject(request.error);
+      });
     } catch (error) {
       console.error('Erro ao salvar pasta:', error);
     }
@@ -67,7 +74,12 @@ export const useFileSystemBackup = (): BackupHook => {
       const db = await openDB();
       const transaction = db.transaction([STORE_NAME], 'readonly');
       const store = transaction.objectStore(STORE_NAME);
-      const handle = await store.get('backup_folder');
+      
+      const handle = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
+        const request = store.get('backup_folder');
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
       
       if (handle) {
         // Verificar se ainda temos permissão
