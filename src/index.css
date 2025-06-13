@@ -212,7 +212,7 @@
 
   /* Professional Navigation */
   .nav-item {
-    @apply relative px-4 py-3 rounded-lg transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 group;
+    @apply relative px-4 py-3 rounded-lg transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/20;
   }
 
   .nav-item.active {
