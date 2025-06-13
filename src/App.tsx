@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 
 // Layouts
 import PublicLayout from "@/components/layouts/PublicLayout";
-import ModernLayout from "@/components/layout/ModernLayout";
+import PrivateLayout from "@/components/layouts/PrivateLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Auth Pages
@@ -15,10 +15,11 @@ import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 
 // App Pages
-import ModernDashboard from "@/pages/app/ModernDashboard";
-import ModernClients from "@/pages/app/ModernClients";
-import ModernWhatsApp from "@/pages/app/ModernWhatsApp";
-import ModernSettings from "@/pages/app/ModernSettings";
+import Dashboard from "@/pages/app/Dashboard";
+import Clients from "@/pages/app/Clients";
+import Debts from "@/pages/app/Debts";
+import Reports from "@/pages/app/Reports";
+import WhatsApp from "@/pages/app/WhatsApp";
 
 // Other Pages
 import NotFound from "./pages/NotFound";
@@ -46,13 +47,14 @@ const App = () => (
             {/* Protected App Routes */}
             <Route path="/app" element={
               <ProtectedRoute>
-                <ModernLayout />
+                <PrivateLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<ModernDashboard />} />
-              <Route path="clients" element={<ModernClients />} />
-              <Route path="whatsapp" element={<ModernWhatsApp />} />
-              <Route path="settings" element={<ModernSettings />} />
+              <Route index element={<Dashboard />} />
+              <Route path="clients" element={<Clients />} />
+              <Route path="debts" element={<Debts />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="whatsapp" element={<WhatsApp />} />
             </Route>
 
             {/* Catch-all route */}
