@@ -1,275 +1,230 @@
 
 import { useState } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
-import { MessageSquare, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import WhatsAppQRCode from '@/components/WhatsAppQRCode';
+import WhatsAppLogs from '@/components/WhatsAppLogs';
+import WhatsAppConfig from '@/components/WhatsAppConfig';
+import { useWhatsAppConnection } from '@/hooks/useWhatsAppConnection';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { 
+  MessageSquare, 
+  Users, 
+  FileText, 
+  Settings,
+  Smartphone,
+  Activity,
+  TrendingUp
+} from 'lucide-react';
 
 const WhatsApp = () => {
-  const { clients } = useLocalStorage();
-  const [selectedClient, setSelectedClient] = useState('');
-  const [message, setMessage] = useState('');
-  const [customMessage, setCustomMessage] = useState('');
+  const { connection, logs } = useWhatsAppConnection();
+  const { getDashboardMetrics } = useLocalStorage();
+  const metrics = getDashboardMetrics();
 
-  const messageTemplates = [
+  const getStatsCards = () => [
     {
-      id: 'reminder',
-      name: 'Lembrete de Pagamento',
-      template: 'Olá {NOME}, este é um lembrete sobre sua dívida de {VALOR} com vencimento em {DATA}. Entre em contato conosco para quitar ou negociar.'
+      title: 'Status da Conexão',
+      value: connection.isConnected ? 'Online' : 'Offline',
+      icon: Smartphone,
+      color: connection.isConnected ? 'text-green-600' : 'text-red-600',
+      bg: connection.isConnected ? 'bg-green-50' : 'bg-red-50'
     },
     {
-      id: 'overdue',
-      name: 'Cobrança Vencida',
-      template: 'Olá {NOME},sua dívida de {VALOR} está vencida desde {DATA}. Entre em contato urgentemente para regularizar a situação.'
+      title: 'Logs Registrados',
+      value: logs.length.toString(),
+      icon: Activity,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50'
     },
     {
-      id: 'payment_received',
-      name: 'Pagamento Recebido',
-      template: 'Olá {NOME}, confirmamos o recebimento do seu pagamento de {VALOR}. Obrigado!'
+      title: 'Clientes Ativos',
+      value: metrics.totalClients.toString(),
+      icon: Users,
+      color: 'text-purple-600',
+      bg: 'bg-purple-50'
     },
     {
-      id: 'negotiation',
-      name: 'Proposta de Negociação',
-      template: 'Olá {NOME}, temos uma proposta especial para quitação da sua dívida de {VALOR}. Entre em contato para mais detalhes.'
+      title: 'Dívidas em Atraso',
+      value: metrics.overdueCount.toString(),
+      icon: TrendingUp,
+      color: 'text-orange-600',
+      bg: 'bg-orange-50'
     }
   ];
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const generateMessage = (templateId: string, client: any, debt: any) => {
-    const template = messageTemplates.find(t => t.id === templateId);
-    if (!template) return '';
-
-    return template.template
-      .replace('{NOME}', client.name)
-      .replace('{VALOR}', formatCurrency(debt.currentAmount))
-      .replace('{DATA}', debt.dueDate ? new Date(debt.dueDate).toLocaleDateString('pt-BR') : 'N/A');
-  };
-
-  const sendWhatsAppMessage = (phone: string, message: string) => {
-    // Remove caracteres não numéricos do telefone
-    const cleanPhone = phone.replace(/\D/g, '');
-    
-    // Adiciona código do país se não tiver
-    const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : '55' + cleanPhone;
-    
-    // Codifica a mensagem para URL
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Gera o link do WhatsApp
-    const whatsappUrl = `https://wa.me/${fullPhone}?text=${encodedMessage}`;
-    
-    // Abre em nova aba
-    window.open(whatsappUrl, '_blank');
-    
-    toast({
-      title: "WhatsApp aberto!",
-      description: "Mensagem preparada no WhatsApp",
-    });
-  };
-
-  const sendToClient = () => {
-    if (!selectedClient || !message) {
-      toast({
-        title: "Erro",
-        description: "Selecione um cliente e digite uma mensagem",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const client = clients.find(c => c.id === selectedClient);
-    if (!client) return;
-
-    sendWhatsAppMessage(client.phone, message);
-  };
-
-  const sendToAllOverdue = () => {
-    const overdueDebts = clients.flatMap(client => 
-      client.debts
-        .filter(debt => debt.status === 'overdue')
-        .map(debt => ({ client, debt }))
-    );
-
-    if (overdueDebts.length === 0) {
-      toast({
-        title: "Nenhuma dívida vencida",
-        description: "Não há dívidas vencidas para enviar mensagens",
-      });
-      return;
-    }
-
-    overdueDebts.forEach(({ client, debt }) => {
-      const message = generateMessage('overdue', client, debt);
-      setTimeout(() => sendWhatsAppMessage(client.phone, message), 1000);
-    });
-
-    toast({
-      title: "Mensagens enviadas!",
-      description: `${overdueDebts.length} mensagens de cobrança enviadas`,
-    });
-  };
-
-  const selectedClientData = clients.find(c => c.id === selectedClient);
-
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Mensagens WhatsApp</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Enviar Mensagem Individual</CardTitle>
-            <CardDescription>
-              Envie mensagens personalizadas para clientes específicos
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="client">Cliente</Label>
-              <Select value={selectedClient} onValueChange={setSelectedClient}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name} - {client.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedClientData && (
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm"><strong>Nome:</strong> {selectedClientData.name}</p>
-                <p className="text-sm"><strong>Telefone:</strong> {selectedClientData.phone}</p>
-                <p className="text-sm">
-                  <strong>Dívidas ativas:</strong> {selectedClientData.debts.filter(d => d.status !== 'paid').length}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="message">Mensagem</Label>
-              <Textarea
-                id="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Digite sua mensagem..."
-                rows={4}
-              />
-            </div>
-
-            <Button onClick={sendToClient} className="w-full">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Enviar no WhatsApp
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Mensagens Automáticas</CardTitle>
-            <CardDescription>
-              Envie mensagens em massa para todos os clientes com dívidas vencidas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <h4 className="font-medium text-red-800 mb-2">Cobrança Automática</h4>
-              <p className="text-sm text-red-700 mb-3">
-                Enviar mensagem de cobrança para todos os clientes com dívidas vencidas
-              </p>
-              <p className="text-xs text-red-600 mb-3">
-                Clientes com dívidas vencidas: {
-                  clients.reduce((count, client) => 
-                    count + client.debts.filter(debt => debt.status === 'overdue').length, 0
-                  )
-                }
-              </p>
-              <Button onClick={sendToAllOverdue} variant="destructive" className="w-full">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Enviar Cobrança em Massa
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Templates de Mensagem</Label>
-              {messageTemplates.map((template) => (
-                <div key={template.id} className="p-3 border border-gray-200 rounded-lg">
-                  <h5 className="font-medium text-sm mb-1">{template.name}</h5>
-                  <p className="text-xs text-gray-600 mb-2">{template.template}</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      if (selectedClientData && selectedClientData.debts.length > 0) {
-                        const debt = selectedClientData.debts[0];
-                        const generatedMessage = generateMessage(template.id, selectedClientData, debt);
-                        setMessage(generatedMessage);
-                      } else {
-                        setMessage(template.template);
-                      }
-                    }}
-                  >
-                    Usar Template
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <MessageSquare className="w-8 h-8 text-green-600" />
+            Sistema de Cobrança WhatsApp
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Conecte seu WhatsApp e automatize a cobrança de dívidas
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Badge 
+            variant={connection.isConnected ? "default" : "secondary"}
+            className="flex items-center gap-2"
+          >
+            <div className={`w-2 h-2 rounded-full ${
+              connection.isConnected ? 'bg-green-500' : 'bg-gray-400'
+            }`} />
+            {connection.isConnected ? 'WhatsApp Online' : 'WhatsApp Offline'}
+          </Badge>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Como Funciona</CardTitle>
-          <CardDescription>
-            Instruções para usar o sistema de mensagens
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <h4 className="font-medium">Mensagens Individuais:</h4>
-              <ul className="list-disc list-inside space-y-1 text-gray-600">
-                <li>Selecione um cliente da lista</li>
-                <li>Digite ou use um template de mensagem</li>
-                <li>Clique em "Enviar no WhatsApp"</li>
-                <li>O WhatsApp será aberto com a mensagem pronta</li>
-              </ul>
+      {/* Cards de Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {getStatsCards().map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                    <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-full ${stat.bg}`}>
+                    <Icon className={`w-6 h-6 ${stat.color}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Informações Importantes */}
+      {!connection.isConnected && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="w-5 h-5 text-yellow-600" />
+              <div>
+                <p className="font-medium text-yellow-800">WhatsApp não conectado</p>
+                <p className="text-sm text-yellow-700">
+                  Para usar o sistema de cobrança automática, você precisa conectar seu WhatsApp usando o QR Code.
+                </p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <h4 className="font-medium">Cobrança em Massa:</h4>
-              <ul className="list-disc list-inside space-y-1 text-gray-600">
-                <li>Clique em "Enviar Cobrança em Massa"</li>
-                <li>Uma aba do WhatsApp será aberta para cada cliente</li>
-                <li>As mensagens são personalizadas automaticamente</li>
-                <li>Envie cada mensagem manualmente no WhatsApp</li>
-              </ul>
-            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabs Principais */}
+      <Tabs defaultValue="connection" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="connection" className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4" />
+            Conexão
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Logs ({logs.length})
+          </TabsTrigger>
+          <TabsTrigger value="config" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Configurações
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Mensagens
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="connection" className="space-y-6">
+          <div className="flex justify-center">
+            <WhatsAppQRCode />
           </div>
           
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Dica:</strong> As mensagens são abertas no WhatsApp Web ou aplicativo. 
-              Certifique-se de ter o WhatsApp configurado no dispositivo.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          {connection.isConnected && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações da Conexão</CardTitle>
+                <CardDescription>
+                  Detalhes sobre a conexão ativa do WhatsApp
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium">Número Conectado:</p>
+                    <p className="text-gray-600">{connection.phoneNumber}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Última Atividade:</p>
+                    <p className="text-gray-600">
+                      {connection.lastSeen 
+                        ? new Date(connection.lastSeen).toLocaleString('pt-BR')
+                        : 'N/A'
+                      }
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Status:</p>
+                    <Badge variant="default" className="bg-green-100 text-green-800">
+                      Conectado e Ativo
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="font-medium">Tentativas de Reconexão:</p>
+                    <p className="text-gray-600">{connection.retryCount}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="logs">
+          <WhatsAppLogs />
+        </TabsContent>
+
+        <TabsContent value="config">
+          <WhatsAppConfig />
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <Card>
+            <CardHeader>
+              <CardTitle>Mensagens Automáticas</CardTitle>
+              <CardDescription>
+                Configure e gerencie mensagens de cobrança automática
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Sistema de Mensagens em Desenvolvimento
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  A funcionalidade de mensagens automáticas será implementada na próxima etapa.
+                </p>
+                <div className="bg-blue-50 p-4 rounded-lg max-w-md mx-auto">
+                  <p className="text-sm text-blue-800">
+                    <strong>Próximas funcionalidades:</strong>
+                  </p>
+                  <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>• Templates de mensagens personalizáveis</li>
+                    <li>• Envio automático por vencimento</li>
+                    <li>• Histórico de mensagens por cliente</li>
+                    <li>• Agendamento de cobranças</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
