@@ -91,9 +91,8 @@ export const useFileSystemBackup = () => {
           
           if (handle) {
             try {
-              // Testar se ainda temos acesso tentando listar o conteúdo
-              const iterator = handle.entries()[Symbol.asyncIterator]();
-              await iterator.next(); // Testar se consegue acessar
+              // Testar se ainda temos acesso
+              await handle.queryPermission({ mode: 'readwrite' });
               
               setDirectoryHandle(handle);
               console.log('Acesso à pasta recuperado:', handle.name);

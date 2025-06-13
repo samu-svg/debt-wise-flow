@@ -18,7 +18,6 @@ import Register from "@/pages/auth/Register";
 import Dashboard from "@/pages/app/Dashboard";
 import Clients from "@/pages/app/Clients";
 import Debts from "@/pages/app/Debts";
-import CobrancaAutomatica from "@/pages/app/CobrancaAutomatica";
 import Reports from "@/pages/app/Reports";
 import WhatsApp from "@/pages/app/WhatsApp";
 
@@ -54,7 +53,6 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="clients" element={<Clients />} />
               <Route path="debts" element={<Debts />} />
-              <Route path="cobranca-automatica" element={<CobrancaAutomatica />} />
               <Route path="reports" element={<Reports />} />
               <Route path="whatsapp" element={<WhatsApp />} />
             </Route>
