@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ import BackupConfigModal from '@/components/BackupConfigModal';
 const PrivateLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { isConfigured, loading, saveData } = useFileSystemBackup();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -49,12 +48,13 @@ const PrivateLayout = () => {
     }
   }, [isConfigured, saveData]);
 
+  // Verificar se precisa mostrar modal de configuração
   useEffect(() => {
-    // Verificar se precisa mostrar modal de configuração
-    if (!loading && !isConfigured) {
+    // Só mostrar modal se não está carregando, não está configurado e o usuário não tem pasta configurada
+    if (!loading && !isConfigured && user && !user.folderConfigured) {
       setShowConfigModal(true);
     }
-  }, [loading, isConfigured]);
+  }, [loading, isConfigured, user]);
 
   const handleLogout = () => {
     logout();
@@ -72,8 +72,20 @@ const PrivateLayout = () => {
     return location.pathname.startsWith(path);
   };
 
-  // Se ainda está carregando ou modal de configuração está aberto, mostrar modal
-  if (loading || showConfigModal) {
+  // Se ainda está carregando, mostrar loading
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se modal de configuração está aberto, mostrar modal
+  if (showConfigModal) {
     return <BackupConfigModal open={showConfigModal} onConfigured={handleConfigured} />;
   }
 

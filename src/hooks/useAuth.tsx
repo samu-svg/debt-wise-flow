@@ -25,27 +25,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         
         if (session?.user) {
-          // Verificar se o usuário tem configuração de pasta
-          const { data: folderConfig } = await supabase
-            .from('user_folder_configs')
-            .select('folder_name')
-            .eq('user_id', session.user.id)
-            .single();
+          // Usar setTimeout para evitar chamadas síncronas no callback
+          setTimeout(async () => {
+            if (!mounted) return;
+            
+            try {
+              // Verificar se o usuário tem configuração de pasta
+              const { data: folderConfig } = await supabase
+                .from('user_folder_configs')
+                .select('folder_name')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
 
-          const authUser: AuthUser = {
-            ...session.user,
-            folderConfigured: !!folderConfig,
-            folderName: folderConfig?.folder_name
-          };
-          
-          setUser(authUser);
+              if (!mounted) return;
+
+              const authUser: AuthUser = {
+                ...session.user,
+                folderConfigured: !!folderConfig,
+                folderName: folderConfig?.folder_name
+              };
+              
+              setUser(authUser);
+            } catch (error) {
+              console.error('Erro ao verificar configuração da pasta:', error);
+              // Em caso de erro, ainda definir o usuário básico
+              setUser(session.user);
+            }
+          }, 0);
         } else {
           setUser(null);
         }
@@ -54,16 +71,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        // O listener já vai tratar isso
-      } else {
-        setLoading(false);
+    // Verificar sessão existente apenas uma vez
+    const getInitialSession = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        // Se não há sessão inicial, apenas definir loading como false
+        if (!initialSession) {
+          setLoading(false);
+        }
+        // Se há sessão, o listener já vai processar
+      } catch (error) {
+        console.error('Erro ao obter sessão inicial:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    getInitialSession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -75,8 +107,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       throw new Error(error.message);
     }
-
-    // O listener já vai atualizar o estado
   };
 
   const register = async (email: string, password: string) => {
@@ -93,13 +123,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       throw new Error(error.message);
     }
-
-    // O listener já vai atualizar o estado
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
-    // O listener já vai limpar o estado
   };
 
   return (
