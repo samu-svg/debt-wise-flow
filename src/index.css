@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,7 +48,6 @@
 
     /* Custom variables for professional design */
     --success: 5 150 105;
-    --warning: 255 255 255;
     --info: 59 130 246;
     --gradient-primary: linear-gradient(135deg, rgb(30 64 175) 0%, rgb(59 130 246) 100%);
     --gradient-success: linear-gradient(135deg, rgb(5 150 105) 0%, rgb(34 197 94) 100%);
@@ -165,7 +165,7 @@
     @apply bg-gradient-to-r from-red-500 to-red-600 text-white;
   }
 
-  .status-warning {
+  .status-info {
     @apply bg-white text-gray-800 border border-gray-300 shadow-sm;
   }
 
@@ -227,7 +227,7 @@
     @apply bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-3 py-1 rounded-full text-sm font-medium;
   }
 
-  .badge-warning {
+  .badge-info {
     @apply bg-white text-gray-800 dark:bg-gray-100/20 dark:text-gray-600 px-3 py-1 rounded-full text-sm font-medium border border-gray-300 shadow-sm;
   }
 
@@ -235,7 +235,7 @@
     @apply bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 px-3 py-1 rounded-full text-sm font-medium;
   }
 
-  .badge-info {
+  .badge-primary {
     @apply bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-3 py-1 rounded-full text-sm font-medium;
   }
 

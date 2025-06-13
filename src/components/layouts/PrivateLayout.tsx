@@ -1,8 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
 import { 
   Home, 
   Users,
@@ -20,7 +21,9 @@ const PrivateLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { isConfigured, loading } = useFileSystemBackup();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   const menuItems = [
     { path: '/app', icon: Home, label: 'Dashboard' },
@@ -30,9 +33,20 @@ const PrivateLayout = () => {
     { path: '/app/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
   ];
 
+  useEffect(() => {
+    // Verificar se precisa mostrar modal de configuração
+    if (!loading && !isConfigured) {
+      setShowConfigModal(true);
+    }
+  }, [loading, isConfigured]);
+
   const handleLogout = () => {
     logout();
     navigate('/auth/login');
+  };
+
+  const handleConfigured = () => {
+    setShowConfigModal(false);
   };
 
   const isActive = (path: string) => {
@@ -41,6 +55,11 @@ const PrivateLayout = () => {
     }
     return location.pathname.startsWith(path);
   };
+
+  // Se ainda está carregando ou modal de configuração está aberto, não renderizar o layout principal
+  if (loading || showConfigModal) {
+    return <BackupConfigModal open={showConfigModal} onConfigured={handleConfigured} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -123,9 +142,6 @@ const PrivateLayout = () => {
           <Outlet />
         </div>
       </div>
-
-      {/* Modal de configuração de backup */}
-      <BackupConfigModal />
     </div>
   );
 };

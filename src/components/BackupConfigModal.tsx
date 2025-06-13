@@ -1,239 +1,117 @@
 
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, Folder, HardDrive, Shield, ExternalLink, Lock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
+import { toast } from '@/hooks/use-toast';
+import { FolderOpen, AlertTriangle, Chrome } from 'lucide-react';
 
-const BackupConfigModal = () => {
-  const { 
-    isSupported, 
-    showConfigModal, 
-    configureFolder,
-    setShowConfigModal,
-    isInIframe,
-    isFirstAccess
-  } = useFileSystemBackup();
+interface BackupConfigModalProps {
+  open: boolean;
+  onConfigured: () => void;
+}
 
-  const handleConfigureFolder = async () => {
-    const success = await configureFolder();
-    if (!success && !isFirstAccess) {
-      alert('Não foi possível configurar a pasta. Tente novamente.');
-    }
-  };
+const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
+  const { isSupported, configureDirectory, loading } = useFileSystemBackup();
+  const [configuring, setConfiguring] = useState(false);
 
-  const handleSkip = () => {
-    if (isFirstAccess) {
-      alert('A configuração da pasta é obrigatória para usar o sistema com segurança.');
+  const handleConfigure = async () => {
+    if (!isSupported) {
+      toast({
+        title: "Navegador não suportado",
+        description: "Use Chrome, Edge ou outro navegador baseado em Chromium para acessar esta funcionalidade.",
+        variant: "destructive",
+      });
       return;
     }
-    setShowConfigModal(false);
+
+    setConfiguring(true);
+    try {
+      await configureDirectory();
+      toast({
+        title: "Pasta configurada!",
+        description: "Sistema configurado para salvar backups localmente.",
+      });
+      onConfigured();
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Erro ao configurar pasta:', error);
+        toast({
+          title: "Erro na configuração",
+          description: "Não foi possível configurar a pasta. Tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setConfiguring(false);
+    }
   };
 
-  // Se estamos em iframe (ambiente de desenvolvimento)
-  if (isInIframe) {
-    return (
-      <Dialog open={showConfigModal} onOpenChange={() => {}}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-blue-600">
-              <Shield className="w-5 h-5" />
-              Backup Local - Ambiente de Desenvolvimento
-            </DialogTitle>
-            <DialogDescription>
-              Funcionalidade limitada no ambiente de desenvolvimento
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <p className="text-sm text-blue-800 mb-2">
-                    <strong>Modo de Desenvolvimento Detectado</strong>
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    O backup automático funciona apenas no app publicado. Por enquanto, use a função "Fazer Backup" na seção Relatórios.
-                  </p>
-                </div>
-                
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-green-800 mb-2">Após publicar seu app:</h4>
-                  <ul className="text-sm text-green-700 space-y-1">
-                    <li>• Backup automático funcionará normalmente</li>
-                    <li>• Dados salvos localmente no seu PC</li>
-                    <li>• Sincronização a cada alteração</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div className="flex flex-col gap-3">
-              <Button 
-                onClick={() => setShowConfigModal(false)}
-                className="w-full"
-              >
-                Entendi - Continuar
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={() => window.open('/app/reports', '_blank')}
-                className="w-full flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Ir para Relatórios (Backup Manual)
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (!isSupported) {
-    return (
-      <Dialog open={showConfigModal} onOpenChange={() => {}}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="w-5 h-5" />
-              Navegador Não Compatível
-            </DialogTitle>
-            <DialogDescription>
-              Seu navegador não suporta backup local automático
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="bg-red-50 p-4 rounded-lg mb-4">
-                  <p className="text-sm text-red-800 mb-2">
-                    <strong>⚠️ Configuração Obrigatória</strong>
-                  </p>
-                  <p className="text-sm text-red-700">
-                    Para garantir a segurança dos seus dados, é necessário usar um navegador compatível.
-                  </p>
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-4">
-                  Para usar o backup automático, recomendamos:
-                </p>
-                <ul className="text-sm text-gray-600 space-y-2">
-                  <li>• Google Chrome (versão 86+)</li>
-                  <li>• Microsoft Edge (versão 86+)</li>
-                </ul>
-              </CardContent>
-            </Card>
-            
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Alternativa:</strong> Use a função "Fazer Backup" na seção Relatórios para salvar seus dados manualmente.
-              </p>
-            </div>
-            
-            <Button 
-              onClick={() => setShowConfigModal(false)} 
-              className="w-full"
-              variant={isFirstAccess ? "outline" : "default"}
-            >
-              {isFirstAccess ? "Usar Backup Manual" : "Continuar sem Backup Automático"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
+  if (loading) {
+    return null;
   }
 
   return (
-    <Dialog open={showConfigModal} onOpenChange={() => {}}>
-      <DialogContent className="max-w-lg">
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent className="sm:max-w-md" hideCloseButton>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-blue-600">
-            <Lock className="w-5 h-5" />
-            {isFirstAccess ? "Configuração Obrigatória" : "Configure o Backup Local"}
+          <DialogTitle className="flex items-center gap-2">
+            <FolderOpen className="w-5 h-5 text-blue-600" />
+            Configuração Obrigatória
           </DialogTitle>
           <DialogDescription>
-            {isFirstAccess 
-              ? "Para garantir a segurança dos seus dados, configure uma pasta de backup"
-              : "Seus dados serão salvos automaticamente no seu computador"
-            }
+            Para usar o sistema, você deve configurar uma pasta local para salvar os backups automaticamente.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-6">
-          {isFirstAccess && (
-            <Card className="border-orange-200 bg-orange-50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-orange-800 mb-2">
-                  <Lock className="w-5 h-5" />
-                  <h4 className="font-medium">Configuração Obrigatória</h4>
+
+        <div className="space-y-4">
+          {!isSupported ? (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <div>
+                    <p className="font-medium text-red-800">Navegador não suportado</p>
+                    <p className="text-sm text-red-700 mt-1">
+                      Use Chrome, Edge ou outro navegador baseado em Chromium.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-orange-700">
-                  Por segurança, você deve configurar uma pasta local para backup dos seus dados antes de usar o sistema.
-                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Chrome className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-800">Sistema de Backup Local</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Selecione uma pasta onde os backups serão salvos automaticamente.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <HardDrive className="w-5 h-5 text-green-600" />
-                Backup Automático
-              </CardTitle>
-              <CardDescription>
-                Mantenha seus dados seguros no seu computador
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-2">Vantagens:</h4>
-                <ul className="text-sm text-green-700 space-y-1">
-                  <li>• Backup automático a cada alteração</li>
-                  <li>• Dados salvos localmente no seu PC</li>
-                  <li>• Histórico de backups com data/hora</li>
-                  <li>• Funciona offline</li>
-                </ul>
-              </div>
-              
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">Como funciona:</h4>
-                <p className="text-sm text-blue-700">
-                  Escolha uma pasta no seu computador onde os backups serão salvos automaticamente. 
-                  Os arquivos ficarão sempre atualizados.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
           <div className="flex flex-col gap-3">
             <Button 
-              onClick={handleConfigureFolder}
-              className="w-full flex items-center gap-2"
-              size="lg"
+              onClick={handleConfigure}
+              disabled={!isSupported || configuring}
+              className="w-full"
             >
-              <Folder className="w-4 h-4" />
-              Escolher Pasta para Backup
+              <FolderOpen className="w-4 h-4 mr-2" />
+              {configuring ? 'Configurando...' : 'Selecionar Pasta'}
             </Button>
             
-            {!isFirstAccess && (
-              <Button 
-                variant="outline" 
-                onClick={handleSkip}
-                className="w-full text-gray-600"
-              >
-                Pular (não recomendado)
-              </Button>
+            {!isSupported && (
+              <p className="text-xs text-center text-gray-600">
+                Você não poderá usar o sistema sem configurar uma pasta de backup.
+              </p>
             )}
           </div>
-
-          {isFirstAccess && (
-            <div className="text-center text-sm text-gray-500">
-              <p>⚠️ Não é possível pular esta configuração</p>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>

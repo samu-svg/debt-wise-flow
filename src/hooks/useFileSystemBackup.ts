@@ -1,226 +1,174 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
-interface BackupHook {
-  isSupported: boolean;
-  isConfigured: boolean;
-  isConnected: boolean;
-  folderName: string;
-  configureFolder: () => Promise<boolean>;
-  createBackup: (data: any) => Promise<boolean>;
-  showConfigModal: boolean;
-  setShowConfigModal: (show: boolean) => void;
-  isInIframe: boolean;
-  isFirstAccess: boolean;
-  forceConfiguration: () => void;
-}
+// Função para abrir IndexedDB
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('DebtManagerDB', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains('directoryHandles')) {
+        db.createObjectStore('directoryHandles');
+      }
+    };
+  });
+};
 
-const DB_NAME = 'debt_manager_backup';
-const DB_VERSION = 1;
-const STORE_NAME = 'folder_handles';
-const CONFIGURED_KEY = 'pasta_configurada';
+// Função para salvar handle da pasta
+const saveDirectoryHandle = async (handle: FileSystemDirectoryHandle): Promise<void> => {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction(['directoryHandles'], 'readwrite');
+    const store = transaction.objectStore('directoryHandles');
+    await store.put(handle, 'backupDirectory');
+  } catch (error) {
+    console.error('Erro ao salvar handle:', error);
+    throw error;
+  }
+};
 
-export const useFileSystemBackup = (): BackupHook => {
-  const [isConfigured, setIsConfigured] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [folderName, setFolderName] = useState('');
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [folderHandle, setFolderHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const [isFirstAccess, setIsFirstAccess] = useState(false);
-
-  // Verificar se estamos em um iframe
-  const isInIframe = window.self !== window.top;
-  
-  // Verificar se a API é suportada e não estamos em iframe
-  const isSupported = 'showDirectoryPicker' in window && !isInIframe;
-
-  // IndexedDB helpers
-  const openDB = useCallback((): Promise<IDBDatabase> => {
+// Função para recuperar handle da pasta
+const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | null> => {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction(['directoryHandles'], 'readonly');
+    const store = transaction.objectStore('directoryHandles');
+    
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-      
+      const request = store.get('backupDirectory');
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-      
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME);
-        }
-      };
+      request.onsuccess = () => resolve(request.result || null);
     });
-  }, []);
+  } catch (error) {
+    console.error('Erro ao recuperar handle:', error);
+    return null;
+  }
+};
 
-  const verificarPrimeiroAcesso = useCallback(() => {
-    const pastaConfigurada = localStorage.getItem(CONFIGURED_KEY);
-    if (!pastaConfigurada && isSupported) {
-      setIsFirstAccess(true);
-      setShowConfigModal(true);
-      return true;
+export const useFileSystemBackup = () => {
+  const [isConfigured, setIsConfigured] = useState(false);
+  const [isSupported, setIsSupported] = useState(false);
+  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkSupport = () => {
+      const supported = 'showDirectoryPicker' in window;
+      setIsSupported(supported);
+      
+      if (!supported) {
+        console.warn('File System Access API não suportado neste navegador');
+        setLoading(false);
+        return;
+      }
+    };
+
+    const checkConfiguration = async () => {
+      try {
+        const handle = await getDirectoryHandle();
+        if (handle) {
+          // Verificar se ainda temos permissão
+          try {
+            await handle.getDirectoryHandle('test', { create: false }).catch(() => {});
+            setDirectoryHandle(handle);
+            setIsConfigured(true);
+            localStorage.setItem('pastaConfigurada', 'true');
+          } catch (error) {
+            console.log('Permissão de pasta perdida, precisa reconfigurar');
+            localStorage.removeItem('pastaConfigurada');
+            setIsConfigured(false);
+          }
+        } else {
+          setIsConfigured(false);
+          localStorage.removeItem('pastaConfigurada');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar configuração:', error);
+        setIsConfigured(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSupport();
+    if (isSupported) {
+      checkConfiguration();
     }
-    return false;
   }, [isSupported]);
 
-  const forceConfiguration = useCallback(() => {
-    setShowConfigModal(true);
-    setIsFirstAccess(true);
-  }, []);
-
-  const saveFolderHandle = useCallback(async (handle: FileSystemDirectoryHandle) => {
-    if (!isSupported) return;
-    
-    try {
-      const db = await openDB();
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      
-      return new Promise<void>((resolve, reject) => {
-        const request = store.put(handle, 'backup_folder');
-        request.onsuccess = () => {
-          setFolderHandle(handle);
-          setFolderName(handle.name);
-          setIsConfigured(true);
-          setIsConnected(true);
-          setIsFirstAccess(false);
-          
-          // Marcar como configurado no localStorage
-          localStorage.setItem(CONFIGURED_KEY, 'true');
-          resolve();
-        };
-        request.onerror = () => reject(request.error);
-      });
-    } catch (error) {
-      console.error('Erro ao salvar pasta:', error);
-    }
-  }, [isSupported, openDB]);
-
-  const loadFolderHandle = useCallback(async () => {
-    if (!isSupported) return;
-    
-    try {
-      const db = await openDB();
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      
-      const handle = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
-        const request = store.get('backup_folder');
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => reject(request.error);
-      });
-      
-      if (handle) {
-        try {
-          // Tentar acessar a pasta para verificar se ainda temos permissão
-          await handle.getDirectoryHandle('.', { create: false });
-          setFolderHandle(handle);
-          setFolderName(handle.name);
-          setIsConfigured(true);
-          setIsConnected(true);
-          localStorage.setItem(CONFIGURED_KEY, 'true');
-        } catch (permissionError) {
-          // Sem permissão - configurado mas desconectado
-          setFolderName(handle.name);
-          setIsConfigured(true);
-          setIsConnected(false);
-        }
-      } else {
-        // Não configurado - verificar primeiro acesso
-        verificarPrimeiroAcesso();
-      }
-    } catch (error) {
-      console.error('Erro ao carregar pasta:', error);
-      verificarPrimeiroAcesso();
-    }
-  }, [isSupported, openDB, verificarPrimeiroAcesso]);
-
-  const configureFolder = useCallback(async (): Promise<boolean> => {
+  const configureDirectory = async (): Promise<boolean> => {
     if (!isSupported) {
-      console.warn('File System Access API não suportada ou executando em iframe');
-      return false;
+      throw new Error('File System Access API não suportado');
     }
-    
+
     try {
-      const handle = await (window as any).showDirectoryPicker({
+      const handle = await window.showDirectoryPicker({
         mode: 'readwrite'
       });
+
+      await saveDirectoryHandle(handle);
+      setDirectoryHandle(handle);
+      setIsConfigured(true);
+      localStorage.setItem('pastaConfigurada', 'true');
       
-      await saveFolderHandle(handle);
-      setShowConfigModal(false);
+      console.log('Pasta configurada com sucesso:', handle.name);
       return true;
     } catch (error) {
       if (error.name === 'AbortError') {
-        // Usuário cancelou - se for primeiro acesso, forçar novamente
-        if (isFirstAccess) {
-          alert('A configuração da pasta é obrigatória para usar o sistema. Tente novamente.');
-          setTimeout(() => {
-            configureFolder();
-          }, 1000);
-        }
+        console.log('Usuário cancelou a seleção de pasta');
       } else {
         console.error('Erro ao configurar pasta:', error);
       }
-      return false;
+      throw error;
     }
-  }, [isSupported, saveFolderHandle, isFirstAccess]);
+  };
 
-  const createBackup = useCallback(async (data: any): Promise<boolean> => {
-    if (!folderHandle || !isConnected || !isSupported) return false;
-    
+  const saveBackup = async (data: string, filename: string): Promise<boolean> => {
+    if (!directoryHandle || !isConfigured) {
+      throw new Error('Pasta não configurada');
+    }
+
     try {
-      // Criar backup principal
-      const mainFileName = 'devedores.json';
-      const mainFileHandle = await folderHandle.getFileHandle(mainFileName, { create: true });
-      const mainWritable = await mainFileHandle.createWritable();
+      const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(data);
+      await writable.close();
       
-      const backupData = {
-        ...data,
-        lastBackup: new Date().toISOString(),
-        version: '2.0'
-      };
-      
-      await mainWritable.write(JSON.stringify(backupData, null, 2));
-      await mainWritable.close();
-
-      // Criar backup com data
-      const now = new Date();
-      const dateString = now.toISOString().split('T')[0];
-      const timeString = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-      const backupFileName = `backup_${dateString}_${timeString}.json`;
-      
-      const backupFileHandle = await folderHandle.getFileHandle(backupFileName, { create: true });
-      const backupWritable = await backupFileHandle.createWritable();
-      await backupWritable.write(JSON.stringify(backupData, null, 2));
-      await backupWritable.close();
-
+      console.log(`Backup salvo: ${filename}`);
       return true;
     } catch (error) {
-      console.error('Erro ao criar backup:', error);
-      setIsConnected(false);
-      return false;
+      console.error('Erro ao salvar backup:', error);
+      throw error;
     }
-  }, [folderHandle, isConnected, isSupported]);
+  };
 
-  // Carregar configuração na inicialização
-  useEffect(() => {
-    if (isSupported) {
-      loadFolderHandle();
-    } else if (!isInIframe) {
-      // Navegador não suportado
-      setShowConfigModal(true);
+  const getBackupStatus = () => {
+    if (!isSupported) {
+      return 'Navegador não suportado';
     }
-  }, [isSupported, loadFolderHandle, isInIframe]);
+    
+    if (loading) {
+      return 'Verificando...';
+    }
+    
+    if (isConfigured && directoryHandle) {
+      return `Pasta: ${directoryHandle.name}`;
+    }
+    
+    return 'Não configurado';
+  };
 
   return {
     isSupported,
     isConfigured,
-    isConnected,
-    folderName,
-    configureFolder,
-    createBackup,
-    showConfigModal,
-    setShowConfigModal,
-    isInIframe,
-    isFirstAccess,
-    forceConfiguration
+    loading,
+    directoryHandle,
+    configureDirectory,
+    saveBackup,
+    getBackupStatus
   };
 };
