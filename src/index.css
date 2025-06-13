@@ -168,7 +168,7 @@
   }
 
   .status-warning {
-    @apply bg-gradient-to-r from-white to-white text-gray-800;
+    @apply bg-white text-gray-800 border border-gray-300;
   }
 
   /* Loading Animations */
@@ -230,7 +230,7 @@
   }
 
   .badge-warning {
-    @apply bg-white text-gray-800 dark:bg-white/20 dark:text-gray-400 px-3 py-1 rounded-full text-sm font-medium border border-gray-300;
+    @apply bg-white text-gray-800 dark:bg-gray-100/20 dark:text-gray-600 px-3 py-1 rounded-full text-sm font-medium border border-gray-300;
   }
 
   .badge-danger {

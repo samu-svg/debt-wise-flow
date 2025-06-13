@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,7 +45,7 @@ const AlertasConfig = () => {
   const getAlertColor = (tipo: string) => {
     switch (tipo) {
       case 'sucesso': return 'text-green-600 bg-green-50';
-      case 'aviso': return 'text-yellow-600 bg-yellow-50';
+      case 'aviso': return 'text-gray-700 bg-white border border-gray-300';
       case 'erro': return 'text-red-600 bg-red-50';
       default: return 'text-blue-600 bg-blue-50';
     }
@@ -166,7 +165,7 @@ const AlertasConfig = () => {
                 { nome: 'Meta Diária Atingida', ativo: false, condicao: 'Recuperação > R$ 5.000' },
                 { nome: 'Conexão WhatsApp Perdida', ativo: true, condicao: 'Status = Offline' }
               ].map((config, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-white">
                   <div>
                     <p className="font-medium text-sm">{config.nome}</p>
                     <p className="text-xs text-gray-600">{config.condicao}</p>
@@ -187,7 +186,7 @@ const AlertasConfig = () => {
       {/* Modal para Novo Alerta */}
       {showNewAlert && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
+          <Card className="w-full max-w-md mx-4 bg-white">
             <CardHeader>
               <CardTitle>Novo Alerta</CardTitle>
               <CardDescription>Configure um novo alerta personalizado</CardDescription>
@@ -199,6 +198,7 @@ const AlertasConfig = () => {
                   value={newAlertConfig.nome}
                   onChange={(e) => setNewAlertConfig({...newAlertConfig, nome: e.target.value})}
                   placeholder="Ex: Taxa de resposta baixa"
+                  className="bg-white"
                 />
               </div>
 
@@ -211,7 +211,7 @@ const AlertasConfig = () => {
                       ...newAlertConfig,
                       condicao: {...newAlertConfig.condicao!, tipo: e.target.value as any}
                     })}
-                    className="px-2 py-1 border rounded text-sm"
+                    className="px-2 py-1 border rounded text-sm bg-white"
                   >
                     <option value="taxa_resposta">Taxa Resposta</option>
                     <option value="valor_recuperado">Valor Recuperado</option>
@@ -225,7 +225,7 @@ const AlertasConfig = () => {
                       ...newAlertConfig,
                       condicao: {...newAlertConfig.condicao!, operador: e.target.value as any}
                     })}
-                    className="px-2 py-1 border rounded text-sm"
+                    className="px-2 py-1 border rounded text-sm bg-white"
                   >
                     <option value="maior_que">Maior que</option>
                     <option value="menor_que">Menor que</option>
@@ -239,7 +239,7 @@ const AlertasConfig = () => {
                       ...newAlertConfig,
                       condicao: {...newAlertConfig.condicao!, valor: Number(e.target.value)}
                     })}
-                    className="text-sm"
+                    className="text-sm bg-white"
                   />
                 </div>
               </div>
@@ -252,7 +252,7 @@ const AlertasConfig = () => {
                     ...newAlertConfig,
                     acao: {...newAlertConfig.acao!, tipo: e.target.value as any}
                   })}
-                  className="w-full px-2 py-1 border rounded text-sm mt-1"
+                  className="w-full px-2 py-1 border rounded text-sm mt-1 bg-white"
                 >
                   <option value="notificacao">Notificação</option>
                   <option value="email">Email</option>

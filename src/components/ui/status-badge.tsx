@@ -18,8 +18,8 @@ const statusClasses = {
     soft: 'badge-success'
   },
   warning: {
-    solid: 'bg-white text-gray-800 border border-gray-300',
-    outline: 'border-white text-gray-600 bg-transparent',
+    solid: 'bg-white text-gray-800 border border-gray-300 shadow-sm',
+    outline: 'border-gray-400 text-gray-700 bg-transparent',
     soft: 'badge-warning'
   },
   danger: {
