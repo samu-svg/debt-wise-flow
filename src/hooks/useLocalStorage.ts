@@ -62,11 +62,11 @@ export const useLocalStorage = () => {
     try {
       console.log('Procurando arquivos de backup na pasta...');
       
-      // Usar values() para iterar sobre os handles dos arquivos
+      // Usar async iteration diretamente sobre o directoryHandle
       const files = [];
-      for await (const handle of directoryHandle.values()) {
-        if (handle.kind === 'file' && handle.name.includes('debt_manager_backup_') && handle.name.endsWith('.json')) {
-          files.push({ name: handle.name, handle });
+      for await (const [name, handle] of directoryHandle) {
+        if (handle.kind === 'file' && name.includes('debt_manager_backup_') && name.endsWith('.json')) {
+          files.push({ name, handle });
         }
       }
 
