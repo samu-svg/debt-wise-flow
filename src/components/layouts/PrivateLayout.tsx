@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,8 @@ import {
   BarChart3,
   LogOut,
   Menu,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import BackupStatus from '@/components/BackupStatus';
 import BackupConfigModal from '@/components/BackupConfigModal';
@@ -29,6 +29,7 @@ const PrivateLayout = () => {
     { path: '/app', icon: Home, label: 'Dashboard' },
     { path: '/app/clients', icon: Users, label: 'Clientes' },
     { path: '/app/debts', icon: FileText, label: 'Dívidas' },
+    { path: '/app/cobranca-automatica', icon: Zap, label: 'Cobrança Automática' },
     { path: '/app/reports', icon: BarChart3, label: 'Relatórios' },
     { path: '/app/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
   ];
