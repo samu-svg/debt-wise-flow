@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import WhatsAppQRCode from '@/components/WhatsAppQRCode';
 import WhatsAppLogs from '@/components/WhatsAppLogs';
 import WhatsAppConfig from '@/components/WhatsAppConfig';
+import AutomationConfig from '@/components/AutomationConfig';
+import CommunicationMonitor from '@/components/CommunicationMonitor';
 import { useWhatsAppConnection } from '@/hooks/useWhatsAppConnection';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { 
@@ -121,7 +123,7 @@ const WhatsApp = () => {
 
       {/* Tabs Principais */}
       <Tabs defaultValue="connection" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="connection" className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
             Conexão
@@ -133,6 +135,14 @@ const WhatsApp = () => {
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             Templates
+          </TabsTrigger>
+          <TabsTrigger value="automation" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Automação
+          </TabsTrigger>
+          <TabsTrigger value="monitor" className="flex items-center gap-2">
+            <Activity className="w-4 h-4" />
+            Monitor
           </TabsTrigger>
           <TabsTrigger value="config" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -194,6 +204,14 @@ const WhatsApp = () => {
 
         <TabsContent value="templates">
           <MessageTemplates />
+        </TabsContent>
+
+        <TabsContent value="automation">
+          <AutomationConfig />
+        </TabsContent>
+
+        <TabsContent value="monitor">
+          <CommunicationMonitor />
         </TabsContent>
 
         <TabsContent value="config">
