@@ -1,7 +1,6 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { WhatsAppConnection, WhatsAppLog, WhatsAppConfig } from '@/types/whatsapp';
-import QRCode from 'qrcode';
 
 const STORAGE_KEYS = {
   CONNECTION: 'whatsapp_connection',
@@ -21,6 +20,13 @@ const DEFAULT_CONFIG: WhatsAppConfig = {
   }
 };
 
+// Declarar tipos para whatsapp-web.js
+declare global {
+  interface Window {
+    WhatsAppWebJS: any;
+  }
+}
+
 export const useWhatsAppConnection = () => {
   const [connection, setConnection] = useState<WhatsAppConnection>({
     isConnected: false,
@@ -31,11 +37,151 @@ export const useWhatsAppConnection = () => {
   const [config, setConfig] = useState<WhatsAppConfig>(DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(false);
   const [qrTimeout, setQrTimeout] = useState<NodeJS.Timeout | null>(null);
+  const clientRef = useRef<any>(null);
 
   // Carregar dados salvos
   useEffect(() => {
     loadSavedData();
+    loadWhatsAppWebJS();
   }, []);
+
+  const loadWhatsAppWebJS = async () => {
+    try {
+      // Dinamically import whatsapp-web.js no cliente
+      const { Client, LocalAuth } = await import('whatsapp-web.js');
+      
+      if (!clientRef.current) {
+        clientRef.current = new Client({
+          authStrategy: new LocalAuth({
+            clientId: "debt-wise-unique"
+          }),
+          puppeteer: {
+            headless: true,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-accelerated-2d-canvas',
+              '--no-first-run',
+              '--no-zygote',
+              '--single-process',
+              '--disable-gpu'
+            ]
+          }
+        });
+
+        setupWhatsAppEvents();
+      }
+    } catch (error) {
+      addLog('error', 'Erro ao carregar WhatsApp Web JS', { error });
+      console.error('WhatsApp Web JS load error:', error);
+    }
+  };
+
+  const setupWhatsAppEvents = () => {
+    if (!clientRef.current) return;
+
+    clientRef.current.on('qr', (qr: string) => {
+      console.log('QR Code received:', qr.substring(0, 20) + '...');
+      
+      // Verificar se o QR code é válido (deve começar com "2@")
+      if (qr.startsWith('2@')) {
+        addLog('system', 'QR Code válido recebido (formato 2@)');
+        
+        // Gerar QR code visual usando a biblioteca qrcode
+        import('qrcode').then(QRCode => {
+          QRCode.toDataURL(qr, {
+            width: 320,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            },
+            errorCorrectionLevel: 'M'
+          }).then(qrCodeDataURL => {
+            saveConnection({
+              ...connection,
+              qrCode: qrCodeDataURL,
+              status: 'connecting'
+            });
+            
+            addLog('connection', 'QR Code pronto para escaneamento');
+            scheduleQRRegen();
+          }).catch(error => {
+            addLog('error', 'Erro ao gerar QR Code visual', { error });
+          });
+        });
+      } else {
+        addLog('system', `QR Code recebido com formato: ${qr.substring(0, 2)}@ - aguardando formato válido 2@`);
+      }
+    });
+
+    clientRef.current.on('ready', () => {
+      const phoneNumber = clientRef.current.info?.wid?.user || 'Número não disponível';
+      
+      if (qrTimeout) {
+        clearTimeout(qrTimeout);
+        setQrTimeout(null);
+      }
+
+      saveConnection({
+        isConnected: true,
+        phoneNumber: `+${phoneNumber}`,
+        lastSeen: new Date().toISOString(),
+        status: 'connected',
+        retryCount: 0,
+        qrCode: undefined
+      });
+
+      addLog('connection', 'WhatsApp conectado com sucesso!', { phoneNumber });
+      
+      // Testar conexão enviando mensagem para próprio número
+      testConnection(phoneNumber);
+    });
+
+    clientRef.current.on('authenticated', () => {
+      addLog('system', 'WhatsApp autenticado com sucesso');
+    });
+
+    clientRef.current.on('auth_failure', (msg: string) => {
+      addLog('error', 'Falha na autenticação', { message: msg });
+      saveConnection({
+        ...connection,
+        status: 'error',
+        lastError: 'Falha na autenticação'
+      });
+    });
+
+    clientRef.current.on('disconnected', (reason: string) => {
+      addLog('connection', 'WhatsApp desconectado', { reason });
+      saveConnection({
+        isConnected: false,
+        status: 'disconnected',
+        retryCount: 0,
+        qrCode: undefined,
+        phoneNumber: undefined
+      });
+    });
+  };
+
+  const testConnection = async (phoneNumber: string) => {
+    try {
+      const testMessage = `🤖 *Debt Wise Flow* - Teste de Conexão
+      
+Olá! Este é um teste automático para confirmar que sua conexão WhatsApp está funcionando corretamente.
+
+✅ Conexão estabelecida com sucesso
+📱 Sistema pronto para envio de cobranças
+🕐 ${new Date().toLocaleString('pt-BR')}
+
+Você pode ignorar esta mensagem.`;
+
+      await clientRef.current.sendMessage(`${phoneNumber}@c.us`, testMessage);
+      addLog('message', 'Mensagem de teste enviada com sucesso', { phoneNumber });
+    } catch (error) {
+      addLog('error', 'Erro ao enviar mensagem de teste', { error });
+    }
+  };
 
   const loadSavedData = () => {
     try {
@@ -95,30 +241,6 @@ export const useWhatsAppConnection = () => {
     });
   }, []);
 
-  const generateRealQRCode = useCallback(async () => {
-    try {
-      // Simular dados de QR Code do WhatsApp Web real
-      // Em produção, isso viria do whatsapp-web.js client.on('qr', callback)
-      const qrData = `2@${Math.random().toString(36).substr(2, 15)},${Math.random().toString(36).substr(2, 15)},${Date.now()}`;
-      
-      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-        width: 320,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        errorCorrectionLevel: 'M'
-      });
-      
-      addLog('system', 'QR Code gerado com formato WhatsApp válido');
-      return qrCodeDataURL;
-    } catch (error) {
-      addLog('error', 'Erro ao gerar QR Code', { error });
-      throw error;
-    }
-  }, [addLog]);
-
   const scheduleQRRegen = useCallback(() => {
     if (qrTimeout) {
       clearTimeout(qrTimeout);
@@ -135,20 +257,12 @@ export const useWhatsAppConnection = () => {
   }, [connection.status, addLog, qrTimeout]);
 
   const generateNewQR = useCallback(async () => {
-    if (connection.status !== 'connecting') return;
+    if (connection.status !== 'connecting' || !clientRef.current) return;
 
     try {
-      addLog('system', 'Gerando novo QR Code...');
-      const qrCode = await generateRealQRCode();
-      
-      saveConnection({
-        ...connection,
-        qrCode,
-        status: 'connecting'
-      });
-
-      addLog('connection', 'Novo QR Code pronto. Escaneie com WhatsApp.');
-      scheduleQRRegen();
+      addLog('system', 'Solicitando novo QR Code...');
+      // O evento 'qr' será disparado automaticamente pelo cliente
+      await clientRef.current.initialize();
     } catch (error) {
       addLog('error', 'Erro ao gerar novo QR Code', { error });
       saveConnection({
@@ -157,7 +271,7 @@ export const useWhatsAppConnection = () => {
         lastError: 'Erro ao gerar QR Code'
       });
     }
-  }, [connection, generateRealQRCode, addLog, scheduleQRRegen]);
+  }, [connection, addLog]);
 
   const connect = useCallback(async () => {
     if (isLoading || connection.status === 'connecting') return;
@@ -166,58 +280,50 @@ export const useWhatsAppConnection = () => {
     addLog('system', 'Iniciando conexão WhatsApp Web...');
 
     try {
-      const qrCode = await generateRealQRCode();
-      
-      saveConnection({
-        ...connection,
-        status: 'connecting',
-        qrCode,
-        retryCount: 0,
-        lastError: undefined
-      });
+      if (!clientRef.current) {
+        await loadWhatsAppWebJS();
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Aguardar inicialização
+      }
 
-      addLog('connection', 'QR Code gerado. Aguardando escaneamento...');
-      scheduleQRRegen();
+      if (clientRef.current) {
+        saveConnection({
+          ...connection,
+          status: 'connecting',
+          retryCount: 0,
+          lastError: undefined
+        });
+
+        addLog('connection', 'Inicializando cliente WhatsApp...');
+        await clientRef.current.initialize();
+      } else {
+        throw new Error('Cliente WhatsApp não pôde ser inicializado');
+      }
 
     } catch (error) {
       addLog('error', 'Erro ao iniciar conexão', { error });
       saveConnection({
         ...connection,
         status: 'error',
-        lastError: 'Erro ao gerar QR Code'
+        lastError: 'Erro ao inicializar cliente WhatsApp'
       });
     } finally {
       setIsLoading(false);
     }
-  }, [connection, isLoading, generateRealQRCode, addLog, scheduleQRRegen]);
+  }, [connection, isLoading, addLog]);
 
-  const simulateSuccessfulConnection = useCallback(() => {
-    if (connection.status !== 'connecting') return;
-
+  const disconnect = useCallback(async () => {
     if (qrTimeout) {
       clearTimeout(qrTimeout);
       setQrTimeout(null);
     }
 
-    const mockPhoneNumber = '+55 11 99999-8888';
-    
-    saveConnection({
-      isConnected: true,
-      phoneNumber: mockPhoneNumber,
-      lastSeen: new Date().toISOString(),
-      status: 'connected',
-      retryCount: 0,
-      qrCode: undefined
-    });
-
-    addLog('connection', 'WhatsApp conectado com sucesso!', { phoneNumber: mockPhoneNumber });
-    addLog('system', 'Pronto para enviar mensagens');
-  }, [connection.status, qrTimeout, addLog]);
-
-  const disconnect = useCallback(() => {
-    if (qrTimeout) {
-      clearTimeout(qrTimeout);
-      setQrTimeout(null);
+    if (clientRef.current) {
+      try {
+        await clientRef.current.destroy();
+        clientRef.current = null;
+      } catch (error) {
+        addLog('error', 'Erro ao desconectar cliente', { error });
+      }
     }
 
     saveConnection({
@@ -264,10 +370,18 @@ export const useWhatsAppConnection = () => {
     addLog('system', 'Logs limpos');
   }, [addLog]);
 
+  // Remover função de simulação
+  const simulateSuccessfulConnection = useCallback(() => {
+    addLog('system', 'Simulação desabilitada - use conexão real');
+  }, [addLog]);
+
   useEffect(() => {
     return () => {
       if (qrTimeout) {
         clearTimeout(qrTimeout);
+      }
+      if (clientRef.current) {
+        clientRef.current.destroy().catch(console.error);
       }
     };
   }, [qrTimeout]);

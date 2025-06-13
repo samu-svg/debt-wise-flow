@@ -20,8 +20,7 @@ const WhatsAppQRCode = () => {
     connect, 
     disconnect, 
     retry, 
-    generateNewQR, 
-    simulateSuccessfulConnection, 
+    generateNewQR,
     isLoading 
   } = useWhatsAppConnection();
 
@@ -108,11 +107,20 @@ const WhatsAppQRCode = () => {
                 <p><strong>4.</strong> Escaneie este QR Code</p>
               </div>
               
-              <div className="flex items-center gap-2 justify-center text-xs text-gray-500 bg-white p-2 rounded border border-gray-200">
-                <Clock className="w-3 h-3" />
-                <span>QR Code válido por 5 minutos</span>
+              <div className="flex items-center gap-2 justify-center text-xs text-gray-500 bg-green-50 p-2 rounded border border-green-200">
+                <CheckCircle className="w-3 h-3 text-green-600" />
+                <span>QR Code válido e pronto para conexão real</span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Aguardando QR Code */}
+        {connection.status === 'connecting' && !connection.qrCode && (
+          <div className="flex flex-col items-center space-y-4 py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600">Gerando QR Code válido...</p>
+            <p className="text-sm text-gray-500">Aguarde enquanto inicializamos a conexão</p>
           </div>
         )}
 
@@ -163,7 +171,7 @@ const WhatsAppQRCode = () => {
               size="lg"
             >
               <QrCode className="w-5 h-5" />
-              Conectar WhatsApp
+              {isLoading ? 'Conectando...' : 'Conectar WhatsApp'}
             </Button>
           )}
 
@@ -219,18 +227,6 @@ const WhatsAppQRCode = () => {
               </Button>
             </div>
           )}
-
-          {/* Test button - REMOVER EM PRODUÇÃO */}
-          {connection.status === 'connecting' && process.env.NODE_ENV === 'development' && (
-            <Button 
-              onClick={simulateSuccessfulConnection}
-              variant="secondary"
-              className="flex items-center gap-2 w-full text-xs bg-gray-100 text-gray-700 hover:bg-gray-200"
-              size="sm"
-            >
-              🧪 Simular Conexão Manual (Teste)
-            </Button>
-          )}
         </div>
 
         {/* Info Box */}
@@ -238,8 +234,8 @@ const WhatsAppQRCode = () => {
           <div className="flex items-start gap-2">
             <QrCode className="w-4 h-4 text-blue-600 mt-0.5" />
             <div className="text-xs text-blue-700">
-              <p className="font-medium mb-1">Dica:</p>
-              <p>Mantenha esta aba aberta durante o escaneamento. O QR Code é renovado automaticamente a cada 5 minutos por segurança.</p>
+              <p className="font-medium mb-1">Sistema Real WhatsApp Web:</p>
+              <p>Este QR Code conecta diretamente ao WhatsApp oficial. A conexão é autêntica e permite envio real de mensagens de cobrança.</p>
             </div>
           </div>
         </div>
