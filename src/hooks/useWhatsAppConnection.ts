@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { WhatsAppConnection, WhatsAppLog, WhatsAppConfig } from '@/types/whatsapp';
 
@@ -122,7 +121,7 @@ export const useWhatsAppConnection = () => {
     }
   };
 
-  // Conecta usando WebSocket para comunicação com backend
+  // Conecta usando WebSocket para comunicação com Edge Function do Supabase
   const connect = useCallback(async () => {
     if (isLoading || connection.status === 'connecting') {
       addLog('system', 'Conexão já em andamento...');
@@ -130,12 +129,15 @@ export const useWhatsAppConnection = () => {
     }
     
     setIsLoading(true);
-    addLog('system', 'Conectando ao servidor WhatsApp...');
+    addLog('system', 'Conectando ao servidor WhatsApp via Supabase...');
 
     try {
-      // Tenta conectar via WebSocket (você precisará implementar um backend)
+      // Conectar via WebSocket à Edge Function do Supabase
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/whatsapp`;
+      const supabaseUrl = 'https://errzltarqbkkcldzivud.supabase.co';
+      const wsUrl = `${protocol === 'wss:' ? 'wss' : 'ws'}://${supabaseUrl.replace('https://', '').replace('http://', '')}/functions/v1/whatsapp-server`;
+      
+      console.log('Conectando ao WebSocket:', wsUrl);
       
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -149,15 +151,29 @@ export const useWhatsAppConnection = () => {
       });
 
       ws.onopen = () => {
-        addLog('connection', 'Conectado ao servidor WhatsApp');
-        ws.send(JSON.stringify({ type: 'REQUEST_QR' }));
+        addLog('connection', 'Conectado ao servidor WhatsApp do Supabase');
+        // Aguardar um pouco antes de solicitar QR
+        setTimeout(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'REQUEST_QR' }));
+          }
+        }, 1000);
       };
 
       ws.onmessage = async (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log('Mensagem recebida do servidor:', data);
           
           switch (data.type) {
+            case 'CONNECTED':
+              addLog('connection', 'WebSocket conectado com sucesso');
+              break;
+
+            case 'STATUS':
+              addLog('system', data.message);
+              break;
+              
             case 'QR_CODE':
               addLog('connection', 'QR Code recebido - escaneie com seu WhatsApp');
               const qrCodeUrl = await generateQRCode(data.qr);
@@ -186,7 +202,7 @@ export const useWhatsAppConnection = () => {
               break;
               
             case 'DISCONNECTED':
-              addLog('connection', 'WhatsApp desconectado', { reason: data.reason });
+              addLog('connection', 'WhatsApp desconectado', { reason: data.reason || data.message });
               saveConnection({
                 isConnected: false,
                 status: 'disconnected',
@@ -197,11 +213,28 @@ export const useWhatsAppConnection = () => {
               break;
               
             case 'ERROR':
-              addLog('error', 'Erro na conexão WhatsApp', { error: data.error });
-              saveConnection({
-                ...connection,
-                status: 'error',
-                lastError: data.error
+              const errorMsg = data.error || data.message || 'Erro desconhecido';
+              addLog('error', 'Erro na conexão WhatsApp', { error: errorMsg });
+              
+              if (errorMsg.includes('whatsapp-web.js requer ambiente Node.js')) {
+                saveConnection({
+                  ...connection,
+                  status: 'error',
+                  lastError: 'Para conectar WhatsApp real: você precisa de um servidor Node.js separado rodando whatsapp-web.js. O Supabase Edge Functions não pode executar Puppeteer. Considere usar Railway, Heroku, ou VPS para hospedar o servidor WhatsApp.'
+                });
+              } else {
+                saveConnection({
+                  ...connection,
+                  status: 'error',
+                  lastError: errorMsg
+                });
+              }
+              break;
+
+            case 'MESSAGE_SENT':
+              addLog('message', `Mensagem enviada para ${data.to}`, { 
+                messageId: data.messageId,
+                message: data.message 
               });
               break;
           }
@@ -211,26 +244,36 @@ export const useWhatsAppConnection = () => {
       };
 
       ws.onerror = (error) => {
-        addLog('error', 'Erro de conexão WebSocket - backend não disponível', { error });
+        console.error('Erro de conexão WebSocket:', error);
+        addLog('error', 'Erro de conexão WebSocket com Supabase Edge Function', { error });
         saveConnection({
           ...connection,
           status: 'error',
-          lastError: 'Backend não disponível. Para usar WhatsApp real, é necessário um servidor Node.js.'
+          lastError: 'Falha na conexão WebSocket. Verifique se a Edge Function está rodando.'
         });
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        console.log('Conexão WebSocket fechada:', event.code, event.reason);
         addLog('connection', 'Conexão com servidor fechada');
-        if (config.autoReconnect && connection.retryCount < config.maxRetries) {
+        
+        if (event.code !== 1000 && config.autoReconnect && connection.retryCount < config.maxRetries) {
           setTimeout(() => retry(), config.retryInterval);
         }
       };
 
-      // Timeout para QR Code (2 minutos)
+      // Timeout para conexão (30 segundos)
       qrTimeoutRef.current = setTimeout(() => {
-        addLog('error', 'Timeout do QR Code - tentando novamente...');
-        generateNewQR();
-      }, 120000);
+        if (ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+          addLog('error', 'Timeout na conexão WebSocket');
+          saveConnection({
+            ...connection,
+            status: 'error',
+            lastError: 'Timeout na conexão. Verifique se o servidor está rodando.'
+          });
+        }
+      }, 30000);
 
     } catch (error) {
       console.error('Erro ao conectar:', error);
@@ -238,7 +281,7 @@ export const useWhatsAppConnection = () => {
       saveConnection({
         ...connection,
         status: 'error',
-        lastError: 'Para conectar WhatsApp real, você precisa de um servidor backend Node.js rodando'
+        lastError: 'Erro de conexão. Verifique a configuração do servidor.'
       });
     } finally {
       setIsLoading(false);
@@ -322,7 +365,7 @@ export const useWhatsAppConnection = () => {
         phoneNumber,
         message
       }));
-      addLog('message', `Mensagem enviada para ${phoneNumber}`, { message });
+      addLog('message', `Enviando mensagem para ${phoneNumber}`, { message });
     } catch (error) {
       addLog('error', `Erro ao enviar mensagem para ${phoneNumber}`, { error });
       throw error;
