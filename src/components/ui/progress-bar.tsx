@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -7,7 +8,7 @@ interface ProgressBarProps {
   max: number;
   className?: string;
   showLabel?: boolean;
-  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple';
+  color?: 'blue' | 'green' | 'red' | 'white' | 'purple';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -15,7 +16,7 @@ const colorClasses = {
   blue: 'from-blue-500 to-blue-600',
   green: 'from-green-500 to-green-600',
   red: 'from-red-500 to-red-600',
-  yellow: 'from-yellow-500 to-orange-500',
+  white: 'from-white to-gray-100 border border-gray-300',
   purple: 'from-purple-500 to-purple-600',
 };
 
@@ -56,3 +57,4 @@ export const ProgressBar = ({
 };
 
 export default ProgressBar;
+

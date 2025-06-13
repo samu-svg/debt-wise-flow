@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -17,8 +18,8 @@ const statusClasses = {
     soft: 'badge-success'
   },
   warning: {
-    solid: 'bg-yellow-600 text-white',
-    outline: 'border-yellow-600 text-yellow-600 bg-transparent',
+    solid: 'bg-white text-gray-800 border border-gray-300',
+    outline: 'border-white text-gray-600 bg-transparent',
     soft: 'badge-warning'
   },
   danger: {
@@ -65,3 +66,4 @@ export const StatusBadge = ({
 };
 
 export default StatusBadge;
+
