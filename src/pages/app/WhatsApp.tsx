@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,8 +8,11 @@ import WhatsAppLogs from '@/components/WhatsAppLogs';
 import WhatsAppConfig from '@/components/WhatsAppConfig';
 import AutomationConfig from '@/components/AutomationConfig';
 import CommunicationMonitor from '@/components/CommunicationMonitor';
+import CobrancaDashboard from '@/components/CobrancaDashboard';
+import AlertasConfig from '@/components/AlertasConfig';
 import { useWhatsAppConnection } from '@/hooks/useWhatsAppConnection';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useCobrancaMetrics } from '@/hooks/useCobrancaMetrics';
 import { 
   MessageSquare, 
   Users, 
@@ -16,14 +20,17 @@ import {
   Settings,
   Smartphone,
   Activity,
-  TrendingUp
+  TrendingUp,
+  BarChart3,
+  Bell
 } from 'lucide-react';
 import MessageTemplates from '@/components/MessageTemplates';
 
 const WhatsApp = () => {
   const { connection, logs } = useWhatsAppConnection();
   const { getDashboardMetrics } = useLocalStorage();
-  const metrics = getDashboardMetrics();
+  const { metrics } = useCobrancaMetrics();
+  const basicMetrics = getDashboardMetrics();
 
   const getStatsCards = () => [
     {
@@ -34,25 +41,39 @@ const WhatsApp = () => {
       bg: connection.isConnected ? 'bg-green-50' : 'bg-red-50'
     },
     {
-      title: 'Logs Registrados',
-      value: logs.length.toString(),
-      icon: Activity,
+      title: 'Mensagens Hoje',
+      value: metrics?.mensagensHoje?.toString() || '0',
+      icon: MessageSquare,
       color: 'text-blue-600',
       bg: 'bg-blue-50'
     },
     {
-      title: 'Clientes Ativos',
-      value: metrics.totalClients.toString(),
-      icon: Users,
+      title: 'Taxa de Resposta',
+      value: metrics ? `${metrics.taxaResposta.toFixed(1)}%` : '0%',
+      icon: Activity,
       color: 'text-purple-600',
       bg: 'bg-purple-50'
     },
     {
-      title: 'Dívidas em Atraso',
-      value: metrics.overdueCount.toString(),
-      icon: TrendingUp,
+      title: 'Clientes Ativos',
+      value: basicMetrics.totalClients.toString(),
+      icon: Users,
       color: 'text-orange-600',
       bg: 'bg-orange-50'
+    },
+    {
+      title: 'Valor Recuperado',
+      value: metrics ? `R$ ${metrics.valorTotalRecuperado.toFixed(2)}` : 'R$ 0,00',
+      icon: TrendingUp,
+      color: 'text-green-600',
+      bg: 'bg-green-50'
+    },
+    {
+      title: 'Conversas Ativas',
+      value: metrics?.conversasAtivas?.toString() || '0',
+      icon: Users,
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50'
     }
   ];
 
@@ -65,7 +86,7 @@ const WhatsApp = () => {
             Sistema de Cobrança WhatsApp
           </h1>
           <p className="text-gray-600 mt-2">
-            Conecte seu WhatsApp e automatize a cobrança de dívidas
+            Plataforma completa de automação de cobranças via WhatsApp
           </p>
         </div>
         
@@ -83,19 +104,19 @@ const WhatsApp = () => {
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {getStatsCards().map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index}>
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                    <p className="text-xs font-medium text-gray-600">{stat.title}</p>
+                    <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
                   </div>
-                  <div className={`p-3 rounded-full ${stat.bg}`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
+                  <div className={`p-2 rounded-full ${stat.bg}`}>
+                    <Icon className={`w-4 h-4 ${stat.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -122,8 +143,12 @@ const WhatsApp = () => {
       )}
 
       {/* Tabs Principais */}
-      <Tabs defaultValue="connection" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Dashboard
+          </TabsTrigger>
           <TabsTrigger value="connection" className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
             Conexão
@@ -144,15 +169,19 @@ const WhatsApp = () => {
             <Activity className="w-4 h-4" />
             Monitor
           </TabsTrigger>
+          <TabsTrigger value="alertas" className="flex items-center gap-2">
+            <Bell className="w-4 h-4" />
+            Alertas
+          </TabsTrigger>
           <TabsTrigger value="config" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
-            Configurações
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
-            Mensagens
+            Config
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          <CobrancaDashboard />
+        </TabsContent>
 
         <TabsContent value="connection" className="space-y-6">
           <div className="flex justify-center">
@@ -214,41 +243,12 @@ const WhatsApp = () => {
           <CommunicationMonitor />
         </TabsContent>
 
-        <TabsContent value="config">
-          <WhatsAppConfig />
+        <TabsContent value="alertas">
+          <AlertasConfig />
         </TabsContent>
 
-        <TabsContent value="messages">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mensagens Automáticas</CardTitle>
-              <CardDescription>
-                Configure e gerencie mensagens de cobrança automática
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Sistema de Mensagens em Desenvolvimento
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  A funcionalidade de mensagens automáticas será implementada na próxima etapa.
-                </p>
-                <div className="bg-blue-50 p-4 rounded-lg max-w-md mx-auto">
-                  <p className="text-sm text-blue-800">
-                    <strong>Próximas funcionalidades:</strong>
-                  </p>
-                  <ul className="text-sm text-blue-700 mt-2 space-y-1">
-                    <li>• Templates de mensagens personalizáveis</li>
-                    <li>• Envio automático por vencimento</li>
-                    <li>• Histórico de mensagens por cliente</li>
-                    <li>• Agendamento de cobranças</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="config">
+          <WhatsAppConfig />
         </TabsContent>
       </Tabs>
     </div>
