@@ -2,7 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, Folder, HardDrive, Shield } from 'lucide-react';
+import { AlertTriangle, Folder, HardDrive, Shield, ExternalLink } from 'lucide-react';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
 
 const BackupConfigModal = () => {
@@ -10,7 +10,8 @@ const BackupConfigModal = () => {
     isSupported, 
     showConfigModal, 
     configureFolder,
-    setShowConfigModal 
+    setShowConfigModal,
+    isInIframe
   } = useFileSystemBackup();
 
   const handleConfigureFolder = async () => {
@@ -19,6 +20,67 @@ const BackupConfigModal = () => {
       alert('Não foi possível configurar a pasta. Tente novamente.');
     }
   };
+
+  // Se estamos em iframe (ambiente de desenvolvimento)
+  if (isInIframe) {
+    return (
+      <Dialog open={showConfigModal} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-600">
+              <Shield className="w-5 h-5" />
+              Backup Local - Ambiente de Desenvolvimento
+            </DialogTitle>
+            <DialogDescription>
+              Funcionalidade limitada no ambiente de desenvolvimento
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm text-blue-800 mb-2">
+                    <strong>Modo de Desenvolvimento Detectado</strong>
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    O backup automático funciona apenas no app publicado. Por enquanto, use a função "Fazer Backup" na seção Relatórios.
+                  </p>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-green-800 mb-2">Após publicar seu app:</h4>
+                  <ul className="text-sm text-green-700 space-y-1">
+                    <li>• Backup automático funcionará normalmente</li>
+                    <li>• Dados salvos localmente no seu PC</li>
+                    <li>• Sincronização a cada alteração</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={() => setShowConfigModal(false)}
+                className="w-full"
+              >
+                Entendi - Continuar
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => window.open('/app/reports', '_blank')}
+                className="w-full flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Ir para Relatórios (Backup Manual)
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!isSupported) {
     return (

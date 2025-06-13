@@ -10,6 +10,7 @@ interface BackupHook {
   createBackup: (data: any) => Promise<boolean>;
   showConfigModal: boolean;
   setShowConfigModal: (show: boolean) => void;
+  isInIframe: boolean;
 }
 
 const DB_NAME = 'debt_manager_backup';
@@ -23,8 +24,11 @@ export const useFileSystemBackup = (): BackupHook => {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [folderHandle, setFolderHandle] = useState<FileSystemDirectoryHandle | null>(null);
 
-  // Verificar se a API é suportada
-  const isSupported = 'showDirectoryPicker' in window;
+  // Verificar se estamos em um iframe
+  const isInIframe = window.self !== window.top;
+  
+  // Verificar se a API é suportada e não estamos em iframe
+  const isSupported = 'showDirectoryPicker' in window && !isInIframe;
 
   // IndexedDB helpers
   const openDB = useCallback((): Promise<IDBDatabase> => {
@@ -97,17 +101,24 @@ export const useFileSystemBackup = (): BackupHook => {
           setIsConnected(false);
         }
       } else {
-        // Mostrar modal se não configurado
-        setShowConfigModal(true);
+        // Mostrar modal se não configurado (apenas se suportado)
+        if (isSupported) {
+          setShowConfigModal(true);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar pasta:', error);
-      setShowConfigModal(true);
+      if (isSupported) {
+        setShowConfigModal(true);
+      }
     }
   }, [isSupported, openDB]);
 
   const configureFolder = useCallback(async (): Promise<boolean> => {
-    if (!isSupported) return false;
+    if (!isSupported) {
+      console.warn('File System Access API não suportada ou executando em iframe');
+      return false;
+    }
     
     try {
       const handle = await (window as any).showDirectoryPicker({
@@ -124,7 +135,7 @@ export const useFileSystemBackup = (): BackupHook => {
   }, [isSupported, saveFolderHandle]);
 
   const createBackup = useCallback(async (data: any): Promise<boolean> => {
-    if (!folderHandle || !isConnected) return false;
+    if (!folderHandle || !isConnected || !isSupported) return false;
     
     try {
       // Criar backup principal
@@ -158,7 +169,7 @@ export const useFileSystemBackup = (): BackupHook => {
       setIsConnected(false);
       return false;
     }
-  }, [folderHandle, isConnected]);
+  }, [folderHandle, isConnected, isSupported]);
 
   // Carregar configuração na inicialização
   useEffect(() => {
@@ -175,6 +186,7 @@ export const useFileSystemBackup = (): BackupHook => {
     configureFolder,
     createBackup,
     showConfigModal,
-    setShowConfigModal
+    setShowConfigModal,
+    isInIframe
   };
 };

@@ -9,7 +9,8 @@ import {
   AlertCircle, 
   XCircle, 
   Settings,
-  Folder
+  Folder,
+  Code
 } from 'lucide-react';
 
 const BackupStatus = () => {
@@ -19,10 +20,20 @@ const BackupStatus = () => {
     isConnected, 
     folderName,
     configureFolder,
-    setShowConfigModal
+    setShowConfigModal,
+    isInIframe
   } = useFileSystemBackup();
 
   const getStatusInfo = () => {
+    if (isInIframe) {
+      return {
+        icon: Code,
+        color: 'bg-blue-500',
+        text: 'Desenvolvimento',
+        description: 'Use backup manual nos Relatórios'
+      };
+    }
+    
     if (!isSupported) {
       return {
         icon: XCircle,
@@ -62,7 +73,7 @@ const BackupStatus = () => {
   const StatusIcon = statusInfo.icon;
 
   const handleReconnect = async () => {
-    if (!isSupported) {
+    if (!isSupported || isInIframe) {
       setShowConfigModal(true);
       return;
     }
@@ -91,6 +102,7 @@ const BackupStatus = () => {
               statusInfo.color === 'bg-green-500' ? 'text-green-500' :
               statusInfo.color === 'bg-yellow-500' ? 'text-yellow-500' :
               statusInfo.color === 'bg-orange-500' ? 'text-orange-500' :
+              statusInfo.color === 'bg-blue-500' ? 'text-blue-500' :
               'text-gray-500'
             }`} />
             <div>
@@ -99,7 +111,7 @@ const BackupStatus = () => {
             </div>
           </div>
           
-          {isConnected && folderName && (
+          {isConnected && folderName && !isInIframe && (
             <div className="bg-green-50 p-3 rounded-lg">
               <p className="text-sm text-green-800">
                 <strong>Pasta:</strong> {folderName}
@@ -110,7 +122,18 @@ const BackupStatus = () => {
             </div>
           )}
           
-          {!isSupported && (
+          {isInIframe && (
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Modo Desenvolvimento</strong>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Backup automático disponível após publicação
+              </p>
+            </div>
+          )}
+          
+          {!isSupported && !isInIframe && (
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-sm text-gray-600">
                 Use Chrome ou Edge para backup automático
@@ -124,23 +147,22 @@ const BackupStatus = () => {
                 onClick={handleReconnect} 
                 size="sm"
                 className="flex items-center gap-2"
+                disabled={isInIframe}
               >
                 <Folder className="w-4 h-4" />
                 {!isConfigured ? 'Configurar' : 'Reconectar'}
               </Button>
             )}
             
-            {isSupported && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowConfigModal(true)}
-                className="flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Configurações
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowConfigModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              {isInIframe ? 'Info' : 'Configurações'}
+            </Button>
           </div>
         </div>
       </PopoverContent>
