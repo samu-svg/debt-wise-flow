@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ const Clients = () => {
     name: '',
     email: '',
     phone: '',
-    cp: '',
+    cpf: '',
     address: ''
   });
 
