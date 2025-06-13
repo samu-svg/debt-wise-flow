@@ -62,9 +62,9 @@ export const useLocalStorage = () => {
     try {
       console.log('Procurando arquivos de backup na pasta...');
       
-      // Usar AsyncIterator para listar arquivos
+      // Usar for await...of para iterar sobre as entradas do diretório
       const files = [];
-      for await (const [name, handle] of directoryHandle.entries()) {
+      for await (const [name, handle] of directoryHandle) {
         if (name.includes('debt_manager_backup_') && name.endsWith('.json')) {
           files.push({ name, handle });
         }
