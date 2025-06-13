@@ -74,8 +74,8 @@ const Clients = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Carregando clientes...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#08872B] mx-auto"></div>
+          <p className="mt-2 text-[#6C757D]">Carregando clientes...</p>
         </div>
       </div>
     );
@@ -85,59 +85,62 @@ const Clients = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-gray-600">{database.clients.length} clientes cadastrados</p>
+          <h1 className="text-3xl font-bold text-[#343A40]">Clientes</h1>
+          <p className="text-[#6C757D]">{database.clients.length} clientes cadastrados</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-[#08872B] hover:bg-[#059669] text-white">
               <Plus className="w-4 h-4 mr-2" />
               Novo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white border-[#DEE2E6]">
             <DialogHeader>
-              <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-[#343A40]">Cadastrar Novo Cliente</DialogTitle>
+              <DialogDescription className="text-[#6C757D]">
                 Preencha os dados do cliente para cadastro
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome *</Label>
+                <Label htmlFor="nome" className="text-[#343A40] font-medium">Nome *</Label>
                 <Input
                   id="nome"
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                   placeholder="Nome completo"
+                  className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp *</Label>
+                <Label htmlFor="whatsapp" className="text-[#343A40] font-medium">WhatsApp *</Label>
                 <Input
                   id="whatsapp"
                   value={formData.whatsapp}
                   onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                   placeholder="(11) 99999-9999"
+                  className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-[#343A40] font-medium">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="email@exemplo.com"
+                  className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]">
                   Cancelar
                 </Button>
-                <Button type="submit">Cadastrar</Button>
+                <Button type="submit" className="bg-[#08872B] hover:bg-[#059669] text-white">Cadastrar</Button>
               </div>
             </form>
           </DialogContent>
@@ -151,32 +154,32 @@ const Clients = () => {
           const totalAmount = activeDebts.reduce((sum, debt) => sum + debt.valor, 0);
           
           return (
-            <Card key={client.id}>
+            <Card key={client.id} className="bg-white border-[#DEE2E6]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg">{client.nome}</CardTitle>
+                <CardTitle className="text-lg text-[#343A40]">{client.nome}</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDelete(client.id, client.nome)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-[#DC3545] hover:text-[#DC3545] hover:bg-[#F8F9FA]"
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
-                  <p><strong>WhatsApp:</strong> {client.whatsapp}</p>
-                  {client.email && <p><strong>Email:</strong> {client.email}</p>}
+                  <p className="text-[#343A40]"><strong>WhatsApp:</strong> {client.whatsapp}</p>
+                  {client.email && <p className="text-[#343A40]"><strong>Email:</strong> {client.email}</p>}
                   
-                  <div className="mt-4 pt-2 border-t border-gray-200">
+                  <div className="mt-4 pt-2 border-t border-[#DEE2E6]">
                     <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium">Dívidas:</span>
+                      <FileText className="w-4 h-4 text-[#08872B]" />
+                      <span className="text-sm font-medium text-[#343A40]">Dívidas:</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-[#6C757D] mt-1">
                       {activeDebts.length} ativas • R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[#6C757D]">
                       Cadastrado em: {new Date(client.createdAt).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
@@ -188,10 +191,10 @@ const Clients = () => {
       </div>
 
       {database.clients.length === 0 && (
-        <Card>
+        <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
-            <p className="text-gray-600">Nenhum cliente cadastrado ainda.</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-[#6C757D]">Nenhum cliente cadastrado ainda.</p>
+            <p className="text-sm text-[#6C757D] mt-2">
               Clique em "Novo Cliente" para começar.
             </p>
           </CardContent>

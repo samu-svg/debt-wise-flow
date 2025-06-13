@@ -79,7 +79,7 @@ const Reports = () => {
     const overdueDebts = allDebts.filter(d => d.status === 'overdue');
     const paidDebts = allDebts.filter(d => d.status === 'paid');
 
-    const totalOriginal = allDebts.reduce((sum, debt) => sum + debt.originalAmount, 0);
+    const totalOriginal =债务s.reduce((sum, debt) => sum + debt.originalAmount, 0);
     const totalCurrent = allDebts.reduce((sum, debt) => sum + debt.currentAmount, 0);
     const totalPaid = allDebts.reduce((sum, debt) => 
       sum + debt.payments.reduce((pSum, payment) => pSum + payment.amount, 0), 0
@@ -148,18 +148,18 @@ const Reports = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Relatórios e Backup</h1>
+      <h1 className="text-3xl font-bold text-[#343A40]">Relatórios e Backup</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="bg-white border-[#DEE2E6]">
           <CardHeader>
-            <CardTitle>Backup dos Dados</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-[#343A40]">Backup dos Dados</CardTitle>
+            <CardDescription className="text-[#6C757D]">
               Faça backup e restaure seus dados localmente
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={handleExport} className="w-full">
+            <Button onClick={handleExport} className="w-full bg-[#08872B] hover:bg-[#059669] text-white">
               <FileText className="w-4 h-4 mr-2" />
               Fazer Backup
             </Button>
@@ -172,27 +172,27 @@ const Reports = () => {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 disabled={importing}
               />
-              <Button variant="outline" className="w-full" disabled={importing}>
+              <Button variant="outline" className="w-full border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]" disabled={importing}>
                 <Plus className="w-4 h-4 mr-2" />
                 {importing ? 'Importando...' : 'Restaurar Backup'}
               </Button>
             </div>
             
-            <p className="text-xs text-gray-600 text-center">
+            <p className="text-xs text-[#6C757D] text-center">
               Seus dados são armazenados localmente no navegador
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white border-[#DEE2E6]">
           <CardHeader>
-            <CardTitle>Relatório Completo</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-[#343A40]">Relatório Completo</CardTitle>
+            <CardDescription className="text-[#6C757D]">
               Gere um relatório detalhado de todos os dados
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={generateReport} className="w-full">
+            <Button onClick={generateReport} className="w-full bg-[#08872B] hover:bg-[#059669] text-white">
               <FileText className="w-4 h-4 mr-2" />
               Gerar Relatório
             </Button>
@@ -200,48 +200,48 @@ const Reports = () => {
         </Card>
       </div>
 
-      <Card>
+      <Card className="bg-white border-[#DEE2E6]">
         <CardHeader>
-          <CardTitle>Resumo Atual</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-[#343A40]">Resumo Atual</CardTitle>
+          <CardDescription className="text-[#6C757D]">
             Visão geral dos dados no sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{clients.length}</p>
-              <p className="text-sm text-blue-600">Clientes</p>
+            <div className="text-center p-4 bg-[#F8F9FA] rounded-lg border border-[#DEE2E6]">
+              <p className="text-2xl font-bold text-[#08872B]">{clients.length}</p>
+              <p className="text-sm text-[#6C757D]">Clientes</p>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">{allDebts.length}</p>
-              <p className="text-sm text-green-600">Dívidas Total</p>
+            <div className="text-center p-4 bg-[#F8F9FA] rounded-lg border border-[#DEE2E6]">
+              <p className="text-2xl font-bold text-[#08872B]">{allDebts.length}</p>
+              <p className="text-sm text-[#6C757D]">Dívidas Total</p>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <p className="text-2xl font-bold text-purple-600">
+            <div className="text-center p-4 bg-[#F8F9FA] rounded-lg border border-[#DEE2E6]">
+              <p className="text-2xl font-bold text-[#343A40]">
                 {formatCurrency(totalCurrent)}
               </p>
-              <p className="text-sm text-purple-600">Valor em Aberto</p>
+              <p className="text-sm text-[#6C757D]">Valor em Aberto</p>
             </div>
           </div>
           
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-[#DEE2E6]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex justify-between">
-                <span>Valor Original Total:</span>
-                <span className="font-medium">{formatCurrency(totalOriginal)}</span>
+                <span className="text-[#343A40]">Valor Original Total:</span>
+                <span className="font-medium text-[#343A40]">{formatCurrency(totalOriginal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Total Recebido:</span>
-                <span className="font-medium text-green-600">{formatCurrency(totalPaid)}</span>
+                <span className="text-[#343A40]">Total Recebido:</span>
+                <span className="font-medium text-[#08872B]">{formatCurrency(totalPaid)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Dívidas Ativas:</span>
-                <span className="font-medium">{allDebts.filter(d => d.status === 'active').length}</span>
+                <span className="text-[#343A40]">Dívidas Ativas:</span>
+                <span className="font-medium text-[#343A40]">{allDebts.filter(d => d.status === 'active').length}</span>
               </div>
               <div className="flex justify-between">
-                <span>Dívidas Vencidas:</span>
-                <span className="font-medium text-red-600">{allDebts.filter(d => d.status === 'overdue').length}</span>
+                <span className="text-[#343A40]">Dívidas Vencidas:</span>
+                <span className="font-medium text-[#DC3545]">{allDebts.filter(d => d.status === 'overdue').length}</span>
               </div>
             </div>
           </div>

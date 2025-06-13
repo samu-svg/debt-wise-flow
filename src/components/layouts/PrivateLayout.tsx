@@ -36,11 +36,11 @@ const PrivateLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F8F9FA]">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg border-r border-gray-200">
-        <div className="flex h-16 items-center justify-center border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">Debt Manager</h1>
+      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg border-r border-[#DEE2E6]">
+        <div className="flex h-16 items-center justify-center border-b border-[#DEE2E6]">
+          <h1 className="text-xl font-bold text-[#343A40]">Debt Manager</h1>
         </div>
         
         <nav className="mt-8 px-4">
@@ -55,8 +55,8 @@ const PrivateLayout = () => {
                     to={item.href}
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-[#08872B] text-white shadow-lg'
+                        : 'text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#343A40]'
                     }`}
                   >
                     <Icon className="mr-3 h-5 w-5" />
@@ -73,7 +73,7 @@ const PrivateLayout = () => {
           <Button
             onClick={handleSignOut}
             variant="outline"
-            className="w-full flex items-center justify-center border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="w-full flex items-center justify-center border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Sair

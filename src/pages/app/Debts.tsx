@@ -83,9 +83,9 @@ const Debts = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pago': return 'text-green-600 bg-green-100';
-      case 'atrasado': return 'text-red-600 bg-red-100';
-      default: return 'text-blue-600 bg-blue-100';
+      case 'pago': return 'text-[#08872B] bg-[#08872B]/10';
+      case 'atrasado': return 'text-[#DC3545] bg-[#DC3545]/10';
+      default: return 'text-[#6C757D] bg-[#6C757D]/10';
     }
   };
 
@@ -106,7 +106,7 @@ const Debts = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-gray-600">Carregando dados...</p>
+          <p className="text-[#6C757D]">Carregando dados...</p>
         </div>
       </div>
     );
@@ -115,31 +115,31 @@ const Debts = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Dívidas</h1>
+        <h1 className="text-3xl font-bold text-[#343A40]">Dívidas</h1>
         <Dialog open={isDebtDialogOpen} onOpenChange={setIsDebtDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-[#08872B] hover:bg-[#059669] text-white">
               <Plus className="w-4 h-4 mr-2" />
               Nova Dívida
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white border-[#DEE2E6]">
             <DialogHeader>
-              <DialogTitle>Cadastrar Nova Dívida</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-[#343A40]">Cadastrar Nova Dívida</DialogTitle>
+              <DialogDescription className="text-[#6C757D]">
                 Preencha os dados da dívida
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleDebtSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="clientId">Cliente *</Label>
+                <Label htmlFor="clientId" className="text-[#343A40] font-medium">Cliente *</Label>
                 <Select value={debtForm.clientId} onValueChange={(value) => setDebtForm({ ...debtForm, clientId: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white border-[#DEE2E6] text-[#343A40]">
                     <SelectValue placeholder="Selecione o cliente" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-[#DEE2E6]">
                     {database.clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
+                      <SelectItem key={client.id} value={client.id} className="text-[#343A40]">
                         {client.nome}
                       </SelectItem>
                     ))}
@@ -147,17 +147,18 @@ const Debts = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição *</Label>
+                <Label htmlFor="descricao" className="text-[#343A40] font-medium">Descrição *</Label>
                 <Input
                   id="descricao"
                   value={debtForm.descricao}
                   onChange={(e) => setDebtForm({ ...debtForm, descricao: e.target.value })}
                   placeholder="Descrição da dívida"
+                  className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="valor">Valor *</Label>
+                <Label htmlFor="valor" className="text-[#343A40] font-medium">Valor *</Label>
                 <Input
                   id="valor"
                   type="number"
@@ -165,23 +166,25 @@ const Debts = () => {
                   value={debtForm.valor}
                   onChange={(e) => setDebtForm({ ...debtForm, valor: e.target.value })}
                   placeholder="0.00"
+                  className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dataVencimento">Data de Vencimento</Label>
+                <Label htmlFor="dataVencimento" className="text-[#343A40] font-medium">Data de Vencimento</Label>
                 <Input
                   id="dataVencimento"
                   type="date"
                   value={debtForm.dataVencimento}
                   onChange={(e) => setDebtForm({ ...debtForm, dataVencimento: e.target.value })}
+                  className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsDebtDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsDebtDialogOpen(false)} className="border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]">
                   Cancelar
                 </Button>
-                <Button type="submit">Cadastrar</Button>
+                <Button type="submit" className="bg-[#08872B] hover:bg-[#059669] text-white">Cadastrar</Button>
               </div>
             </form>
           </DialogContent>
@@ -190,12 +193,12 @@ const Debts = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {database.debts.map((debt) => (
-          <Card key={debt.id}>
+          <Card key={debt.id} className="bg-white border-[#DEE2E6]">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{debt.descricao}</CardTitle>
-                  <CardDescription>{getClientName(debt.clientId)}</CardDescription>
+                  <CardTitle className="text-lg text-[#343A40]">{debt.descricao}</CardTitle>
+                  <CardDescription className="text-[#6C757D]">{getClientName(debt.clientId)}</CardDescription>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(debt.status)}`}>
                   {getStatusText(debt.status)}
@@ -205,18 +208,18 @@ const Debts = () => {
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Valor:</span>
-                  <span className="font-medium">{formatCurrency(debt.valor)}</span>
+                  <span className="text-[#343A40]">Valor:</span>
+                  <span className="font-medium text-[#343A40]">{formatCurrency(debt.valor)}</span>
                 </div>
                 {debt.dataVencimento && (
                   <div className="flex justify-between">
-                    <span>Vencimento:</span>
-                    <span className="font-medium">{new Date(debt.dataVencimento).toLocaleDateString('pt-BR')}</span>
+                    <span className="text-[#343A40]">Vencimento:</span>
+                    <span className="font-medium text-[#343A40]">{new Date(debt.dataVencimento).toLocaleDateString('pt-BR')}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Criado em:</span>
-                  <span className="font-medium">{new Date(debt.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-[#343A40]">Criado em:</span>
+                  <span className="font-medium text-[#343A40]">{new Date(debt.createdAt).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
             </CardContent>
@@ -225,10 +228,10 @@ const Debts = () => {
       </div>
 
       {database.debts.length === 0 && (
-        <Card>
+        <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
-            <p className="text-gray-600">Nenhuma dívida cadastrada ainda.</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-[#6C757D]">Nenhuma dívida cadastrada ainda.</p>
+            <p className="text-sm text-[#6C757D] mt-2">
               Clique em "Nova Dívida" para começar.
             </p>
           </CardContent>
