@@ -1,174 +1,131 @@
 
+import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
-import { setBackupCallback } from '@/hooks/useLocalStorage';
-import BackupStatus from '@/components/BackupStatus';
-import BackupConfigModal from '@/components/BackupConfigModal';
-import { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { 
-  Calendar, 
   Home, 
-  Plus, 
-  X, 
+  Users,
   FileText,
   MessageSquare,
-  Moon,
-  Sun,
+  BarChart3,
+  LogOut,
   Menu,
-  ChevronLeft
+  X
 } from 'lucide-react';
+import BackupStatus from '@/components/BackupStatus';
+import BackupConfigModal from '@/components/BackupConfigModal';
 
 const PrivateLayout = () => {
-  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { createBackup } = useFileSystemBackup();
-  const [darkMode, setDarkMode] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const menuItems = [
+    { path: '/app', icon: Home, label: 'Dashboard' },
+    { path: '/app/clients', icon: Users, label: 'Clientes' },
+    { path: '/app/debts', icon: FileText, label: 'Dívidas' },
+    { path: '/app/reports', icon: BarChart3, label: 'Relatórios' },
+    { path: '/app/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
+  ];
 
   const handleLogout = () => {
     logout();
     navigate('/auth/login');
   };
 
-  const isActive = (path: string) => location.pathname === path;
-
-  const menuItems = [
-    { title: 'Dashboard', path: '/app', icon: Home, color: 'text-blue-600' },
-    { title: 'Clientes', path: '/app/clients', icon: Plus, color: 'text-green-600' },
-    { title: 'Dívidas', path: '/app/debts', icon: Calendar, color: 'text-orange-600' },
-    { title: 'Relatórios', path: '/app/reports', icon: FileText, color: 'text-purple-600' },
-    { title: 'WhatsApp', path: '/app/whatsapp', icon: MessageSquare, color: 'text-emerald-600' },
-  ];
-
-  // Dark mode toggle
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
+  const isActive = (path: string) => {
+    if (path === '/app') {
+      return location.pathname === '/app';
+    }
+    return location.pathname.startsWith(path);
   };
 
-  // Configurar callback de backup automático
-  useEffect(() => {
-    setBackupCallback(async (data) => {
-      await createBackup(data);
-    });
-  }, [createBackup]);
-
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900 flex ${darkMode ? 'dark' : ''}`}>
-      {/* Modal de configuração de backup */}
-      <BackupConfigModal />
-      
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </Button>
+      </div>
+
       {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-16' : 'w-72'} transition-all duration-300 ease-in-out`}>
-        <div className={`fixed left-0 top-0 h-full ${sidebarCollapsed ? 'w-16' : 'w-72'} card-modern border-r-0 rounded-none z-30 transition-all duration-300`}>
+      <div className={`
+        fixed left-0 top-0 z-40 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0
+      `}>
+        <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              {!sidebarCollapsed && (
-                <div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                    Debt Wise Flow
-                  </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {user?.email}
-                  </p>
-                </div>
-              )}
-              <Button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                variant="ghost"
-                size="sm"
-                className="hover-lift"
-              >
-                {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-              </Button>
-            </div>
+          <div className="flex items-center justify-between p-6 border-b">
+            <h1 className="text-xl font-bold text-gray-900">Debt Wise</h1>
           </div>
-          
+
           {/* Navigation */}
-          <nav className="p-4 space-y-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`nav-item ${active ? 'active' : ''} flex items-center group`}
-                  title={sidebarCollapsed ? item.title : ''}
-                >
-                  <Icon className={`w-5 h-5 ${active ? 'text-white' : item.color} transition-colors duration-200`} />
-                  {!sidebarCollapsed && (
-                    <span className={`ml-3 font-medium ${active ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                      {item.title}
-                    </span>
-                  )}
-                  {active && !sidebarCollapsed && (
-                    <div className="ml-auto w-2 h-2 bg-white rounded-full"></div>
-                  )}
-                </Link>
-              );
-            })}
+          <nav className="flex-1 p-4">
+            <ul className="space-y-2">
+              {menuItems.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`
+                        flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
+                        ${isActive(item.path)
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      <IconComponent className="w-5 h-5" />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </nav>
 
           {/* Footer */}
-          <div className="absolute bottom-6 left-4 right-4 space-y-3">
-            {/* Dark Mode Toggle */}
+          <div className="p-4 border-t space-y-3">
+            <BackupStatus />
             <Button
-              onClick={toggleDarkMode}
-              variant="ghost"
-              className={`${sidebarCollapsed ? 'w-8 h-8 p-0' : 'w-full'} hover-lift justify-start`}
-              title={sidebarCollapsed ? (darkMode ? 'Light Mode' : 'Dark Mode') : ''}
-            >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              {!sidebarCollapsed && (
-                <span className="ml-3">{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>
-              )}
-            </Button>
-
-            {/* Logout Button */}
-            <Button
-              onClick={handleLogout}
               variant="outline"
-              className={`${sidebarCollapsed ? 'w-8 h-8 p-0' : 'w-full'} hover-lift justify-start border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20`}
-              title={sidebarCollapsed ? 'Sair' : ''}
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 text-gray-700"
             >
-              <X className="w-4 h-4" />
-              {!sidebarCollapsed && <span className="ml-3">Sair</span>}
+              <LogOut className="w-4 h-4" />
+              Sair
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Header */}
-        <header className="card-modern border-b border-gray-200 dark:border-gray-700 px-6 py-4 sticky top-0 z-20">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Sistema de Gerenciamento de Dívidas
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Gestão inteligente e profissional
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <BackupStatus />
-            </div>
-          </div>
-        </header>
-        
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
-          </div>
-        </main>
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Main content */}
+      <div className="lg:ml-64 min-h-screen">
+        <div className="p-4 lg:p-8 pt-16 lg:pt-8">
+          <Outlet />
+        </div>
       </div>
+
+      {/* Modal de configuração de backup */}
+      <BackupConfigModal />
     </div>
   );
 };
