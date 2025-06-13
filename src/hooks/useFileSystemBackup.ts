@@ -64,7 +64,7 @@ export const useFileSystemBackup = () => {
   const [isConfigured, setIsConfigured] = useState(false);
   const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFirstAccess, setIsFirstAccess] = useState(false);
+  const [isFirstAccess, setIsFirstAccess] = useState(true);
 
   const {
     capabilities,
@@ -98,21 +98,16 @@ export const useFileSystemBackup = () => {
           const handle = await getDirectoryHandle();
           if (handle) {
             try {
-              // Testar se ainda temos permissão
-              const testPermission = await handle.queryPermission({ mode: 'readwrite' });
-              if (testPermission === 'granted') {
-                setDirectoryHandle(handle);
-                setIsConfigured(true);
-                setIsFirstAccess(false);
-                console.log('Pasta configurada e acessível:', handle.name);
-              } else {
-                console.log('Permissão perdida, solicitando reconfiguração');
-                localStorage.removeItem('pastaConfigurada');
-                setIsConfigured(false);
-                setIsFirstAccess(true);
-              }
+              // Testar se ainda temos acesso fazendo uma operação simples
+              const testFile = await handle.getFileHandle('test-access.tmp', { create: true });
+              await handle.removeEntry('test-access.tmp').catch(() => {});
+              
+              setDirectoryHandle(handle);
+              setIsConfigured(true);
+              setIsFirstAccess(false);
+              console.log('Pasta configurada e acessível:', handle.name);
             } catch (error) {
-              console.log('Erro ao verificar permissão:', error);
+              console.log('Erro ao verificar acesso à pasta:', error);
               localStorage.removeItem('pastaConfigurada');
               setIsConfigured(false);
               setIsFirstAccess(true);
