@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ import {
   Plus,
   Trash2,
   MessageSquare,
-  Variables,
+  Variable,
   Bot
 } from 'lucide-react';
 
@@ -212,7 +211,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium flex items-center gap-2">
-                  <Variables className="w-4 h-4" />
+                  <Variable className="w-4 h-4" />
                   Variáveis Dinâmicas
                 </h3>
                 <Button type="button" onClick={addVariable} size="sm" variant="outline">
