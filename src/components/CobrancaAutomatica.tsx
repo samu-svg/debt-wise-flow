@@ -43,7 +43,8 @@ const CobrancaAutomatica = () => {
     nome: '',
     whatsapp: '',
     valor_divida: 0,
-    data_vencimento: ''
+    data_vencimento: '',
+    status: 'pendente'
   });
 
   const [templateEditando, setTemplateEditando] = useState<any>(null);
@@ -51,7 +52,7 @@ const CobrancaAutomatica = () => {
   const handleAdicionarCliente = async () => {
     try {
       await adicionarCliente(novoCliente);
-      setNovoCliente({ nome: '', whatsapp: '', valor_divida: 0, data_vencimento: '' });
+      setNovoCliente({ nome: '', whatsapp: '', valor_divida: 0, data_vencimento: '', status: 'pendente' });
       toast({
         title: "Cliente adicionado!",
         description: "Cliente foi adicionado com sucesso."
@@ -403,7 +404,7 @@ const CobrancaAutomatica = () => {
             <div>
               <Label>Variáveis disponíveis:</Label>
               <p className="text-sm text-gray-600">
-                {{nome}}, {{valor}}, {{data}}, {{dias}} (apenas para templates de atraso)
+                {`{{nome}}, {{valor}}, {{data}}, {{dias}}`} (apenas para templates de atraso)
               </p>
             </div>
             <Textarea
