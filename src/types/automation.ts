@@ -1,4 +1,5 @@
 
+
 export interface CommunicationLog {
   id: string;
   clientId: string;
@@ -35,9 +36,9 @@ export interface AutomationConfig {
   
   // Configurações por valor
   valueSegmentation: {
-    lowValue: { min: 0; max: 100; frequency: 'weekly' };
-    mediumValue: { min: 100; max: 1000; frequency: 'every3days' };
-    highValue: { min: 1000; max: Infinity; frequency: 'daily' };
+    lowValue: { min: number; max: number; frequency: 'weekly' };
+    mediumValue: { min: number; max: number; frequency: 'every3days' };
+    highValue: { min: number; max: number; frequency: 'daily' };
   };
 }
 
@@ -67,3 +68,4 @@ export interface AutomationStats {
   conversionsToday: number;
   pendingConversations: number;
 }
+
