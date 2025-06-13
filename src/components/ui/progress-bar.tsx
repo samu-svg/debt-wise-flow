@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +14,7 @@ const colorClasses = {
   blue: 'from-blue-500 to-blue-600',
   green: 'from-green-500 to-green-600',
   red: 'from-red-500 to-red-600',
-  white: 'from-white to-gray-100 border border-gray-300',
+  white: 'from-white to-gray-100 border border-gray-300 shadow-sm',
   purple: 'from-purple-500 to-purple-600',
 };
 
@@ -57,4 +55,3 @@ export const ProgressBar = ({
 };
 
 export default ProgressBar;
-
