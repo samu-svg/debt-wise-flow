@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 
 interface FileSystemCapabilities {
@@ -6,6 +5,7 @@ interface FileSystemCapabilities {
   permissions: boolean;
   fallbackSupport: boolean;
   isSecure: boolean;
+  isInFrame: boolean;
   userAgent: string;
 }
 
@@ -28,17 +28,36 @@ export const useFileSystemManager = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [lastError, setLastError] = useState<FileSystemError | null>(null);
 
+  // Detectar se estamos em um iframe
+  const isInFrame = useCallback((): boolean => {
+    try {
+      return window !== window.parent;
+    } catch (e) {
+      return true; // Se houver erro de acesso, provavelmente estamos em iframe
+    }
+  }, []);
+
   // Detectar capacidades do sistema
   const detectCapabilities = useCallback(async (): Promise<FileSystemCapabilities> => {
+    const inFrame = isInFrame();
+    
     const caps: FileSystemCapabilities = {
       fileSystemAccess: false,
       permissions: false,
       fallbackSupport: true,
       isSecure: window.location.protocol === 'https:' || window.location.hostname === 'localhost',
+      isInFrame: inFrame,
       userAgent: navigator.userAgent
     };
 
     try {
+      // Se estamos em iframe, não podemos usar File System API
+      if (inFrame) {
+        console.log('Detectado iframe - File System API desabilitada por segurança');
+        caps.fileSystemAccess = false;
+        return caps;
+      }
+
       // Verificar File System Access API
       caps.fileSystemAccess = 'showDirectoryPicker' in window && 
                               'showOpenFilePicker' in window && 
@@ -68,7 +87,7 @@ export const useFileSystemManager = () => {
       console.error('Erro ao detectar capacidades:', error);
       return caps;
     }
-  }, []);
+  }, [isInFrame]);
 
   // Inicializar sistema
   useEffect(() => {
@@ -124,6 +143,11 @@ export const useFileSystemManager = () => {
           throw error;
         }
 
+        // Não retry para erros de segurança (iframe)
+        if (error.name === 'SecurityError') {
+          break;
+        }
+
         // Não retry para erros de permissão permanentes
         if (error.name === 'NotAllowedError' && attempt >= 1) {
           break;
@@ -136,7 +160,7 @@ export const useFileSystemManager = () => {
       code: lastError?.name || 'OPERATION_FAILED',
       message: `Falha em ${operationType} após ${maxRetries + 1} tentativas`,
       details: lastError,
-      retry: true
+      retry: lastError?.name !== 'SecurityError' // Não permitir retry em erros de segurança
     });
 
     throw lastError;
@@ -146,6 +170,11 @@ export const useFileSystemManager = () => {
   const handleDirectoryAccess = useCallback(async (): Promise<FileSystemDirectoryHandle | null> => {
     if (!capabilities?.fileSystemAccess || !window.showDirectoryPicker) {
       throw new Error('File System Access API não disponível');
+    }
+
+    // Verificar se estamos em iframe antes de tentar
+    if (capabilities.isInFrame) {
+      throw new Error('Seleção de pasta não disponível em iframe por questões de segurança');
     }
 
     return executeWithRetry(async () => {
@@ -228,6 +257,11 @@ export const useFileSystemManager = () => {
     const suggestions: string[] = [];
 
     switch (error.code) {
+      case 'SecurityError':
+        suggestions.push('Esta aplicação está rodando em modo desenvolvimento (iframe)');
+        suggestions.push('Use o modo de download para salvar os dados');
+        suggestions.push('Para acesso à pasta local, abra a aplicação em nova aba');
+        break;
       case 'NotAllowedError':
         suggestions.push('Verifique as permissões do navegador');
         suggestions.push('Tente usar o modo incógnito');

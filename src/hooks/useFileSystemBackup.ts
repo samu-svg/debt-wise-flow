@@ -85,6 +85,16 @@ export const useFileSystemBackup = () => {
         console.log('Verificando configuração da pasta de dados...');
         const hasConfigured = localStorage.getItem('pastaConfigurada') === 'true';
         
+        // Se estamos em iframe, usar sempre modo download
+        if (capabilities?.isInFrame) {
+          console.log('Modo iframe detectado - usando download automático');
+          setIsConfigured(true);
+          setIsFirstAccess(false);
+          setLoading(false);
+          localStorage.setItem('pastaConfigurada', 'true');
+          return;
+        }
+        
         if (!hasConfigured) {
           console.log('Primeira configuração necessária');
           setIsFirstAccess(true);
@@ -141,9 +151,9 @@ export const useFileSystemBackup = () => {
       console.log('Iniciando configuração da pasta...');
       clearError();
 
-      // Se File System API não estiver disponível, usar fallback
-      if (!capabilities?.fileSystemAccess) {
-        console.log('File System API não disponível, usando fallback');
+      // Se estamos em iframe ou File System API não disponível, usar fallback
+      if (capabilities?.isInFrame || !capabilities?.fileSystemAccess) {
+        console.log('Usando modo download por limitação do ambiente');
         setIsConfigured(true);
         setIsFirstAccess(false);
         localStorage.setItem('pastaConfigurada', 'true');
@@ -177,6 +187,15 @@ export const useFileSystemBackup = () => {
       if ((error as Error).name === 'AbortError') {
         console.log('Seleção cancelada pelo usuário');
         return false;
+      }
+      
+      // Se é erro de segurança (iframe), usar fallback
+      if ((error as Error).name === 'SecurityError') {
+        console.log('Erro de segurança detectado, usando modo download');
+        setIsConfigured(true);
+        setIsFirstAccess(false);
+        localStorage.setItem('pastaConfigurada', 'true');
+        return true;
       }
       
       throw error;
