@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +16,7 @@ import {
   Activity,
   TrendingUp
 } from 'lucide-react';
+import MessageTemplates from '@/components/MessageTemplates';
 
 const WhatsApp = () => {
   const { connection, logs } = useWhatsAppConnection();
@@ -121,7 +121,7 @@ const WhatsApp = () => {
 
       {/* Tabs Principais */}
       <Tabs defaultValue="connection" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="connection" className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
             Conexão
@@ -129,6 +129,10 @@ const WhatsApp = () => {
           <TabsTrigger value="logs" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Logs ({logs.length})
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Templates
           </TabsTrigger>
           <TabsTrigger value="config" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -186,6 +190,10 @@ const WhatsApp = () => {
 
         <TabsContent value="logs">
           <WhatsAppLogs />
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <MessageTemplates />
         </TabsContent>
 
         <TabsContent value="config">
