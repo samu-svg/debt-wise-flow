@@ -82,14 +82,17 @@ export const useFileSystemBackup = (): BackupHook => {
       });
       
       if (handle) {
-        // Verificar se ainda temos permissão
-        const permission = await handle.queryPermission({ mode: 'readwrite' });
-        if (permission === 'granted') {
+        try {
+          // Verificar se ainda temos permissão tentando acessar o handle
+          await handle.getFileHandle('test_permission.tmp', { create: true });
+          // Se chegou aqui, temos permissão
           setFolderHandle(handle);
           setFolderName(handle.name);
           setIsConfigured(true);
           setIsConnected(true);
-        } else {
+        } catch (permissionError) {
+          // Sem permissão - configurado mas desconectado
+          setFolderName(handle.name);
           setIsConfigured(true);
           setIsConnected(false);
         }
