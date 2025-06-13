@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useLocalDataManager } from '@/hooks/useLocalDataManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,18 +11,17 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, Calendar } from 'lucide-react';
 
 const Debts = () => {
-  const { clients, addDebt, addPayment } = useLocalStorage();
+  const { database, addDebt, addCollectionMessage, isLoaded } = useLocalDataManager();
   const [isDebtDialogOpen, setIsDebtDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<{ clientId: string; debtId: string } | null>(null);
   
   const [debtForm, setDebtForm] = useState({
     clientId: '',
-    description: '',
-    originalAmount: '',
-    interestRate: '',
-    dueDate: '',
-    status: 'active' as const
+    descricao: '',
+    valor: '',
+    dataVencimento: '',
+    status: 'pendente' as const
   });
 
   const [paymentForm, setPaymentForm] = useState({
@@ -31,10 +30,6 @@ const Debts = () => {
     description: ''
   });
 
-  const allDebts = clients.flatMap(client => 
-    client.debts.map(debt => ({ ...debt, clientName: client.name }))
-  );
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -42,10 +37,10 @@ const Debts = () => {
     }).format(value);
   };
 
-  const handleDebtSubmit = (e: React.FormEvent) => {
+  const handleDebtSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!debtForm.clientId || !debtForm.description || !debtForm.originalAmount) {
+    if (!debtForm.clientId || !debtForm.descricao || !debtForm.valor) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -54,77 +49,68 @@ const Debts = () => {
       return;
     }
 
-    addDebt(debtForm.clientId, {
-      description: debtForm.description,
-      originalAmount: parseFloat(debtForm.originalAmount),
-      interestRate: parseFloat(debtForm.interestRate) || 0,
-      dueDate: debtForm.dueDate,
-      status: debtForm.status
-    });
+    try {
+      await addDebt({
+        clientId: debtForm.clientId,
+        valor: parseFloat(debtForm.valor),
+        dataVencimento: debtForm.dataVencimento,
+        status: debtForm.status,
+        descricao: debtForm.descricao
+      });
 
-    setDebtForm({
-      clientId: '',
-      description: '',
-      originalAmount: '',
-      interestRate: '',
-      dueDate: '',
-      status: 'active'
-    });
-    setIsDebtDialogOpen(false);
-    
-    toast({
-      title: "Dívida adicionada!",
-      description: "Dívida cadastrada com sucesso",
-    });
-  };
-
-  const handlePaymentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedDebt || !paymentForm.amount) {
+      setDebtForm({
+        clientId: '',
+        descricao: '',
+        valor: '',
+        dataVencimento: '',
+        status: 'pendente'
+      });
+      setIsDebtDialogOpen(false);
+      
+      toast({
+        title: "Dívida adicionada!",
+        description: "Dívida cadastrada com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar dívida:', error);
       toast({
         title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
+        description: "Erro ao cadastrar dívida",
         variant: "destructive",
       });
-      return;
     }
-
-    addPayment(selectedDebt.clientId, selectedDebt.debtId, {
-      amount: parseFloat(paymentForm.amount),
-      date: paymentForm.date,
-      description: paymentForm.description
-    });
-
-    setPaymentForm({
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      description: ''
-    });
-    setSelectedDebt(null);
-    setIsPaymentDialogOpen(false);
-    
-    toast({
-      title: "Pagamento registrado!",
-      description: "Pagamento adicionado com sucesso",
-    });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid': return 'text-green-600 bg-green-100';
-      case 'overdue': return 'text-red-600 bg-red-100';
+      case 'pago': return 'text-green-600 bg-green-100';
+      case 'atrasado': return 'text-red-600 bg-red-100';
       default: return 'text-blue-600 bg-blue-100';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'paid': return 'Paga';
-      case 'overdue': return 'Vencida';
-      default: return 'Ativa';
+      case 'pago': return 'Paga';
+      case 'atrasado': return 'Vencida';
+      default: return 'Pendente';
     }
   };
+
+  const getClientName = (clientId: string) => {
+    const client = database.clients.find(c => c.id === clientId);
+    return client ? client.nome : 'Cliente não encontrado';
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -152,54 +138,43 @@ const Debts = () => {
                     <SelectValue placeholder="Selecione o cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client) => (
+                    {database.clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
-                        {client.name}
+                        {client.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição *</Label>
+                <Label htmlFor="descricao">Descrição *</Label>
                 <Input
-                  id="description"
-                  value={debtForm.description}
-                  onChange={(e) => setDebtForm({ ...debtForm, description: e.target.value })}
+                  id="descricao"
+                  value={debtForm.descricao}
+                  onChange={(e) => setDebtForm({ ...debtForm, descricao: e.target.value })}
                   placeholder="Descrição da dívida"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="originalAmount">Valor Original *</Label>
+                <Label htmlFor="valor">Valor *</Label>
                 <Input
-                  id="originalAmount"
+                  id="valor"
                   type="number"
                   step="0.01"
-                  value={debtForm.originalAmount}
-                  onChange={(e) => setDebtForm({ ...debtForm, originalAmount: e.target.value })}
+                  value={debtForm.valor}
+                  onChange={(e) => setDebtForm({ ...debtForm, valor: e.target.value })}
                   placeholder="0.00"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="interestRate">Taxa de Juros (% ao mês)</Label>
+                <Label htmlFor="dataVencimento">Data de Vencimento</Label>
                 <Input
-                  id="interestRate"
-                  type="number"
-                  step="0.01"
-                  value={debtForm.interestRate}
-                  onChange={(e) => setDebtForm({ ...debtForm, interestRate: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Data de Vencimento</Label>
-                <Input
-                  id="dueDate"
+                  id="dataVencimento"
                   type="date"
-                  value={debtForm.dueDate}
-                  onChange={(e) => setDebtForm({ ...debtForm, dueDate: e.target.value })}
+                  value={debtForm.dataVencimento}
+                  onChange={(e) => setDebtForm({ ...debtForm, dataVencimento: e.target.value })}
                 />
               </div>
               <div className="flex justify-end space-x-2">
@@ -214,13 +189,13 @@ const Debts = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {allDebts.map((debt) => (
+        {database.debts.map((debt) => (
           <Card key={debt.id}>
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{debt.description}</CardTitle>
-                  <CardDescription>{debt.clientName}</CardDescription>
+                  <CardTitle className="text-lg">{debt.descricao}</CardTitle>
+                  <CardDescription>{getClientName(debt.clientId)}</CardDescription>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(debt.status)}`}>
                   {getStatusText(debt.status)}
@@ -230,51 +205,26 @@ const Debts = () => {
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Valor Original:</span>
-                  <span className="font-medium">{formatCurrency(debt.originalAmount)}</span>
+                  <span>Valor:</span>
+                  <span className="font-medium">{formatCurrency(debt.valor)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Valor Atual:</span>
-                  <span className="font-medium text-red-600">{formatCurrency(debt.currentAmount)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Juros:</span>
-                  <span className="font-medium">{debt.interestRate}% a.m.</span>
-                </div>
-                {debt.dueDate && (
+                {debt.dataVencimento && (
                   <div className="flex justify-between">
                     <span>Vencimento:</span>
-                    <span className="font-medium">{new Date(debt.dueDate).toLocaleDateString('pt-BR')}</span>
+                    <span className="font-medium">{new Date(debt.dataVencimento).toLocaleDateString('pt-BR')}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Pagamentos:</span>
-                  <span className="font-medium">{debt.payments.length}</span>
+                  <span>Criado em:</span>
+                  <span className="font-medium">{new Date(debt.createdAt).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
-              
-              {debt.status !== 'paid' && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedDebt({ clientId: debt.clientId, debtId: debt.id });
-                      setIsPaymentDialogOpen(true);
-                    }}
-                    className="w-full"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Registrar Pagamento
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {allDebts.length === 0 && (
+      {database.debts.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
             <p className="text-gray-600">Nenhuma dívida cadastrada ainda.</p>
@@ -284,56 +234,6 @@ const Debts = () => {
           </CardContent>
         </Card>
       )}
-
-      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Registrar Pagamento</DialogTitle>
-            <DialogDescription>
-              Registre um pagamento para esta dívida
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handlePaymentSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Valor do Pagamento *</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                value={paymentForm.amount}
-                onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                placeholder="0.00"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="date">Data do Pagamento *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={paymentForm.date}
-                onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="paymentDescription">Observações</Label>
-              <Input
-                id="paymentDescription"
-                value={paymentForm.description}
-                onChange={(e) => setPaymentForm({ ...paymentForm, description: e.target.value })}
-                placeholder="Observações sobre o pagamento"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit">Registrar</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
