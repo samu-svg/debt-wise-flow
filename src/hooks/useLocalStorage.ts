@@ -16,25 +16,88 @@ export const setSaveToFolderCallback = (callback: (data: any) => void) => {
 
 export const useLocalStorage = () => {
   const [clients, setClients] = useState<Client[]>([]);
-  const { saveData, isConfigured } = useFileSystemBackup();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const { saveData, isConfigured, directoryHandle } = useFileSystemBackup();
 
+  // Carregar dados iniciais
   useEffect(() => {
     loadClients();
   }, []);
 
+  // Tentar restaurar dados da pasta quando conectar
+  useEffect(() => {
+    if (isConfigured && directoryHandle && clients.length === 0 && !isInitialized) {
+      console.log('Tentando restaurar dados da pasta configurada...');
+      restoreFromFolder();
+    }
+  }, [isConfigured, directoryHandle, clients.length, isInitialized]);
+
   const loadClients = () => {
+    console.log('Carregando dados do localStorage...');
     const saved = localStorage.getItem(STORAGE_KEYS.CLIENTS);
     if (saved) {
-      setClients(JSON.parse(saved));
+      try {
+        const parsedClients = JSON.parse(saved);
+        console.log('Dados carregados do localStorage:', parsedClients.length, 'clientes');
+        setClients(parsedClients);
+      } catch (error) {
+        console.error('Erro ao parsear dados do localStorage:', error);
+        setClients([]);
+      }
+    } else {
+      console.log('Nenhum dado encontrado no localStorage');
+    }
+    setIsInitialized(true);
+  };
+
+  const restoreFromFolder = async () => {
+    if (!directoryHandle) return;
+
+    try {
+      console.log('Procurando arquivos de backup na pasta...');
+      
+      // Procurar pelo arquivo mais recente
+      const files = [];
+      for await (const [name, handle] of directoryHandle.entries()) {
+        if (name.includes('debt_manager_backup_') && name.endsWith('.json')) {
+          files.push({ name, handle });
+        }
+      }
+
+      if (files.length === 0) {
+        console.log('Nenhum arquivo de backup encontrado na pasta');
+        return;
+      }
+
+      // Ordenar por data (mais recente primeiro)
+      files.sort((a, b) => b.name.localeCompare(a.name));
+      const latestFile = files[0];
+
+      console.log('Restaurando dados do arquivo:', latestFile.name);
+      
+      if (latestFile.handle.kind === 'file') {
+        const file = await latestFile.handle.getFile();
+        const content = await file.text();
+        const data = JSON.parse(content);
+
+        if (data.clients && Array.isArray(data.clients) && data.clients.length > 0) {
+          console.log('Restaurando', data.clients.length, 'clientes da pasta');
+          localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(data.clients));
+          setClients(data.clients);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao restaurar dados da pasta:', error);
     }
   };
 
   const saveClients = async (newClients: Client[]) => {
+    console.log('Salvando', newClients.length, 'clientes');
     localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(newClients));
     setClients(newClients);
     
     // Salvar automaticamente na pasta configurada se disponível
-    if (isConfigured) {
+    if (isConfigured && saveData) {
       try {
         const data = {
           clients: newClients,
@@ -44,7 +107,7 @@ export const useLocalStorage = () => {
         };
         
         const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
-        console.log('Salvando dados na pasta configurada...');
+        console.log('Salvando backup na pasta configurada:', filename);
         await saveData(JSON.stringify(data, null, 2), filename);
       } catch (error) {
         console.error('Erro ao salvar backup automático:', error);
@@ -215,6 +278,7 @@ export const useLocalStorage = () => {
 
   return {
     clients,
+    isInitialized,
     addClient,
     updateClient,
     deleteClient,
@@ -224,6 +288,7 @@ export const useLocalStorage = () => {
     calculateInterest,
     getDashboardMetrics,
     exportData,
-    importData
+    importData,
+    restoreFromFolder
   };
 };

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { 
   Database, 
   CheckCircle, 
@@ -10,7 +11,8 @@ import {
   XCircle, 
   Settings,
   Folder,
-  Lock
+  Lock,
+  RefreshCw
 } from 'lucide-react';
 
 const BackupStatus = () => {
@@ -22,6 +24,8 @@ const BackupStatus = () => {
     configureDirectory,
     isFirstAccess
   } = useFileSystemBackup();
+
+  const { restoreFromFolder } = useLocalStorage();
 
   const getStatusInfo = () => {
     if (isFirstAccess || (!isConfigured && isSupported)) {
@@ -77,6 +81,17 @@ const BackupStatus = () => {
     }
     
     await configureDirectory();
+  };
+
+  const handleRestoreData = async () => {
+    if (isConfigured && isConnected) {
+      try {
+        await restoreFromFolder();
+        console.log('Dados restaurados da pasta com sucesso');
+      } catch (error) {
+        console.error('Erro ao restaurar dados:', error);
+      }
+    }
   };
 
   return (
@@ -138,7 +153,7 @@ const BackupStatus = () => {
             </div>
           )}
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {(isFirstAccess || !isConfigured || !isConnected) && (
               <Button 
                 onClick={handleReconnect} 
@@ -149,6 +164,18 @@ const BackupStatus = () => {
                 <Folder className="w-4 h-4" />
                 {isFirstAccess ? 'Configurar Pasta' : 
                  !isConfigured ? 'Selecionar Pasta' : 'Reconectar'}
+              </Button>
+            )}
+
+            {isConfigured && isConnected && (
+              <Button 
+                onClick={handleRestoreData}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Restaurar Dados
               </Button>
             )}
             
