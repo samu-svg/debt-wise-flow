@@ -86,7 +86,7 @@ const WhatsAppQRCode = () => {
         {/* QR Code Display */}
         {connection.status === 'connecting' && connection.qrCode && (
           <div className="flex flex-col items-center space-y-4">
-            <div className="p-6 bg-white rounded-xl shadow-sm border-2 border-gray-200">
+            <div className="p-4 bg-white rounded-xl shadow-sm border-2 border-gray-200">
               <img 
                 src={connection.qrCode} 
                 alt="QR Code WhatsApp" 
@@ -120,7 +120,7 @@ const WhatsAppQRCode = () => {
           <div className="flex flex-col items-center space-y-4 py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             <p className="text-gray-600">Inicializando conexão com WhatsApp Web...</p>
-            <p className="text-sm text-gray-500">Aguarde enquanto preparamos a conexão</p>
+            <p className="text-sm text-gray-500">Aguarde enquanto preparamos a conexão real</p>
           </div>
         )}
 
@@ -171,7 +171,7 @@ const WhatsAppQRCode = () => {
               size="lg"
             >
               <QrCode className="w-5 h-5" />
-              {isLoading ? 'Conectando...' : 'Conectar WhatsApp Real'}
+              {isLoading ? 'Conectando...' : 'Conectar WhatsApp'}
             </Button>
           )}
 
@@ -235,7 +235,7 @@ const WhatsAppQRCode = () => {
             <QrCode className="w-4 h-4 text-blue-600 mt-0.5" />
             <div className="text-xs text-blue-700">
               <p className="font-medium mb-1">Conexão Real com WhatsApp:</p>
-              <p>Este sistema agora conecta diretamente com o WhatsApp Web oficial. Escaneie o QR Code com seu celular para ativar o sistema de cobrança automática.</p>
+              <p>Este sistema conecta diretamente com o WhatsApp Web oficial usando a biblioteca whatsapp-web.js. Escaneie o QR Code com seu celular para ativar o sistema de cobrança automática.</p>
             </div>
           </div>
         </div>
