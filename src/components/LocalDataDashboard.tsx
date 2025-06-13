@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +9,6 @@ import {
   Clock, 
   AlertTriangle, 
   CheckCircle, 
-  Download, 
   Upload,
   Database,
   TrendingUp,
@@ -19,42 +17,8 @@ import {
 import { toast } from '@/hooks/use-toast';
 
 const LocalDataDashboard = () => {
-  const { statistics, exportData, importData, refresh, restoreFromFolder } = useLocalDataManager();
-  const { isConnected, folderName, downloadBackup, restoreFromFolder: restoreFromBackup } = useFileSystemBackup();
-
-  // Export manual via download
-  const handleExport = async () => {
-    try {
-      const data = exportData();
-      const filename = `debt_manager_export_${new Date().toISOString().split('T')[0]}.json`;
-      
-      if (downloadBackup) {
-        await downloadBackup(data, filename);
-      } else {
-        // Fallback para download tradicional
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-      
-      toast({
-        title: "Dados exportados",
-        description: "Arquivo de backup baixado com sucesso!",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro na exportação",
-        description: "Não foi possível exportar os dados.",
-        variant: "destructive",
-      });
-    }
-  };
+  const { statistics, exportData, importData, refresh } = useLocalDataManager();
+  const { isConnected, folderName, restoreFromFolder: restoreFromBackup } = useFileSystemBackup();
 
   const handleImport = () => {
     const input = document.createElement('input');
@@ -137,10 +101,6 @@ const LocalDataDashboard = () => {
           <p className="text-gray-600">Gestão de dados locais e backups</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleExport} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
           <Button onClick={handleImport} variant="outline">
             <Upload className="w-4 h-4 mr-2" />
             Importar
@@ -339,11 +299,11 @@ const LocalDataDashboard = () => {
                   <br />
                 </>
               ) : (
-                '• ⚠️ Configure uma pasta para backup automático\n'
+                '• ⚠️ Configure uma pasta para salvamento automático\n'
               )}
-              • 📥 Use "Exportar" para download manual
+              • 📥 Use "Importar" para restaurar backups externos
               <br />
-              • 🔄 Use "Restaurar da Pasta" para recuperar backups
+              • 🔄 Use "Restaurar da Pasta" para recuperar dados da pasta
             </p>
           </div>
         </CardContent>
