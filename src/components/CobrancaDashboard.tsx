@@ -100,6 +100,13 @@ const CobrancaDashboard = () => {
     }
   ];
 
+  // Safely get palavras-chave data with null checking
+  const palavrasChaveData = metrics.palavrasChaveRespostas 
+    ? Object.entries(metrics.palavrasChaveRespostas)
+        .sort(([,a], [,b]) => (b as number) - (a as number))
+        .slice(0, 8)
+    : [];
+
   return (
     <div className="space-y-6">
       {/* Header com ações */}
@@ -270,15 +277,17 @@ const CobrancaDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(metrics.palavrasChaveRespostaS)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 8)
-                .map(([palavra, count]) => (
-                  <div key={palavra} className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{palavra}</span>
-                    <Badge variant="secondary">{count}</Badge>
-                  </div>
-                ))}
+              {palavrasChaveData.map(([palavra, count]) => (
+                <div key={palavra} className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{palavra}</span>
+                  <Badge variant="secondary">{count as number}</Badge>
+                </div>
+              ))}
+              {palavrasChaveData.length === 0 && (
+                <p className="text-gray-500 text-sm text-center py-4">
+                  Nenhuma palavra-chave encontrada
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
