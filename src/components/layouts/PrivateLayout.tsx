@@ -6,14 +6,18 @@ import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
 import { setBackupCallback } from '@/hooks/useLocalStorage';
 import BackupStatus from '@/components/BackupStatus';
 import BackupConfigModal from '@/components/BackupConfigModal';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Calendar, 
   Home, 
   Plus, 
   X, 
   FileText,
-  MessageSquare 
+  MessageSquare,
+  Moon,
+  Sun,
+  Menu,
+  ChevronLeft
 } from 'lucide-react';
 
 const PrivateLayout = () => {
@@ -21,6 +25,8 @@ const PrivateLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { createBackup } = useFileSystemBackup();
+  const [darkMode, setDarkMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -30,12 +36,18 @@ const PrivateLayout = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
-    { title: 'Dashboard', path: '/app', icon: Home },
-    { title: 'Clientes', path: '/app/clients', icon: Plus },
-    { title: 'Dívidas', path: '/app/debts', icon: Calendar },
-    { title: 'Relatórios', path: '/app/reports', icon: FileText },
-    { title: 'WhatsApp', path: '/app/whatsapp', icon: MessageSquare },
+    { title: 'Dashboard', path: '/app', icon: Home, color: 'text-blue-600' },
+    { title: 'Clientes', path: '/app/clients', icon: Plus, color: 'text-green-600' },
+    { title: 'Dívidas', path: '/app/debts', icon: Calendar, color: 'text-orange-600' },
+    { title: 'Relatórios', path: '/app/reports', icon: FileText, color: 'text-purple-600' },
+    { title: 'WhatsApp', path: '/app/whatsapp', icon: MessageSquare, color: 'text-emerald-600' },
   ];
+
+  // Dark mode toggle
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle('dark');
+  };
 
   // Configurar callback de backup automático
   useEffect(() => {
@@ -45,62 +57,116 @@ const PrivateLayout = () => {
   }, [createBackup]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900 flex ${darkMode ? 'dark' : ''}`}>
       {/* Modal de configuração de backup */}
       <BackupConfigModal />
       
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800">
-            Debt Manager Pro
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">{user?.email}</p>
-        </div>
-        
-        <nav className="mt-6">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors ${
-                  isActive(item.path) ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' : ''
-                }`}
+      <div className={`${sidebarCollapsed ? 'w-16' : 'w-72'} transition-all duration-300 ease-in-out`}>
+        <div className={`fixed left-0 top-0 h-full ${sidebarCollapsed ? 'w-16' : 'w-72'} card-modern border-r-0 rounded-none z-30 transition-all duration-300`}>
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              {!sidebarCollapsed && (
+                <div>
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                    Debt Wise Flow
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {user?.email}
+                  </p>
+                </div>
+              )}
+              <Button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                variant="ghost"
+                size="sm"
+                className="hover-lift"
               >
-                <Icon className="w-5 h-5 mr-3" />
-                {item.title}
-              </Link>
-            );
-          })}
-        </nav>
+                {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+          
+          {/* Navigation */}
+          <nav className="p-4 space-y-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`nav-item ${active ? 'active' : ''} flex items-center group`}
+                  title={sidebarCollapsed ? item.title : ''}
+                >
+                  <Icon className={`w-5 h-5 ${active ? 'text-white' : item.color} transition-colors duration-200`} />
+                  {!sidebarCollapsed && (
+                    <span className={`ml-3 font-medium ${active ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {item.title}
+                    </span>
+                  )}
+                  {active && !sidebarCollapsed && (
+                    <div className="ml-auto w-2 h-2 bg-white rounded-full"></div>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
 
-        <div className="absolute bottom-6 left-6 right-6">
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="w-full flex items-center justify-center"
-          >
-            <X className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          {/* Footer */}
+          <div className="absolute bottom-6 left-4 right-4 space-y-3">
+            {/* Dark Mode Toggle */}
+            <Button
+              onClick={toggleDarkMode}
+              variant="ghost"
+              className={`${sidebarCollapsed ? 'w-8 h-8 p-0' : 'w-full'} hover-lift justify-start`}
+              title={sidebarCollapsed ? (darkMode ? 'Light Mode' : 'Dark Mode') : ''}
+            >
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {!sidebarCollapsed && (
+                <span className="ml-3">{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>
+              )}
+            </Button>
+
+            {/* Logout Button */}
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className={`${sidebarCollapsed ? 'w-8 h-8 p-0' : 'w-full'} hover-lift justify-start border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20`}
+              title={sidebarCollapsed ? 'Sair' : ''}
+            >
+              <X className="w-4 h-4" />
+              {!sidebarCollapsed && <span className="ml-3">Sair</span>}
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="card-modern border-b border-gray-200 dark:border-gray-700 px-6 py-4 sticky top-0 z-20">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-semibold text-gray-800">
-              Sistema de Gerenciamento de Dívidas
-            </h1>
-            <BackupStatus />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Sistema de Gerenciamento de Dívidas
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Gestão inteligente e profissional
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <BackupStatus />
+            </div>
           </div>
         </header>
         
+        {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-auto">
-          <Outlet />
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
