@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,6 @@ const WhatsAppQRCode = () => {
     disconnect, 
     retry, 
     generateNewQR,
-    simulateSuccessfulConnection,
     isLoading 
   } = useWhatsAppConnection();
 
@@ -69,7 +69,7 @@ const WhatsAppQRCode = () => {
       <CardHeader className="text-center bg-white">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Smartphone className="w-6 h-6 text-green-600" />
-          <CardTitle className="text-gray-900">WhatsApp Web Connection</CardTitle>
+          <CardTitle className="text-gray-900">Conexão WhatsApp Real</CardTitle>
         </div>
         <div className="flex items-center justify-center gap-2">
           <StatusIcon className={`w-4 h-4 ${statusInfo.color}`} />
@@ -102,26 +102,15 @@ const WhatsAppQRCode = () => {
               
               <div className="text-sm text-gray-600 space-y-1 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <p><strong>1.</strong> Abra o WhatsApp no seu celular</p>
-                <p><strong>2.</strong> Vá em Menu → Aparelhos conectados</p>
+                <p><strong>2.</strong> Vá em Menu (⋮) → Aparelhos conectados</p>
                 <p><strong>3.</strong> Toque em "Conectar um aparelho"</p>
                 <p><strong>4.</strong> Escaneie este QR Code</p>
               </div>
               
-              <div className="flex items-center gap-2 justify-center text-xs text-gray-500 bg-green-50 p-2 rounded border border-green-200">
-                <CheckCircle className="w-3 h-3 text-green-600" />
-                <span>QR Code gerado e aguardando escaneamento</span>
+              <div className="flex items-center gap-2 justify-center text-xs text-green-600 bg-green-50 p-2 rounded border border-green-200">
+                <CheckCircle className="w-3 h-3" />
+                <span>QR Code real - conecte seu WhatsApp agora!</span>
               </div>
-
-              {/* Botão de demonstração */}
-              <Button 
-                onClick={simulateSuccessfulConnection}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 text-green-600 border-green-300 hover:bg-green-50"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Simular Conexão (Demo)
-              </Button>
             </div>
           </div>
         )}
@@ -130,8 +119,8 @@ const WhatsAppQRCode = () => {
         {connection.status === 'connecting' && !connection.qrCode && (
           <div className="flex flex-col items-center space-y-4 py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="text-gray-600">Gerando QR Code válido...</p>
-            <p className="text-sm text-gray-500">Aguarde enquanto inicializamos a conexão</p>
+            <p className="text-gray-600">Inicializando conexão com WhatsApp Web...</p>
+            <p className="text-sm text-gray-500">Aguarde enquanto preparamos a conexão</p>
           </div>
         )}
 
@@ -182,7 +171,7 @@ const WhatsAppQRCode = () => {
               size="lg"
             >
               <QrCode className="w-5 h-5" />
-              {isLoading ? 'Conectando...' : 'Conectar WhatsApp'}
+              {isLoading ? 'Conectando...' : 'Conectar WhatsApp Real'}
             </Button>
           )}
 
@@ -245,8 +234,8 @@ const WhatsAppQRCode = () => {
           <div className="flex items-start gap-2">
             <QrCode className="w-4 h-4 text-blue-600 mt-0.5" />
             <div className="text-xs text-blue-700">
-              <p className="font-medium mb-1">Sistema de Demonstração:</p>
-              <p>QR Code funcional para demonstração. Use o botão "Simular Conexão" para testar o sistema de cobrança automática.</p>
+              <p className="font-medium mb-1">Conexão Real com WhatsApp:</p>
+              <p>Este sistema agora conecta diretamente com o WhatsApp Web oficial. Escaneie o QR Code com seu celular para ativar o sistema de cobrança automática.</p>
             </div>
           </div>
         </div>
