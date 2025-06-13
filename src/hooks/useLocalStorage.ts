@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Client, Debt, Payment, DashboardMetrics } from '@/types';
 import { useFileSystemBackup } from './useFileSystemBackup';
@@ -11,7 +10,7 @@ const STORAGE_KEYS = {
 export const useLocalStorage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { saveData, isConfigured, directoryHandle, isConnected } = useFileSystemBackup();
+  const { saveData, downloadBackup, isConfigured, directoryHandle, isConnected, isSupported } = useFileSystemBackup();
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -21,20 +20,20 @@ export const useLocalStorage = () => {
   // Tentar restaurar dados da pasta quando conectar
   useEffect(() => {
     if (isConnected && directoryHandle && clients.length === 0) {
-      console.log('Sistema conectado à pasta - tentando restaurar dados...');
+      console.log('Pasta conectada - tentando restaurar dados...');
       restoreFromFolder();
     }
   }, [isConnected, directoryHandle]);
 
   const loadInitialData = async () => {
-    console.log('Carregando dados iniciais...');
+    console.log('🔄 Carregando dados iniciais...');
     
     // Primeiro tentar carregar do localStorage
     const saved = localStorage.getItem(STORAGE_KEYS.CLIENTS);
     if (saved) {
       try {
         const parsedClients = JSON.parse(saved);
-        console.log('Dados carregados do localStorage:', parsedClients.length, 'clientes');
+        console.log('📱 Dados carregados do localStorage:', parsedClients.length, 'clientes');
         setClients(parsedClients);
         setIsInitialized(true);
         return;
@@ -43,30 +42,29 @@ export const useLocalStorage = () => {
       }
     }
 
-    // Se não há dados no localStorage, tentar restaurar da pasta
-    console.log('Nenhum dado no localStorage - aguardando conexão da pasta');
+    console.log('📭 Nenhum dado local encontrado');
     setIsInitialized(true);
   };
 
   const restoreFromFolder = async () => {
     if (!directoryHandle) {
-      console.log('Nenhuma pasta configurada para restore');
+      console.log('❌ Nenhuma pasta configurada para restore');
       return;
     }
 
     try {
-      console.log('Procurando arquivos de backup na pasta...');
+      console.log('🔍 Procurando arquivos na pasta principal...');
       
-      // Procurar arquivos de backup
+      // Procurar arquivos de dados
       const files = [];
       for await (const [name, handle] of directoryHandle.entries()) {
-        if (handle.kind === 'file' && name.includes('debt_manager_backup_') && name.endsWith('.json')) {
+        if (handle.kind === 'file' && name.includes('debt_manager_data_') && name.endsWith('.json')) {
           files.push({ name, handle });
         }
       }
 
       if (files.length === 0) {
-        console.log('Nenhum arquivo de backup encontrado na pasta');
+        console.log('📁 Nenhum arquivo de dados encontrado na pasta');
         return;
       }
 
@@ -74,47 +72,65 @@ export const useLocalStorage = () => {
       files.sort((a, b) => b.name.localeCompare(a.name));
       const latestFile = files[0];
 
-      console.log('Restaurando dados do arquivo:', latestFile.name);
+      console.log('📂 Restaurando dados do arquivo:', latestFile.name);
       
       const file = await latestFile.handle.getFile();
       const content = await file.text();
       const data = JSON.parse(content);
 
       if (data.clients && Array.isArray(data.clients) && data.clients.length > 0) {
-        console.log('Restaurando', data.clients.length, 'clientes da pasta');
+        console.log('✅ Restaurando', data.clients.length, 'clientes da pasta principal');
         localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(data.clients));
         setClients(data.clients);
       }
     } catch (error) {
-      console.error('Erro ao restaurar dados da pasta:', error);
+      console.error('❌ Erro ao restaurar dados da pasta:', error);
     }
   };
 
   const saveClients = async (newClients: Client[]) => {
-    console.log('Salvando', newClients.length, 'clientes');
+    console.log('💾 Salvando', newClients.length, 'clientes...');
     
-    // Salvar no localStorage
+    // SEMPRE salvar no localStorage primeiro (cache local)
     localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(newClients));
     setClients(newClients);
     
-    // Salvar automaticamente na pasta configurada se disponível
+    const data = {
+      clients: newClients,
+      exportDate: new Date().toISOString(),
+      version: '2.0',
+      type: 'main_data'
+    };
+    
+    const filename = `debt_manager_data_${new Date().toISOString().split('T')[0]}.json`;
+    const jsonData = JSON.stringify(data, null, 2);
+
+    // PRIORIDADE 1: Salvar na pasta local (armazenamento principal)
     if (isConnected && saveData) {
       try {
-        const data = {
-          clients: newClients,
-          exportDate: new Date().toISOString(),
-          version: '2.0',
-          type: 'auto_backup'
-        };
-        
-        const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
-        console.log('Salvando backup automático na pasta:', filename);
-        await saveData(JSON.stringify(data, null, 2), filename);
-        console.log('Backup salvo com sucesso na pasta!');
+        console.log('📁 Salvando na pasta principal:', filename);
+        await saveData(jsonData, filename);
+        console.log('✅ Dados salvos na pasta principal!');
+        return; // Sucesso na pasta, não precisa fazer download
       } catch (error) {
-        console.error('Erro ao salvar backup automático:', error);
+        console.error('❌ Erro ao salvar na pasta principal:', error);
+        // Continua para tentar download automático
       }
     }
+
+    // PRIORIDADE 2: Download automático quando pasta não disponível
+    if (!isConnected && downloadBackup) {
+      try {
+        console.log('📥 Pasta não disponível - fazendo download automático');
+        await downloadBackup(jsonData, filename);
+        console.log('✅ Download automático realizado!');
+      } catch (error) {
+        console.error('❌ Erro no download automático:', error);
+      }
+    }
+
+    // FALLBACK: Se nada funcionou, pelo menos temos no localStorage
+    console.log('💾 Dados mantidos no localStorage como fallback');
   };
 
   const addClient = (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'debts'>) => {

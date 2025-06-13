@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
 import { useUserFolderConfig } from './useUserFolderConfig';
@@ -75,7 +74,7 @@ export const useFileSystemBackup = () => {
       if (!isInitialized || !user) return;
 
       try {
-        console.log('Inicializando sistema de arquivos para usuário:', user.email);
+        console.log('Inicializando sistema principal de arquivos para:', user.email);
 
         // Se estamos em iframe, usar sempre modo download
         if (capabilities?.isInFrame) {
@@ -99,9 +98,9 @@ export const useFileSystemBackup = () => {
               }
               
               setDirectoryHandle(handle);
-              console.log('Acesso à pasta recuperado:', handle.name);
+              console.log('✅ Acesso à pasta principal recuperado:', handle.name);
             } catch (error) {
-              console.log('Erro ao verificar acesso à pasta:', error);
+              console.log('❌ Erro ao verificar acesso à pasta:', error);
               // Pasta não acessível mais, usuário precisará reconfigurar
             }
           }
@@ -118,21 +117,21 @@ export const useFileSystemBackup = () => {
 
   const configureDirectory = async (): Promise<boolean> => {
     try {
-      console.log('Iniciando configuração da pasta...');
+      console.log('🔧 Configurando pasta principal...');
       clearError();
 
       // Se estamos em iframe ou File System API não disponível, usar fallback
       if (capabilities?.isInFrame || !capabilities?.fileSystemAccess) {
-        console.log('Usando modo download por limitação do ambiente');
+        console.log('📥 Usando modo download automático por limitação do ambiente');
         return true;
       }
 
       // Usar File System API
-      console.log('Solicitando seleção de pasta...');
+      console.log('📁 Solicitando seleção de pasta principal...');
       const handle = await handleDirectoryAccess();
       
       if (handle) {
-        console.log('Pasta selecionada:', handle.name);
+        console.log('✅ Pasta principal selecionada:', handle.name);
         
         // Salvar handle no IndexedDB
         await saveDirectoryHandle(handle);
@@ -144,14 +143,14 @@ export const useFileSystemBackup = () => {
           name: handle.name
         });
         
-        console.log('✅ Configuração concluída com sucesso');
+        console.log('✅ Configuração da pasta principal concluída');
         return true;
       }
 
-      console.log('Nenhuma pasta foi selecionada');
+      console.log('❌ Nenhuma pasta foi selecionada');
       return false;
     } catch (error) {
-      console.error('Erro ao configurar pasta:', error);
+      console.error('Erro ao configurar pasta principal:', error);
       
       // Se foi cancelado pelo usuário, não mostrar como erro
       if ((error as Error).name === 'AbortError') {
@@ -169,49 +168,57 @@ export const useFileSystemBackup = () => {
     }
   };
 
-  // Função otimizada para salvar dados na pasta (sem downloads automáticos)
+  // FUNÇÃO PRINCIPAL: Salvar dados (pasta principal ou download automático)
   const saveData = async (data: string, filename: string): Promise<boolean> => {
     try {
       clearError();
-      console.log('💾 Salvando na pasta local:', filename);
+      console.log('💾 Salvando dados principais:', filename);
       
-      // APENAS tentar salvar na pasta se tivermos handle ativo
+      // PRIORIDADE 1: Tentar salvar na pasta principal
       if (directoryHandle && capabilities?.fileSystemAccess) {
         const success = await saveFile(data, filename, directoryHandle);
         if (success) {
-          console.log('✅ Arquivo salvo na pasta local');
+          console.log('✅ Dados salvos na pasta principal');
           return true;
         }
       }
       
-      // Se não conseguiu salvar na pasta, NÃO fazer download automático
-      console.log('📝 Dados mantidos apenas no localStorage (pasta indisponível)');
-      return false;
+      // PRIORIDADE 2: Download automático se pasta não disponível
+      console.log('📥 Pasta não disponível - iniciando download automático');
+      return await downloadBackup(data, filename);
     } catch (error) {
-      console.error('Erro ao salvar na pasta:', error);
-      return false;
+      console.error('❌ Erro ao salvar dados:', error);
+      // Tentar download como fallback
+      try {
+        console.log('🔄 Tentando download como fallback...');
+        return await downloadBackup(data, filename);
+      } catch (downloadError) {
+        console.error('❌ Erro também no download fallback:', downloadError);
+        return false;
+      }
     }
   };
 
-  // Função específica para download manual (quando usuário solicita)
+  // FUNÇÃO: Download automático/manual
   const downloadBackup = async (data: string, filename: string): Promise<boolean> => {
     try {
-      console.log('📥 Iniciando download manual:', filename);
+      console.log('📥 Executando download:', filename);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      console.log('✅ Download concluído');
+      console.log('✅ Download concluído automaticamente');
       return true;
     } catch (error) {
-      console.error('Erro no download:', error);
+      console.error('❌ Erro no download:', error);
       return false;
     }
   };
@@ -219,35 +226,35 @@ export const useFileSystemBackup = () => {
   // Função para restaurar dados da pasta
   const restoreFromFolder = async (): Promise<any> => {
     if (!directoryHandle || !capabilities?.fileSystemAccess) {
-      throw new Error('Pasta não disponível para restauração');
+      throw new Error('Pasta principal não disponível para restauração');
     }
 
     try {
-      console.log('🔄 Procurando backups na pasta...');
-      const backupFiles: string[] = [];
+      console.log('🔄 Procurando dados na pasta principal...');
+      const dataFiles: string[] = [];
       
       for await (const [name] of directoryHandle.entries()) {
-        if (name.includes('debt_manager_backup') && name.endsWith('.json')) {
-          backupFiles.push(name);
+        if (name.includes('debt_manager_data') && name.endsWith('.json')) {
+          dataFiles.push(name);
         }
       }
       
-      if (backupFiles.length === 0) {
-        throw new Error('Nenhum backup encontrado na pasta');
+      if (dataFiles.length === 0) {
+        throw new Error('Nenhum arquivo de dados encontrado na pasta principal');
       }
       
-      // Pegar o backup mais recente
-      const latestBackup = backupFiles.sort().reverse()[0];
-      console.log('📁 Restaurando do arquivo:', latestBackup);
+      // Pegar o arquivo mais recente
+      const latestData = dataFiles.sort().reverse()[0];
+      console.log('📁 Restaurando do arquivo:', latestData);
       
-      const fileHandle = await directoryHandle.getFileHandle(latestBackup);
+      const fileHandle = await directoryHandle.getFileHandle(latestData);
       const file = await fileHandle.getFile();
       const content = await file.text();
       
-      console.log('✅ Dados restaurados da pasta');
+      console.log('✅ Dados restaurados da pasta principal');
       return JSON.parse(content);
     } catch (error) {
-      console.error('Erro ao restaurar da pasta:', error);
+      console.error('❌ Erro ao restaurar da pasta principal:', error);
       throw error;
     }
   };
@@ -255,10 +262,10 @@ export const useFileSystemBackup = () => {
   const getStatus = () => {
     if (loading) return 'Verificando configuração...';
     if (lastError) return `Erro: ${lastError.message}`;
-    if (!isConfigured) return 'Pasta não configurada';
-    if (isConfigured && directoryHandle) return `✅ Pasta: ${directoryHandle.name}`;
+    if (!isConfigured) return 'Pasta principal não configurada';
+    if (isConfigured && directoryHandle) return `✅ Pasta Principal: ${directoryHandle.name}`;
     if (isConfigured && folderConfig) return `📁 Pasta: ${folderConfig.folder_name}`;
-    if (capabilities?.isInFrame) return '📥 Modo download disponível';
+    if (capabilities?.isInFrame) return '📥 Modo download automático ativo';
     
     return getSystemStatus();
   };
@@ -271,16 +278,16 @@ export const useFileSystemBackup = () => {
     isConnected,
     loading,
     directoryHandle,
-    folderName: directoryHandle?.name || folderConfig?.folder_name || (capabilities?.isInFrame ? 'Download' : ''),
+    folderName: directoryHandle?.name || folderConfig?.folder_name || (capabilities?.isInFrame ? 'Download Automático' : ''),
     isFirstAccess: !isConfigured,
     lastError,
     errorSuggestions: lastError ? getErrorSuggestions(lastError) : [],
     configureDirectory,
     configureFolder: configureDirectory,
     saveBackup: saveData,
-    saveData, // Para salvamento na pasta (sem download)
-    downloadBackup, // Para download manual
-    restoreFromFolder, // Para restaurar da pasta
+    saveData, // Para salvamento na pasta principal (com fallback para download)
+    downloadBackup, // Para download manual/automático
+    restoreFromFolder, // Para restaurar da pasta principal
     getBackupStatus: getStatus,
     getStatus,
     forceConfiguration: () => {},

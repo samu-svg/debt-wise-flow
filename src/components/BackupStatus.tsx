@@ -14,7 +14,8 @@ import {
   Settings,
   Folder,
   Lock,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 
 const BackupStatus = () => {
@@ -57,16 +58,16 @@ const BackupStatus = () => {
         icon: Lock,
         color: 'bg-red-500',
         text: 'Configuração Necessária',
-        description: 'Configure pasta para armazenar dados'
+        description: 'Configure pasta principal para seus dados'
       };
     }
     
     if (!isSupported) {
       return {
-        icon: XCircle,
-        color: 'bg-orange-500',
-        text: 'Modo Download',
-        description: 'Dados salvos via download'
+        icon: Download,
+        color: 'bg-blue-500',
+        text: 'Download Automático',
+        description: 'Dados salvos via download automático'
       };
     }
     
@@ -74,8 +75,8 @@ const BackupStatus = () => {
       return {
         icon: AlertCircle,
         color: 'bg-orange-500',
-        text: 'Não configurado',
-        description: 'Configure pasta para dados'
+        text: 'Pasta não configurada',
+        description: 'Configure pasta principal'
       };
     }
     
@@ -84,15 +85,15 @@ const BackupStatus = () => {
         icon: AlertCircle,
         color: 'bg-orange-500',
         text: 'Desconectado',
-        description: 'Reconecte à pasta de dados'
+        description: 'Reconecte à pasta principal'
       };
     }
     
     return {
       icon: CheckCircle,
       color: 'bg-green-500',
-      text: 'Pasta Ativa ✅',
-      description: `Dados em: ${folderName}`
+      text: 'Pasta Principal Ativa ✅',
+      description: `Dados salvos em: ${folderName}`
     };
   };
 
@@ -110,7 +111,7 @@ const BackupStatus = () => {
         setShowConfigModal(false);
       }
     } catch (error) {
-      console.error('Erro ao configurar pasta:', error);
+      console.error('Erro ao configurar pasta principal:', error);
     }
   };
 
@@ -118,7 +119,7 @@ const BackupStatus = () => {
     if (isConfigured && isConnected) {
       try {
         await restoreFromFolder();
-        console.log('Dados restaurados da pasta com sucesso');
+        console.log('Dados restaurados da pasta principal com sucesso');
       } catch (error) {
         console.error('Erro ao restaurar dados:', error);
       }
@@ -159,10 +160,10 @@ const BackupStatus = () => {
             {(isFirstAccess || (!isConfigured && isSupported)) && (
               <div className="bg-red-50 p-3 rounded-lg border border-red-200">
                 <p className="text-sm text-red-800">
-                  <strong>⚠️ Pasta Necessária</strong>
+                  <strong>⚠️ Pasta Principal Necessária</strong>
                 </p>
                 <p className="text-xs text-red-600 mt-1">
-                  Configure uma pasta local para armazenar os dados dos clientes e dívidas
+                  Configure uma pasta local como armazenamento principal dos seus dados
                 </p>
               </div>
             )}
@@ -170,18 +171,21 @@ const BackupStatus = () => {
             {isConnected && folderName && (
               <div className="bg-green-50 p-3 rounded-lg">
                 <p className="text-sm text-green-800">
-                  <strong>Pasta Ativa:</strong> {folderName}
+                  <strong>Pasta Principal:</strong> {folderName}
                 </p>
                 <p className="text-xs text-green-600 mt-1">
-                  Dados salvos automaticamente na pasta local
+                  Todos os dados são salvos automaticamente nesta pasta
                 </p>
               </div>
             )}
             
             {!isSupported && (
-              <div className="bg-orange-50 p-3 rounded-lg">
-                <p className="text-sm text-orange-600">
-                  Use Chrome ou Edge para armazenamento em pasta local
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-600">
+                  <strong>Download Automático Ativo</strong>
+                </p>
+                <p className="text-xs text-blue-500 mt-1">
+                  Dados salvos via download automático quando você faz alterações
                 </p>
               </div>
             )}
@@ -197,8 +201,8 @@ const BackupStatus = () => {
                 >
                   <Folder className="w-4 h-4" />
                   {loading ? 'Carregando...' :
-                   isFirstAccess ? 'Configurar Pasta' : 
-                   !isConfigured ? 'Selecionar Pasta' : 'Reconectar'}
+                   isFirstAccess ? 'Configurar Pasta Principal' : 
+                   !isConfigured ? 'Selecionar Pasta Principal' : 'Reconectar'}
                 </Button>
               )}
 
@@ -210,7 +214,7 @@ const BackupStatus = () => {
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  Restaurar Dados
+                  Restaurar da Pasta
                 </Button>
               )}
               
@@ -232,15 +236,24 @@ const BackupStatus = () => {
       {showConfigModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Configuração Inicial</h2>
+            <h2 className="text-xl font-bold mb-4">Configuração da Pasta Principal</h2>
             <p className="text-gray-600 mb-4">
-              Para começar a usar o sistema, você precisa configurar uma pasta local 
-              onde seus dados serão salvos automaticamente.
+              Configure uma pasta local como armazenamento principal dos seus dados. 
+              Todos os clientes e dívidas serão salvos automaticamente nesta pasta.
             </p>
+            <div className="bg-blue-50 p-3 rounded-lg mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>💡 Economia de Banco de Dados</strong>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Os dados ficam na sua pasta local, economizando espaço no banco de dados.
+                Se a pasta não estiver disponível, o sistema fará downloads automáticos.
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button onClick={handleConfigure} className="flex-1">
                 <Folder className="w-4 h-4 mr-2" />
-                Configurar Pasta
+                Configurar Pasta Principal
               </Button>
               <Button 
                 variant="outline" 
