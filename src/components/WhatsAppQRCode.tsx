@@ -11,7 +11,9 @@ import {
   AlertCircle,
   X,
   Clock,
-  Scan
+  Scan,
+  Server,
+  Code
 } from 'lucide-react';
 
 const WhatsAppQRCode = () => {
@@ -38,9 +40,9 @@ const WhatsAppQRCode = () => {
         return {
           icon: Clock,
           color: 'text-blue-600',
-          text: 'Aguardando Escaneamento',
+          text: 'Aguardando Conexão',
           variant: 'secondary' as const,
-          description: 'Escaneie o QR Code com seu WhatsApp'
+          description: 'Tentando conectar com servidor WhatsApp'
         };
       case 'error':
         return {
@@ -115,12 +117,12 @@ const WhatsAppQRCode = () => {
           </div>
         )}
 
-        {/* Aguardando QR Code */}
+        {/* Aguardando Servidor */}
         {connection.status === 'connecting' && !connection.qrCode && (
           <div className="flex flex-col items-center space-y-4 py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="text-gray-600">Inicializando conexão com WhatsApp Web...</p>
-            <p className="text-sm text-gray-500">Aguarde enquanto preparamos a conexão real</p>
+            <p className="text-gray-600">Conectando ao servidor WhatsApp...</p>
+            <p className="text-sm text-gray-500">Aguarde enquanto estabelecemos a conexão</p>
           </div>
         )}
 
@@ -161,6 +163,28 @@ const WhatsAppQRCode = () => {
           </div>
         )}
 
+        {/* Backend Required Notice */}
+        {connection.status === 'error' && connection.lastError?.includes('backend') && (
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-center gap-2 text-yellow-800 mb-2">
+              <Server className="w-5 h-5" />
+              <span className="font-medium">Backend Node.js Necessário</span>
+            </div>
+            <div className="text-sm text-yellow-700 space-y-2">
+              <p>Para conectar WhatsApp real, você precisa de:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Servidor Node.js com whatsapp-web.js</li>
+                <li>WebSocket servidor rodando</li>
+                <li>Puppeteer configurado no servidor</li>
+              </ul>
+              <div className="flex items-center gap-2 mt-2 p-2 bg-white rounded border border-yellow-300">
+                <Code className="w-4 h-4" />
+                <span className="text-xs">Esta é uma aplicação frontend - backend necessário para WhatsApp real</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-col gap-3">
           {connection.status === 'disconnected' && (
@@ -171,7 +195,7 @@ const WhatsAppQRCode = () => {
               size="lg"
             >
               <QrCode className="w-5 h-5" />
-              {isLoading ? 'Conectando...' : 'Conectar WhatsApp'}
+              {isLoading ? 'Conectando...' : 'Conectar WhatsApp Real'}
             </Button>
           )}
 
@@ -232,10 +256,10 @@ const WhatsAppQRCode = () => {
         {/* Info Box */}
         <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
           <div className="flex items-start gap-2">
-            <QrCode className="w-4 h-4 text-blue-600 mt-0.5" />
+            <Server className="w-4 h-4 text-blue-600 mt-0.5" />
             <div className="text-xs text-blue-700">
-              <p className="font-medium mb-1">Conexão Real com WhatsApp:</p>
-              <p>Este sistema conecta diretamente com o WhatsApp Web oficial usando a biblioteca whatsapp-web.js. Escaneie o QR Code com seu celular para ativar o sistema de cobrança automática.</p>
+              <p className="font-medium mb-1">Conexão WhatsApp Real:</p>
+              <p>Para conectar WhatsApp real, você precisa de um servidor Node.js rodando whatsapp-web.js. Esta aplicação frontend se conectará via WebSocket ao seu backend.</p>
             </div>
           </div>
         </div>
