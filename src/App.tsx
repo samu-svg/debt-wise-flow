@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -38,7 +39,10 @@ function App() {
             <Route path="/" element={<PublicLayout />}>
               <Route index element={<Index />} />
               <Route path="login" element={<Login />} />
+              <Route path="entrar" element={<Login />} />
               <Route path="register" element={<Register />} />
+              <Route path="registre-se" element={<Register />} />
+              <Route path="cadastro" element={<Register />} />
             </Route>
 
             {/* Private routes */}

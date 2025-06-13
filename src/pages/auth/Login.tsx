@@ -79,7 +79,7 @@ const Login = () => {
         <div className="mt-4 text-center">
           <p className="text-sm">
             Não tem uma conta?{' '}
-            <Link to="/auth/register" className="register-link">
+            <Link to="/registre-se" className="register-link">
               Cadastre-se
             </Link>
           </p>
