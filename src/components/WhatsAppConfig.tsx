@@ -12,7 +12,7 @@ import { WhatsAppConfig as ConfigType } from '@/types/whatsapp';
 
 const WhatsAppConfig = () => {
   const { config, updateConfig } = useWhatsAppConnection();
-  const [formData, setFormData] = useState<ConfigType>(config);
+  const [formData, setFormData] = useState<Partial<ConfigType>>(config);
   const [hasChanges, setHasChanges] = useState(false);
 
   const handleChange = (field: keyof ConfigType, value: any) => {
@@ -80,7 +80,7 @@ const WhatsAppConfig = () => {
               </div>
               <Switch
                 id="autoReconnect"
-                checked={formData.autoReconnect}
+                checked={formData.autoReconnect || false}
                 onCheckedChange={(checked) => handleChange('autoReconnect', checked)}
               />
             </div>
@@ -90,7 +90,7 @@ const WhatsAppConfig = () => {
               <Input
                 id="retryInterval"
                 type="number"
-                value={formData.retryInterval}
+                value={formData.retryInterval || 15000}
                 onChange={(e) => handleChange('retryInterval', parseInt(e.target.value))}
                 min="5000"
                 max="300000"
@@ -106,7 +106,7 @@ const WhatsAppConfig = () => {
               <Input
                 id="maxRetries"
                 type="number"
-                value={formData.maxRetries}
+                value={formData.maxRetries || 20}
                 onChange={(e) => handleChange('maxRetries', parseInt(e.target.value))}
                 min="1"
                 max="50"
@@ -121,7 +121,7 @@ const WhatsAppConfig = () => {
               <Input
                 id="messageDelay"
                 type="number"
-                value={formData.messageDelay}
+                value={formData.messageDelay || 2000}
                 onChange={(e) => handleChange('messageDelay', parseInt(e.target.value))}
                 min="500"
                 max="10000"
@@ -153,19 +153,19 @@ const WhatsAppConfig = () => {
               </div>
               <Switch
                 id="businessHoursEnabled"
-                checked={formData.businessHours.enabled}
+                checked={formData.businessHours?.enabled || false}
                 onCheckedChange={(checked) => handleBusinessHoursChange('enabled', checked)}
               />
             </div>
 
-            {formData.businessHours.enabled && (
+            {formData.businessHours?.enabled && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="businessStart">Horário de Início</Label>
                   <Input
                     id="businessStart"
                     type="time"
-                    value={formData.businessHours.start}
+                    value={formData.businessHours?.start || '09:00'}
                     onChange={(e) => handleBusinessHoursChange('start', e.target.value)}
                   />
                 </div>
@@ -174,7 +174,7 @@ const WhatsAppConfig = () => {
                   <Input
                     id="businessEnd"
                     type="time"
-                    value={formData.businessHours.end}
+                    value={formData.businessHours?.end || '18:00'}
                     onChange={(e) => handleBusinessHoursChange('end', e.target.value)}
                   />
                 </div>
@@ -208,12 +208,12 @@ const WhatsAppConfig = () => {
           <h4 className="font-medium mb-2">Configurações Ativas:</h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>Reconexão: {config.autoReconnect ? 'Ativada' : 'Desativada'}</div>
-            <div>Intervalo: {config.retryInterval / 1000}s</div>
-            <div>Max Tentativas: {config.maxRetries}</div>
-            <div>Delay Mensagens: {config.messageDelay}ms</div>
-            <div>Horário Comercial: {config.businessHours.enabled ? 'Ativo' : 'Inativo'}</div>
-            {config.businessHours.enabled && (
-              <div>Horário: {config.businessHours.start} - {config.businessHours.end}</div>
+            <div>Intervalo: {(config.retryInterval || 15000) / 1000}s</div>
+            <div>Max Tentativas: {config.maxRetries || 20}</div>
+            <div>Delay Mensagens: {config.messageDelay || 2000}ms</div>
+            <div>Horário Comercial: {config.businessHours?.enabled ? 'Ativo' : 'Inativo'}</div>
+            {config.businessHours?.enabled && (
+              <div>Horário: {config.businessHours?.start || '09:00'} - {config.businessHours?.end || '18:00'}</div>
             )}
           </div>
         </div>
