@@ -62,11 +62,11 @@ export const useLocalStorage = () => {
     try {
       console.log('Procurando arquivos de backup na pasta...');
       
-      // Usar for await...of para iterar sobre as entradas do diretório
+      // Usar values() para iterar sobre os handles dos arquivos
       const files = [];
-      for await (const [name, handle] of directoryHandle) {
-        if (name.includes('debt_manager_backup_') && name.endsWith('.json')) {
-          files.push({ name, handle });
+      for await (const handle of directoryHandle.values()) {
+        if (handle.kind === 'file' && handle.name.includes('debt_manager_backup_') && handle.name.endsWith('.json')) {
+          files.push({ name: handle.name, handle });
         }
       }
 
@@ -81,16 +81,14 @@ export const useLocalStorage = () => {
 
       console.log('Restaurando dados do arquivo:', latestFile.name);
       
-      if (latestFile.handle.kind === 'file') {
-        const file = await latestFile.handle.getFile();
-        const content = await file.text();
-        const data = JSON.parse(content);
+      const file = await latestFile.handle.getFile();
+      const content = await file.text();
+      const data = JSON.parse(content);
 
-        if (data.clients && Array.isArray(data.clients) && data.clients.length > 0) {
-          console.log('Restaurando', data.clients.length, 'clientes da pasta');
-          localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(data.clients));
-          setClients(data.clients);
-        }
+      if (data.clients && Array.isArray(data.clients) && data.clients.length > 0) {
+        console.log('Restaurando', data.clients.length, 'clientes da pasta');
+        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(data.clients));
+        setClients(data.clients);
       }
     } catch (error) {
       console.error('Erro ao restaurar dados da pasta:', error);
