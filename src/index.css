@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,7 +18,7 @@
     /* Estados */
     --color-success: #5FED83;
     --color-error: #DC3545;
-    --color-warning: #6C757D; /* Substituindo amarelo por cinza */
+    --color-warning: #6C757D !important; /* Forçando cinza em vez de amarelo */
 
     --background: 248 249 250;
     --foreground: 52 58 64;
@@ -61,7 +62,7 @@
     /* Custom variables - Design minimalista */
     --success: 95 237 131;
     --info: 108 117 125;
-    --warning: 108 117 125; /* Cinza em vez de amarelo */
+    --warning: 108 117 125 !important; /* Cinza em vez de amarelo */
     --gradient-primary: linear-gradient(135deg, rgb(8 135 43) 0%, rgb(95 237 131) 100%);
     --gradient-success: linear-gradient(135deg, rgb(95 237 131) 0%, rgb(8 135 43) 100%);
     --gradient-card: linear-gradient(145deg, rgb(255 255 255) 0%, rgb(248 249 250) 100%);
@@ -122,36 +123,36 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
+    background-color: var(--color-background) !important;
+    color: var(--color-text-primary) !important;
   }
 
   /* Typography System */
   h1 {
     @apply text-3xl font-bold tracking-tight;
-    color: var(--color-text-primary);
+    color: var(--color-text-primary) !important;
   }
 
   h2 {
     @apply text-2xl font-semibold tracking-tight;
-    color: var(--color-text-primary);
+    color: var(--color-text-primary) !important;
   }
 
   h3 {
     @apply text-xl font-semibold;
-    color: var(--color-text-primary);
+    color: var(--color-text-primary) !important;
   }
 
   h4 {
     @apply text-lg font-medium;
-    color: var(--color-text-secondary);
+    color: var(--color-text-secondary) !important;
   }
 
   /* Professional Components - Paleta Minimalista */
   .card-modern {
     @apply rounded-xl shadow-lg border backdrop-blur-sm;
-    background: var(--color-background);
-    border-color: var(--color-border);
+    background: var(--color-background) !important;
+    border-color: var(--color-border) !important;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   }
 
@@ -162,70 +163,81 @@
 
   .btn-primary {
     @apply text-white font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
   }
 
   .btn-primary:hover {
-    background-color: rgb(95 237 131);
+    background-color: rgb(95 237 131) !important;
   }
 
   .btn-success {
     @apply text-white font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background: var(--gradient-success);
+    background: var(--gradient-success) !important;
   }
 
   .btn-danger {
     @apply font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: var(--color-error);
-    color: white;
+    background-color: var(--color-error) !important;
+    color: white !important;
   }
 
   .btn-secondary {
     @apply font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: var(--color-text-secondary);
-    color: white;
-    border: 1px solid var(--color-border);
+    background-color: var(--color-text-secondary) !important;
+    color: white !important;
+    border: 1px solid var(--color-border) !important;
+  }
+
+  /* FORÇAR REMOÇÃO DE QUALQUER AMARELO - WARNING STYLES */
+  .btn-warning,
+  .alert-warning,
+  .warning,
+  .text-warning,
+  .bg-warning {
+    background-color: #6B7280 !important;
+    color: white !important;
+    border-color: #6B7280 !important;
   }
 
   .metric-card {
     @apply rounded-xl p-6 shadow-lg border transition-all duration-200 hover:shadow-xl hover:scale-[1.02];
-    background: var(--color-background);
-    border-color: var(--color-border);
+    background: var(--color-background) !important;
+    border-color: var(--color-border) !important;
   }
 
   .status-online {
-    background-color: var(--color-primary);
-    color: white;
+    background-color: var(--color-primary) !important;
+    color: white !important;
   }
 
   .status-offline {
-    background-color: var(--color-error);
-    color: white;
+    background-color: var(--color-error) !important;
+    color: white !important;
   }
 
   .status-info {
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
+    background-color: var(--color-background) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border) !important;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 
   .status-pending {
-    background-color: var(--color-text-secondary);
-    color: white;
+    background-color: var(--color-text-secondary) !important;
+    color: white !important;
   }
 
   /* Loading Animations */
   .loading-skeleton {
     @apply animate-pulse rounded;
-    background-color: var(--color-background-secondary);
+    background-color: var(--color-background-secondary) !important;
   }
 
   .loading-spinner {
     @apply animate-spin rounded-full border-2;
-    border-color: var(--color-background-secondary);
-    border-top-color: var(--color-primary);
+    border-color: var(--color-background-secondary) !important;
+    border-top-color: var(--color-primary) !important;
   }
 
   /* Form Improvements */
@@ -235,24 +247,24 @@
 
   .form-floating input {
     @apply block w-full px-4 pt-6 pb-2 text-base rounded-lg focus:ring-2 focus:border-transparent transition-all duration-200;
-    background-color: var(--color-background);
-    border: 1px solid var(--color-border);
-    color: var(--color-text-primary);
+    background-color: var(--color-background) !important;
+    border: 1px solid var(--color-border) !important;
+    color: var(--color-text-primary) !important;
   }
 
   .form-floating input:focus {
-    ring-color: var(--color-primary);
+    ring-color: var(--color-primary) !important;
   }
 
   .form-floating label {
     @apply absolute left-4 top-4 text-sm transition-all duration-200 transform origin-top-left pointer-events-none;
-    color: var(--color-text-secondary);
+    color: var(--color-text-secondary) !important;
   }
 
   .form-floating input:focus + label,
   .form-floating input:not(:placeholder-shown) + label {
     @apply -translate-y-2 scale-90;
-    color: var(--color-primary);
+    color: var(--color-primary) !important;
   }
 
   /* Micro-interactions */
@@ -271,16 +283,16 @@
   /* Professional Navigation */
   .nav-item {
     @apply relative px-4 py-3 rounded-lg transition-all duration-200;
-    background-color: transparent;
+    background-color: transparent !important;
   }
 
   .nav-item:hover {
-    background-color: var(--color-background-secondary);
+    background-color: var(--color-background-secondary) !important;
   }
 
   .nav-item.active {
-    background-color: var(--color-primary);
-    color: white;
+    background-color: var(--color-primary) !important;
+    color: white !important;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   }
 
@@ -290,141 +302,174 @@
 
   /* Status Badges - Paleta Minimalista */
   .badge-success {
-    background-color: rgb(95 237 131 / 0.1);
-    color: var(--color-primary);
+    background-color: rgb(95 237 131 / 0.1) !important;
+    color: var(--color-primary) !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-info {
-    background-color: rgb(108 117 125 / 0.1);
-    color: var(--color-text-secondary);
+    background-color: rgb(108 117 125 / 0.1) !important;
+    color: var(--color-text-secondary) !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-danger {
-    background-color: rgb(220 53 69 / 0.1);
-    color: var(--color-error);
+    background-color: rgb(220 53 69 / 0.1) !important;
+    color: var(--color-error) !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-primary {
-    background-color: rgb(8 135 43 / 0.1);
-    color: var(--color-primary);
+    background-color: rgb(8 135 43 / 0.1) !important;
+    color: var(--color-primary) !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-secondary {
-    background-color: var(--color-background-secondary);
-    color: var(--color-text-secondary);
+    background-color: var(--color-background-secondary) !important;
+    color: var(--color-text-secondary) !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-pending {
-    background-color: rgb(108 117 125 / 0.1);
-    color: var(--color-text-secondary);
+    background-color: rgb(108 117 125 / 0.1) !important;
+    color: var(--color-text-secondary) !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-paid {
-    background-color: rgb(95 237 131 / 0.1);
-    color: var(--color-primary);
+    background-color: rgb(95 237 131 / 0.1) !important;
+    color: var(--color-primary) !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-overdue {
-    background-color: rgb(220 53 69 / 0.1);
-    color: var(--color-error);
+    background-color: rgb(220 53 69 / 0.1) !important;
+    color: var(--color-error) !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  /* FORÇAR REMOÇÃO DE AMARELO EM BADGES WARNING */
+  .badge-warning {
+    background-color: rgb(107 114 128 / 0.1) !important;
+    color: #6B7280 !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   /* Progress Bars */
   .progress-bar {
     @apply w-full rounded-full h-3 overflow-hidden;
-    background-color: var(--color-background-secondary);
+    background-color: var(--color-background-secondary) !important;
   }
 
   .progress-fill {
     @apply h-full rounded-full transition-all duration-500 ease-out;
-    background-color: var(--color-primary);
+    background-color: var(--color-primary) !important;
   }
 
   /* Glass Effect */
   .glass {
     @apply backdrop-blur-md border;
-    background-color: rgb(255 255 255 / 0.8);
-    border-color: rgb(255 255 255 / 0.2);
+    background-color: rgb(255 255 255 / 0.8) !important;
+    border-color: rgb(255 255 255 / 0.2) !important;
   }
 
   /* Focus States */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
-    --tw-ring-color: var(--color-primary);
+    --tw-ring-color: var(--color-primary) !important;
   }
 
-  /* Login Page Specific Styles - Minimalist Design */
+  /* Login Page Specific Styles - Minimalist Design FORÇADO */
   .login-container {
     @apply bg-white border shadow-sm;
-    border-color: var(--color-border);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background-color: #FFFFFF !important;
+    border-color: #E5E7EB !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
 
   .login-title {
-    color: var(--color-text-primary);
-    font-weight: 600;
+    color: #374151 !important;
+    font-weight: 600 !important;
   }
 
   .form-label {
-    color: var(--color-text-primary);
-    font-weight: 500;
+    color: #374151 !important;
+    font-weight: 500 !important;
   }
 
   .login-input {
-    @apply bg-white;
-    border: 1px solid var(--color-border);
-    color: var(--color-text-primary);
+    background-color: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    color: #374151 !important;
   }
 
   .login-input:focus {
-    border-color: var(--color-primary);
-    ring-color: var(--color-primary);
+    border-color: #10B981 !important;
+    ring-color: #10B981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
   }
 
   .btn-login {
-    @apply text-white font-medium;
-    background-color: var(--color-primary);
-    border: none;
+    background-color: #10B981 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    font-weight: 500 !important;
   }
 
   .btn-login:hover:not(:disabled) {
-    background-color: rgb(95 237 131);
+    background-color: #059669 !important;
   }
 
   .register-link {
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    transition: color 0.2s ease;
+    color: #6B7280 !important;
+    text-decoration: none !important;
+    transition: color 0.2s ease !important;
   }
 
   .register-link:hover {
-    color: var(--color-primary);
+    color: #10B981 !important;
   }
 
   .forgot-password {
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    transition: color 0.2s ease;
+    color: #6B7280 !important;
+    text-decoration: none !important;
+    transition: color 0.2s ease !important;
   }
 
   .forgot-password:hover {
-    color: var(--color-primary);
+    color: #10B981 !important;
   }
 
   .error-message {
-    background-color: var(--color-background-secondary);
-    color: var(--color-text-primary);
-    border-left: 3px solid var(--color-text-secondary);
-    padding: 0.75rem;
-    border-radius: 0.375rem;
+    background-color: #F9FAFB !important;
+    color: #374151 !important;
+    border-left: 3px solid #6B7280 !important;
+    padding: 0.75rem !important;
+    border-radius: 0.375rem !important;
+  }
+
+  /* ANULAR QUALQUER COR AMARELA NO SISTEMA INTEIRO */
+  * {
+    color: inherit !important;
+  }
+  
+  *[style*="yellow"], 
+  *[style*="#FFD700"], 
+  *[style*="#FFC107"], 
+  *[style*="#FFEB3B"],
+  .text-yellow-400,
+  .text-yellow-500,
+  .text-yellow-600,
+  .bg-yellow-400,
+  .bg-yellow-500,
+  .bg-yellow-600,
+  .border-yellow-400,
+  .border-yellow-500,
+  .border-yellow-600 {
+    color: #6B7280 !important;
+    background-color: #F9FAFB !important;
+    border-color: #E5E7EB !important;
   }
 }
 
@@ -434,17 +479,17 @@
 }
 
 ::-webkit-scrollbar-track {
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-background-secondary) !important;
   border-radius: 0.5rem;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-text-secondary);
+  background-color: var(--color-text-secondary) !important;
   border-radius: 0.5rem;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary) !important;
 }
 
 /* Print Styles */
