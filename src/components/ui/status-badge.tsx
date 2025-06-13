@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -13,29 +12,52 @@ interface StatusBadgeProps {
 
 const statusClasses = {
   success: {
-    solid: 'bg-green-600 text-white',
-    outline: 'border-green-600 text-green-600 bg-transparent',
+    solid: 'text-white',
+    outline: 'border-2 bg-transparent',
     soft: 'badge-success'
   },
   warning: {
-    solid: 'bg-white text-gray-800 border border-gray-300 shadow-sm',
-    outline: 'border-gray-400 text-gray-700 bg-transparent',
-    soft: 'badge-warning'
+    solid: 'text-white',
+    outline: 'border-2 bg-transparent',
+    soft: 'badge-info'
   },
   danger: {
-    solid: 'bg-red-600 text-white',
-    outline: 'border-red-600 text-red-600 bg-transparent',
+    solid: 'text-white',
+    outline: 'border-2 bg-transparent',
     soft: 'badge-danger'
   },
   info: {
-    solid: 'bg-blue-600 text-white',
-    outline: 'border-blue-600 text-blue-600 bg-transparent',
+    solid: 'text-white',
+    outline: 'border-2 bg-transparent',
     soft: 'badge-info'
   },
   neutral: {
-    solid: 'bg-gray-600 text-white',
-    outline: 'border-gray-600 text-gray-600 bg-transparent',
+    solid: 'text-white',
+    outline: 'border-2 bg-transparent',
     soft: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+  }
+};
+
+const statusColors = {
+  success: {
+    solid: 'bg-[#08872B]',
+    outline: 'border-[#08872B] text-[#08872B]'
+  },
+  warning: {
+    solid: 'bg-[#6C757D]',
+    outline: 'border-[#6C757D] text-[#6C757D]'
+  },
+  danger: {
+    solid: 'bg-[#DC3545]',
+    outline: 'border-[#DC3545] text-[#DC3545]'
+  },
+  info: {
+    solid: 'bg-[#6C757D]',
+    outline: 'border-[#6C757D] text-[#6C757D]'
+  },
+  neutral: {
+    solid: 'bg-[#6C757D]',
+    outline: 'border-[#6C757D] text-[#6C757D]'
   }
 };
 
@@ -56,8 +78,9 @@ export const StatusBadge = ({
     <span className={cn(
       'inline-flex items-center font-medium rounded-full',
       statusClasses[status][variant],
+      variant === 'solid' && statusColors[status].solid,
+      variant === 'outline' && statusColors[status].outline,
       sizeClasses[size],
-      variant === 'outline' && 'border',
       className
     )}>
       {children}
@@ -66,4 +89,3 @@ export const StatusBadge = ({
 };
 
 export default StatusBadge;
-
