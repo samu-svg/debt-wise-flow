@@ -1,12 +1,12 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
 import { toast } from '@/hooks/use-toast';
-import { FolderOpen, AlertTriangle, Chrome, RefreshCw, Download } from 'lucide-react';
+import { FolderOpen, AlertTriangle, RefreshCw, Download } from 'lucide-react';
 
 interface BackupConfigModalProps {
   open: boolean;
@@ -18,7 +18,6 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
     isSupported, 
     configureDirectory, 
     loading, 
-    isInIframe,
     lastError,
     errorSuggestions,
     clearError
@@ -31,7 +30,7 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
       clearError();
       await configureDirectory();
       toast({
-        title: "Sistema configurado!",
+        title: "Pasta configurada!",
         description: isSupported 
           ? "Pasta configurada para backup automático." 
           : "Sistema configurado para download manual.",
@@ -66,13 +65,10 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FolderOpen className="w-5 h-5 text-blue-600" />
-            {isInIframe ? 'Modo Desenvolvimento' : 'Configuração de Backup'}
+            Configuração de Backup
           </DialogTitle>
           <DialogDescription>
-            {isInIframe 
-              ? 'No modo desenvolvimento, use backup manual. Após publicação, configure uma pasta para backup automático.'
-              : 'Configure o sistema de backup para usar o Debt Wise Flow com segurança.'
-            }
+            Configure uma pasta local para salvar seus dados com segurança. Esta pasta será sincronizada automaticamente a cada login.
           </DialogDescription>
         </DialogHeader>
 
@@ -100,35 +96,7 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
           )}
 
           {/* Status Cards */}
-          {isInIframe ? (
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Chrome className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-800">Modo Desenvolvimento Ativo</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Backup via download disponível. Backup automático após publicação.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : !isSupported ? (
-            <Card className="border-orange-200 bg-orange-50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Download className="w-5 h-5 text-orange-600" />
-                  <div>
-                    <p className="font-medium text-orange-800">Modo Compatibilidade</p>
-                    <p className="text-sm text-orange-700 mt-1">
-                      Backup via download automático. Use Chrome/Edge para melhor experiência.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
+          {isSupported ? (
             <Card className="border-green-200 bg-green-50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -137,6 +105,20 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
                     <p className="font-medium text-green-800">Sistema Completo Disponível</p>
                     <p className="text-sm text-green-700 mt-1">
                       Selecione uma pasta para backup automático direto.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Download className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <p className="font-medium text-orange-800">Modo Compatibilidade</p>
+                    <p className="text-sm text-orange-700 mt-1">
+                      Backup via download automático. Use Chrome/Edge para melhor experiência.
                     </p>
                   </div>
                 </div>
@@ -165,22 +147,13 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
               </div>
             ) : (
               <Button 
-                onClick={isInIframe ? onConfigured : handleConfigure}
+                onClick={handleConfigure}
                 disabled={configuring}
                 className="w-full"
               >
-                {isInIframe ? (
-                  <>
-                    <Chrome className="w-4 h-4 mr-2" />
-                    Continuar (Desenvolvimento)
-                  </>
-                ) : (
-                  <>
-                    <FolderOpen className="w-4 h-4 mr-2" />
-                    {configuring ? 'Configurando...' : 
-                     isSupported ? 'Selecionar Pasta' : 'Configurar Download'}
-                  </>
-                )}
+                <FolderOpen className="w-4 h-4 mr-2" />
+                {configuring ? 'Configurando...' : 
+                 isSupported ? 'Selecionar Pasta Local' : 'Configurar Download'}
               </Button>
             )}
           </div>
@@ -188,10 +161,11 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
           {/* Info */}
           <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
             <div className="text-xs text-gray-600 space-y-1">
-              <p className="font-medium">Sistema Inteligente de Backup:</p>
-              <p>• Detecta automaticamente as capacidades do seu navegador</p>
-              <p>• Usa método mais seguro disponível</p>
-              <p>• Fallback automático para download se necessário</p>
+              <p className="font-medium">Por que configurar uma pasta?</p>
+              <p>• Seus dados ficam salvos automaticamente no seu computador</p>
+              <p>• Sincronização automática a cada login</p>
+              <p>• Backup seguro e privado dos seus dados</p>
+              <p>• Acesso offline aos arquivos salvos</p>
             </div>
           </div>
         </div>

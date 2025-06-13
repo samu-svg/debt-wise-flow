@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
 
@@ -75,9 +76,6 @@ export const useFileSystemBackup = () => {
     getSystemStatus
   } = useFileSystemManager();
 
-  // Check if running in iframe (development mode)
-  const isInIframe = window.self !== window.top;
-
   useEffect(() => {
     const checkConfiguration = async () => {
       if (!isInitialized) return;
@@ -92,7 +90,7 @@ export const useFileSystemBackup = () => {
           return;
         }
 
-        // Apenas tentar recuperar handle se File System API estiver disponível
+        // Tentar recuperar handle se File System API estiver disponível
         if (capabilities?.fileSystemAccess) {
           const handle = await getDirectoryHandle();
           if (handle) {
@@ -134,7 +132,7 @@ export const useFileSystemBackup = () => {
     try {
       clearError();
 
-      // Se File System API não estiver disponível, apenas marcar como configurado
+      // Se File System API não estiver disponível, usar fallback
       if (!capabilities?.fileSystemAccess) {
         setIsConfigured(true);
         setIsFirstAccess(false);
@@ -188,13 +186,12 @@ export const useFileSystemBackup = () => {
   };
 
   return {
-    isSupported: capabilities?.fileSystemAccess || !isInIframe,
+    isSupported: capabilities?.fileSystemAccess || true, // Sempre permitir configuração
     isConfigured,
     isConnected: isConfigured && (directoryHandle !== null || !capabilities?.fileSystemAccess),
     loading,
     directoryHandle,
     folderName: directoryHandle?.name || (isConfigured && !capabilities?.fileSystemAccess ? 'Download' : ''),
-    isInIframe,
     isFirstAccess,
     lastError,
     errorSuggestions: lastError ? getErrorSuggestions(lastError) : [],

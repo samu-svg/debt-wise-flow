@@ -10,7 +10,6 @@ import {
   XCircle, 
   Settings,
   Folder,
-  Code,
   Lock
 } from 'lucide-react';
 
@@ -21,35 +20,25 @@ const BackupStatus = () => {
     isConnected, 
     folderName,
     configureDirectory,
-    isInIframe,
     isFirstAccess
   } = useFileSystemBackup();
 
   const getStatusInfo = () => {
-    if (isInIframe) {
+    if (isFirstAccess || (!isConfigured && isSupported)) {
       return {
-        icon: Code,
-        color: 'bg-blue-500',
-        text: 'Desenvolvimento',
-        description: 'Use backup manual nos Relatórios'
+        icon: Lock,
+        color: 'bg-red-500',
+        text: 'Configuração Obrigatória',
+        description: 'Configure pasta local para continuar'
       };
     }
     
     if (!isSupported) {
       return {
         icon: XCircle,
-        color: 'bg-red-500',
-        text: 'Não compatível',
-        description: 'Navegador não suporta backup automático'
-      };
-    }
-
-    if (isFirstAccess || (!isConfigured && isSupported)) {
-      return {
-        icon: Lock,
-        color: 'bg-red-500',
-        text: 'Obrigatório',
-        description: 'Configure pasta para continuar'
+        color: 'bg-orange-500',
+        text: 'Modo Download',
+        description: 'Backup via download automático'
       };
     }
     
@@ -74,7 +63,7 @@ const BackupStatus = () => {
     return {
       icon: CheckCircle,
       color: 'bg-green-500',
-      text: 'Configurada ✅',
+      text: 'Pasta Configurada ✅',
       description: `Pasta: ${folderName}`
     };
   };
@@ -83,7 +72,7 @@ const BackupStatus = () => {
   const StatusIcon = statusInfo.icon;
 
   const handleReconnect = async () => {
-    if (!isSupported || isInIframe) {
+    if (!isSupported) {
       return;
     }
     
@@ -110,7 +99,6 @@ const BackupStatus = () => {
             <StatusIcon className={`w-5 h-5 ${
               statusInfo.color === 'bg-green-500' ? 'text-green-500' :
               statusInfo.color === 'bg-orange-500' ? 'text-orange-500' :
-              statusInfo.color === 'bg-blue-500' ? 'text-blue-500' :
               statusInfo.color === 'bg-red-500' ? 'text-red-500' :
               'text-gray-500'
             }`} />
@@ -126,43 +114,32 @@ const BackupStatus = () => {
                 <strong>⚠️ Configuração Obrigatória</strong>
               </p>
               <p className="text-xs text-red-600 mt-1">
-                Configure uma pasta para usar o sistema com segurança
+                Configure uma pasta local para usar o sistema com segurança
               </p>
             </div>
           )}
           
-          {isConnected && folderName && !isInIframe && (
+          {isConnected && folderName && (
             <div className="bg-green-50 p-3 rounded-lg">
               <p className="text-sm text-green-800">
                 <strong>Pasta:</strong> {folderName}
               </p>
               <p className="text-xs text-green-600 mt-1">
-                Backup automático ativo
+                Backup automático ativo - Sincronização a cada login
               </p>
             </div>
           )}
           
-          {isInIframe && (
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Modo Desenvolvimento</strong>
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Backup automático disponível após publicação
-              </p>
-            </div>
-          )}
-          
-          {!isSupported && !isInIframe && (
-            <div className="bg-red-50 p-3 rounded-lg">
-              <p className="text-sm text-red-600">
-                Use Chrome ou Edge para backup automático
+          {!isSupported && (
+            <div className="bg-orange-50 p-3 rounded-lg">
+              <p className="text-sm text-orange-600">
+                Use Chrome ou Edge para backup em pasta local
               </p>
             </div>
           )}
           
           <div className="flex gap-2">
-            {(isFirstAccess || !isConfigured || !isConnected) && !isInIframe && (
+            {(isFirstAccess || !isConfigured || !isConnected) && (
               <Button 
                 onClick={handleReconnect} 
                 size="sm"
@@ -171,7 +148,7 @@ const BackupStatus = () => {
               >
                 <Folder className="w-4 h-4" />
                 {isFirstAccess ? 'Configurar Agora' : 
-                 !isConfigured ? 'Configurar' : 'Reconectar'}
+                 !isConfigured ? 'Configurar Pasta' : 'Reconectar'}
               </Button>
             )}
             
@@ -181,7 +158,7 @@ const BackupStatus = () => {
               className="flex items-center gap-2"
             >
               <Settings className="w-4 h-4" />
-              {isInIframe ? 'Info' : 'Configurações'}
+              Configurações
             </Button>
           </div>
         </div>
