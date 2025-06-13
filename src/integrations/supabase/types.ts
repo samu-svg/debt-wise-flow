@@ -9,7 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      user_folder_configs: {
+        Row: {
+          configured_at: string
+          folder_handle_data: Json | null
+          folder_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          configured_at?: string
+          folder_handle_data?: Json | null
+          folder_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          configured_at?: string
+          folder_handle_data?: Json | null
+          folder_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

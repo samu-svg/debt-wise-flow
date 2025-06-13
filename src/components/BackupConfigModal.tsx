@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { FolderOpen, AlertTriangle, RefreshCw, Download, Database, Info } from 'lucide-react';
+import { FolderOpen, AlertTriangle, RefreshCw, Download, Database, Info, User } from 'lucide-react';
 
 interface BackupConfigModalProps {
   open: boolean;
@@ -14,29 +15,38 @@ interface BackupConfigModalProps {
 }
 
 const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
+  const { user } = useAuth();
   const { 
     isSupported, 
     configureDirectory, 
     loading, 
     lastError,
     errorSuggestions,
-    clearError
+    clearError,
+    isConfigured
   } = useFileSystemBackup();
   const [configuring, setConfiguring] = useState(false);
 
   const handleConfigure = async () => {
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para configurar o armazenamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setConfiguring(true);
     try {
-      console.log('Tentando configurar pasta de dados...');
+      console.log('Configurando pasta para usuário:', user.email);
       clearError();
       const success = await configureDirectory();
       
       if (success) {
         toast({
-          title: "Armazenamento configurado com sucesso!",
-          description: isSupported 
-            ? "Pasta local configurada para armazenar dados de clientes e dívidas." 
-            : "Sistema configurado para salvar dados via download.",
+          title: "Configuração salva com sucesso!",
+          description: "Sua pasta foi configurada e será sincronizada automaticamente nos próximos logins.",
         });
         onConfigured();
       } else {
@@ -74,6 +84,11 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
     return null;
   }
 
+  // Se já está configurado, não mostrar modal
+  if (isConfigured) {
+    return null;
+  }
+
   // Se há erro de segurança (iframe), mostrar informação especial
   const isSecurityError = lastError?.code === 'SecurityError';
 
@@ -83,15 +98,29 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Database className="w-5 h-5 text-blue-600" />
-            Configuração de Armazenamento Local
+            Configuração Única de Armazenamento
           </DialogTitle>
           <DialogDescription>
-            Configure onde salvar os dados de clientes e dívidas. 
-            Os dados serão salvos automaticamente a cada alteração.
+            Configure uma vez onde salvar os dados. A partir do próximo login, 
+            os dados serão sincronizados automaticamente nesta pasta.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* User Info */}
+          {user && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">
+                    Configurando para: <strong>{user.email}</strong>
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Error Display */}
           {lastError && (
             <Alert variant={isSecurityError ? "default" : "destructive"}>
@@ -142,9 +171,9 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
                 <div className="flex items-center gap-3">
                   <Database className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-800">Armazenamento Local Disponível</p>
+                    <p className="font-medium text-green-800">Configuração Única</p>
                     <p className="text-sm text-green-700 mt-1">
-                      Dados serão salvos diretamente na pasta selecionada.
+                      Dados serão salvos na pasta que você escolher. Configuração fica salva na sua conta.
                     </p>
                   </div>
                 </div>
@@ -196,12 +225,12 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
             ) : (
               <Button 
                 onClick={handleConfigure}
-                disabled={configuring}
+                disabled={configuring || !user}
                 className="w-full"
               >
                 <FolderOpen className="w-4 h-4 mr-2" />
                 {configuring ? 'Configurando...' : 
-                 isSupported ? 'Selecionar Pasta para Dados' : 'Configurar Armazenamento'}
+                 isSupported ? 'Selecionar Pasta (Configuração Única)' : 'Configurar Armazenamento'}
               </Button>
             )}
           </div>
@@ -209,12 +238,12 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
           {/* Info */}
           <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
             <div className="text-xs text-gray-600 space-y-1">
-              <p className="font-medium">Por que configurar armazenamento local?</p>
-              <p>• Dados de clientes e dívidas ficam no seu computador</p>
-              <p>• Sincronização automática a cada alteração</p>
-              <p>• Controle total sobre dados sensíveis</p>
-              <p>• Acesso aos arquivos mesmo offline</p>
-              <p>• Backup automático dos dados importantes</p>
+              <p className="font-medium">Por que configurar uma vez?</p>
+              <p>• Configuração salva na sua conta no banco de dados</p>
+              <p>• Sincronização automática a cada login</p>
+              <p>• Dados salvos automaticamente a cada alteração</p>
+              <p>• Não precisa reconfigurar a cada sessão</p>
+              <p>• Controle total sobre seus dados sensíveis</p>
             </div>
           </div>
         </div>

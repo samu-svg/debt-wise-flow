@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Client, Debt, Payment, DashboardMetrics } from '@/types';
+import { useFileSystemBackup } from './useFileSystemBackup';
 
 const STORAGE_KEYS = {
   CLIENTS: 'debt_manager_clients',
@@ -15,6 +16,7 @@ export const setSaveToFolderCallback = (callback: (data: any) => void) => {
 
 export const useLocalStorage = () => {
   const [clients, setClients] = useState<Client[]>([]);
+  const { saveData, isConfigured } = useFileSystemBackup();
 
   useEffect(() => {
     loadClients();
@@ -27,21 +29,26 @@ export const useLocalStorage = () => {
     }
   };
 
-  const saveClients = (newClients: Client[]) => {
+  const saveClients = async (newClients: Client[]) => {
     localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(newClients));
     setClients(newClients);
     
-    // Salvar automaticamente na pasta local configurada
-    if (saveToFolderCallback) {
-      const data = {
-        clients: newClients,
-        exportDate: new Date().toISOString(),
-        version: '2.0',
-        type: 'local_data'
-      };
-      
-      console.log('Salvando dados na pasta local...');
-      saveToFolderCallback(data);
+    // Salvar automaticamente na pasta configurada se disponível
+    if (isConfigured) {
+      try {
+        const data = {
+          clients: newClients,
+          exportDate: new Date().toISOString(),
+          version: '2.0',
+          type: 'local_data'
+        };
+        
+        const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
+        console.log('Salvando dados na pasta configurada...');
+        await saveData(JSON.stringify(data, null, 2), filename);
+      } catch (error) {
+        console.error('Erro ao salvar backup automático:', error);
+      }
     }
   };
 

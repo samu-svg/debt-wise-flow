@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
+import { useUserFolderConfig } from './useUserFolderConfig';
+import { useAuth } from './useAuth';
 
 // Extend Window interface for File System Access API
 declare global {
@@ -61,10 +63,10 @@ const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | null> =
 };
 
 export const useFileSystemBackup = () => {
-  const [isConfigured, setIsConfigured] = useState(false);
+  const { user } = useAuth();
+  const { folderConfig, saveFolderConfig, isConfigured } = useUserFolderConfig();
   const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFirstAccess, setIsFirstAccess] = useState(true);
 
   const {
     capabilities,
@@ -78,73 +80,47 @@ export const useFileSystemBackup = () => {
   } = useFileSystemManager();
 
   useEffect(() => {
-    const checkConfiguration = async () => {
-      if (!isInitialized) return;
+    const initializeFileSystem = async () => {
+      if (!isInitialized || !user) return;
 
       try {
-        console.log('Verificando configuração da pasta de dados...');
-        const hasConfigured = localStorage.getItem('pastaConfigurada') === 'true';
-        
+        console.log('Inicializando sistema de arquivos...');
+
         // Se estamos em iframe, usar sempre modo download
         if (capabilities?.isInFrame) {
           console.log('Modo iframe detectado - usando download automático');
-          setIsConfigured(true);
-          setIsFirstAccess(false);
-          setLoading(false);
-          localStorage.setItem('pastaConfigurada', 'true');
-          return;
-        }
-        
-        if (!hasConfigured) {
-          console.log('Primeira configuração necessária');
-          setIsFirstAccess(true);
-          setIsConfigured(false);
           setLoading(false);
           return;
         }
 
-        // Tentar recuperar handle se File System API estiver disponível
-        if (capabilities?.fileSystemAccess) {
+        // Se usuário tem pasta configurada, tentar recuperar handle
+        if (isConfigured && capabilities?.fileSystemAccess) {
+          console.log('Usuário tem pasta configurada, tentando recuperar acesso...');
           const handle = await getDirectoryHandle();
+          
           if (handle) {
             try {
-              // Testar se ainda temos acesso fazendo uma operação simples
+              // Testar se ainda temos acesso
               const testFile = await handle.getFileHandle('test-access.tmp', { create: true });
               await handle.removeEntry('test-access.tmp').catch(() => {});
               
               setDirectoryHandle(handle);
-              setIsConfigured(true);
-              setIsFirstAccess(false);
-              console.log('Pasta configurada e acessível:', handle.name);
+              console.log('Acesso à pasta recuperado:', handle.name);
             } catch (error) {
               console.log('Erro ao verificar acesso à pasta:', error);
-              localStorage.removeItem('pastaConfigurada');
-              setIsConfigured(false);
-              setIsFirstAccess(true);
+              // Pasta não acessível mais, usuário precisará reconfigurar
             }
-          } else {
-            console.log('Handle não encontrado, reconfiguração necessária');
-            setIsConfigured(false);
-            setIsFirstAccess(true);
-            localStorage.removeItem('pastaConfigurada');
           }
-        } else {
-          // Para fallback, marcar como configurado se já foi aceito antes
-          setIsConfigured(hasConfigured);
-          setIsFirstAccess(false);
-          console.log('Modo fallback ativo');
         }
       } catch (error) {
-        console.error('Erro ao verificar configuração:', error);
-        setIsConfigured(false);
-        setIsFirstAccess(true);
+        console.error('Erro ao inicializar sistema de arquivos:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    checkConfiguration();
-  }, [isInitialized, capabilities]);
+    initializeFileSystem();
+  }, [isInitialized, user, isConfigured, capabilities]);
 
   const configureDirectory = async (): Promise<boolean> => {
     try {
@@ -154,9 +130,6 @@ export const useFileSystemBackup = () => {
       // Se estamos em iframe ou File System API não disponível, usar fallback
       if (capabilities?.isInFrame || !capabilities?.fileSystemAccess) {
         console.log('Usando modo download por limitação do ambiente');
-        setIsConfigured(true);
-        setIsFirstAccess(false);
-        localStorage.setItem('pastaConfigurada', 'true');
         return true;
       }
 
@@ -167,12 +140,15 @@ export const useFileSystemBackup = () => {
       if (handle) {
         console.log('Pasta selecionada:', handle.name);
         
-        // Salvar handle
+        // Salvar handle no IndexedDB
         await saveDirectoryHandle(handle);
         setDirectoryHandle(handle);
-        setIsConfigured(true);
-        setIsFirstAccess(false);
-        localStorage.setItem('pastaConfigurada', 'true');
+
+        // Salvar configuração no banco de dados
+        await saveFolderConfig(handle.name, {
+          type: 'file_system_access',
+          name: handle.name
+        });
         
         console.log('Configuração concluída com sucesso');
         return true;
@@ -192,9 +168,6 @@ export const useFileSystemBackup = () => {
       // Se é erro de segurança (iframe), usar fallback
       if ((error as Error).name === 'SecurityError') {
         console.log('Erro de segurança detectado, usando modo download');
-        setIsConfigured(true);
-        setIsFirstAccess(false);
-        localStorage.setItem('pastaConfigurada', 'true');
         return true;
       }
       
@@ -218,17 +191,10 @@ export const useFileSystemBackup = () => {
     if (lastError) return `Erro: ${lastError.message}`;
     if (!isConfigured) return 'Pasta não configurada';
     if (isConfigured && directoryHandle) return `Pasta: ${directoryHandle.name}`;
-    if (isConfigured) return 'Modo download ativo';
+    if (isConfigured && folderConfig) return `Pasta: ${folderConfig.folder_name}`;
+    if (capabilities?.isInFrame) return 'Modo download ativo';
     
     return getSystemStatus();
-  };
-
-  const forceConfiguration = () => {
-    console.log('Forçando nova configuração');
-    setIsFirstAccess(true);
-    setIsConfigured(false);
-    localStorage.removeItem('pastaConfigurada');
-    clearError();
   };
 
   return {
@@ -237,8 +203,8 @@ export const useFileSystemBackup = () => {
     isConnected: isConfigured && (directoryHandle !== null || !capabilities?.fileSystemAccess),
     loading,
     directoryHandle,
-    folderName: directoryHandle?.name || (isConfigured && !capabilities?.fileSystemAccess ? 'Download' : ''),
-    isFirstAccess,
+    folderName: directoryHandle?.name || folderConfig?.folder_name || (capabilities?.isInFrame ? 'Download' : ''),
+    isFirstAccess: !isConfigured,
     lastError,
     errorSuggestions: lastError ? getErrorSuggestions(lastError) : [],
     configureDirectory,
@@ -247,7 +213,7 @@ export const useFileSystemBackup = () => {
     saveData,
     getBackupStatus: getStatus,
     getStatus,
-    forceConfiguration,
+    forceConfiguration: () => {},
     clearError,
     setShowConfigModal: () => {}
   };
