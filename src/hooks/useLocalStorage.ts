@@ -26,11 +26,11 @@ export const useLocalStorage = () => {
 
   // Tentar restaurar dados da pasta quando conectar
   useEffect(() => {
-    if (isConfigured && directoryHandle && clients.length === 0 && !isInitialized) {
+    if (isConfigured && directoryHandle && !isInitialized) {
       console.log('Tentando restaurar dados da pasta configurada...');
       restoreFromFolder();
     }
-  }, [isConfigured, directoryHandle, clients.length, isInitialized]);
+  }, [isConfigured, directoryHandle, isInitialized]);
 
   const loadClients = () => {
     console.log('Carregando dados do localStorage...');
@@ -45,18 +45,24 @@ export const useLocalStorage = () => {
         setClients([]);
       }
     } else {
-      console.log('Nenhum dado encontrado no localStorage');
+      console.log('Nenhum dado encontrado no localStorage - tentando restaurar da pasta');
+      if (isConfigured && directoryHandle) {
+        restoreFromFolder();
+      }
     }
     setIsInitialized(true);
   };
 
   const restoreFromFolder = async () => {
-    if (!directoryHandle) return;
+    if (!directoryHandle) {
+      console.log('Nenhuma pasta configurada para restore');
+      return;
+    }
 
     try {
       console.log('Procurando arquivos de backup na pasta...');
       
-      // Procurar pelo arquivo mais recente
+      // Usar AsyncIterator para listar arquivos
       const files = [];
       for await (const [name, handle] of directoryHandle.entries()) {
         if (name.includes('debt_manager_backup_') && name.endsWith('.json')) {
