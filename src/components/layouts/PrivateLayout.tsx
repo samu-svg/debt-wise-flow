@@ -1,159 +1,91 @@
 
-import { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
-import { 
-  Home, 
-  Users,
-  FileText,
-  MessageSquare,
-  BarChart3,
-  LogOut,
-  Menu,
-  X
-} from 'lucide-react';
 import BackupStatus from '@/components/BackupStatus';
-import BackupConfigModal from '@/components/BackupConfigModal';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Receipt, 
+  MessageSquare, 
+  BarChart, 
+  Settings,
+  Database,
+  LogOut 
+} from 'lucide-react';
 
 const PrivateLayout = () => {
+  const { signOut } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { logout, user } = useAuth();
-  const { isConfigured, loading, saveData } = useFileSystemBackup();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showConfigModal, setShowConfigModal] = useState(false);
 
-  const menuItems = [
-    { path: '/app', icon: Home, label: 'Dashboard' },
-    { path: '/app/clients', icon: Users, label: 'Clientes' },
-    { path: '/app/debts', icon: FileText, label: 'Dívidas' },
-    { path: '/app/reports', icon: BarChart3, label: 'Relatórios' },
-    { path: '/app/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
+  const navigation = [
+    { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
+    { name: 'Clientes', href: '/app/clients', icon: Users },
+    { name: 'Dívidas', href: '/app/debts', icon: Receipt },
+    { name: 'WhatsApp', href: '/app/whatsapp', icon: MessageSquare },
+    { name: 'Relatórios', href: '/app/reports', icon: BarChart },
+    { name: 'Dados Locais', href: '/app/local-data', icon: Database },
   ];
 
-  // Verificar se precisa mostrar modal de configuração
-  useEffect(() => {
-    // Só mostrar modal se não está carregando, não está configurado e o usuário não tem pasta configurada
-    if (!loading && !isConfigured && user && !user.folderConfigured) {
-      setShowConfigModal(true);
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
-  }, [loading, isConfigured, user]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/auth/login');
   };
-
-  const handleConfigured = () => {
-    setShowConfigModal(false);
-  };
-
-  const isActive = (path: string) => {
-    if (path === '/app') {
-      return location.pathname === '/app';
-    }
-    return location.pathname.startsWith(path);
-  };
-
-  // Se ainda está carregando, mostrar loading
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Se modal de configuração está aberto, mostrar modal
-  if (showConfigModal) {
-    return <BackupConfigModal open={showConfigModal} onConfigured={handleConfigured} />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-        </Button>
-      </div>
-
       {/* Sidebar */}
-      <div className={`
-        fixed left-0 top-0 z-40 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0
-      `}>
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <h1 className="text-xl font-bold text-gray-900">Debt Wise</h1>
-          </div>
+      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+        <div className="flex h-16 items-center justify-center border-b border-gray-200">
+          <h1 className="text-xl font-bold text-gray-900">Debt Manager</h1>
+        </div>
+        
+        <nav className="mt-8 px-4">
+          <ul className="space-y-2">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              const Icon = item.icon;
+              
+              return (
+                <li key={item.name}>
+                  <Link
+                    to={item.href}
+                    className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4">
-            <ul className="space-y-2">
-              {menuItems.map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <li key={item.path}>
-                    <Link
-                      to={item.path}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`
-                        flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
-                        ${isActive(item.path)
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-100'
-                        }
-                      `}
-                    >
-                      <IconComponent className="w-5 h-5" />
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
-          {/* Footer */}
-          <div className="p-4 border-t space-y-3">
-            <BackupStatus />
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="w-full flex items-center gap-2 text-gray-700"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
-          </div>
+        <div className="absolute bottom-4 left-4 right-4 space-y-4">
+          <BackupStatus />
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            className="w-full flex items-center justify-center"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
         </div>
       </div>
-
-      {/* Mobile overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
 
       {/* Main content */}
-      <div className="lg:ml-64 min-h-screen">
-        <div className="p-4 lg:p-8 pt-16 lg:pt-8">
+      <div className="pl-64">
+        <main className="py-8 px-8">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

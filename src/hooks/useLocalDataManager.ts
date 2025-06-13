@@ -84,12 +84,14 @@ export const useLocalDataManager = () => {
   // Auto-salvar quando conectado
   useEffect(() => {
     if (isLoaded && isConnected) {
+      console.log('Sistema conectado - dados serão salvos automaticamente na pasta');
       autoSave();
     }
   }, [database, isLoaded, isConnected]);
 
   const loadLocalData = () => {
     try {
+      console.log('Carregando dados do localStorage...');
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsedData = JSON.parse(saved);
@@ -97,6 +99,9 @@ export const useLocalDataManager = () => {
           ...parsedData,
           settings: { ...DEFAULT_SETTINGS, ...parsedData.settings }
         });
+        console.log('Dados carregados:', parsedData.clients?.length || 0, 'clientes,', parsedData.debts?.length || 0, 'dívidas');
+      } else {
+        console.log('Nenhum dado encontrado no localStorage');
       }
       setIsLoaded(true);
     } catch (error) {
@@ -107,18 +112,25 @@ export const useLocalDataManager = () => {
 
   const saveLocalData = async (newDatabase: LocalDatabase) => {
     try {
+      console.log('Salvando dados localmente...');
       // Salvar no localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newDatabase));
       setDatabase(newDatabase);
 
+      console.log('Dados salvos no localStorage:', newDatabase.clients.length, 'clientes,', newDatabase.debts.length, 'dívidas');
+
       // Auto-backup na pasta se conectada
       if (isConnected && saveData) {
         const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
+        console.log('Salvando backup na pasta:', filename);
         await saveData(JSON.stringify(newDatabase, null, 2), filename);
-        console.log('Backup automático salvo na pasta');
+        console.log('Backup automático salvo na pasta local');
+      } else {
+        console.log('Pasta não conectada - dados salvos apenas no navegador');
       }
     } catch (error) {
       console.error('Erro ao salvar dados:', error);
+      throw error;
     }
   };
 

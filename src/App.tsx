@@ -1,50 +1,47 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
 
 // Layouts
-import PublicLayout from "@/components/layouts/PublicLayout";
-import PrivateLayout from "@/components/layouts/PrivateLayout";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import PrivateLayout from '@/components/layouts/PrivateLayout';
+import PublicLayout from '@/components/layouts/PublicLayout';
 
-// Auth Pages
-import Login from "@/pages/auth/Login";
-import Register from "@/pages/auth/Register";
+// Auth pages
+import Login from '@/pages/auth/Login';
+import Register from '@/pages/auth/Register';
 
-// App Pages
-import Dashboard from "@/pages/app/Dashboard";
-import Clients from "@/pages/app/Clients";
-import Debts from "@/pages/app/Debts";
-import Reports from "@/pages/app/Reports";
-import WhatsApp from "@/pages/app/WhatsApp";
+// App pages
+import Dashboard from '@/pages/app/Dashboard';
+import Clients from '@/pages/app/Clients';
+import Debts from '@/pages/app/Debts';
+import WhatsApp from '@/pages/app/WhatsApp';
+import Reports from '@/pages/app/Reports';
+import LocalData from '@/pages/app/LocalData';
 
-// Other Pages
-import NotFound from "./pages/NotFound";
+// Other pages
+import Index from '@/pages/Index';
+import NotFound from '@/pages/NotFound';
+
+// Components
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <div className="min-h-screen bg-background">
           <Routes>
-            {/* Redirect root to app */}
-            <Route path="/" element={<Navigate to="/app" replace />} />
-            
-            {/* Public Auth Routes */}
-            <Route path="/auth" element={<PublicLayout />}>
+            {/* Public routes */}
+            <Route path="/" element={<PublicLayout />}>
+              <Route index element={<Index />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
-              <Route index element={<Navigate to="/auth/login" replace />} />
             </Route>
 
-            {/* Protected App Routes */}
+            {/* Private routes */}
             <Route path="/app" element={
               <ProtectedRoute>
                 <PrivateLayout />
@@ -53,17 +50,20 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="clients" element={<Clients />} />
               <Route path="debts" element={<Debts />} />
-              <Route path="reports" element={<Reports />} />
               <Route path="whatsapp" element={<WhatsApp />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="local-data" element={<LocalData />} />
             </Route>
 
-            {/* Catch-all route */}
+            {/* Catch all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </div>
+      </Router>
+      <Toaster />
+      <Sonner />
+    </QueryClientProvider>
+  );
+}
 
 export default App;
