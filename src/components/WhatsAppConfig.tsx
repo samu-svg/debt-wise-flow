@@ -186,7 +186,7 @@ const WhatsAppConfig = () => {
         {/* Botões de Ação */}
         <div className="flex gap-3 pt-4 border-t">
           <Button 
-            onClick={handle Save}
+            onClick={handleSave}
             disabled={!hasChanges}
             className="flex items-center gap-2"
           >
