@@ -38,7 +38,7 @@ const PrivateLayout = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg border-r border-gray-200">
         <div className="flex h-16 items-center justify-center border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-900">Debt Manager</h1>
         </div>
@@ -53,9 +53,9 @@ const PrivateLayout = () => {
                 <li key={item.name}>
                   <Link
                     to={item.href}
-                    className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     }`}
                   >
@@ -73,7 +73,7 @@ const PrivateLayout = () => {
           <Button
             onClick={handleSignOut}
             variant="outline"
-            className="w-full flex items-center justify-center"
+            className="w-full flex items-center justify-center border-gray-300 text-gray-700 hover:bg-gray-50"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Sair
