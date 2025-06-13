@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,7 +21,8 @@ import {
   Activity,
   TrendingUp,
   BarChart3,
-  Bell
+  Bell,
+  AlertTriangle
 } from 'lucide-react';
 import MessageTemplates from '@/components/MessageTemplates';
 
@@ -78,7 +78,7 @@ const WhatsApp = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white min-h-screen">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
@@ -108,7 +108,7 @@ const WhatsApp = () => {
         {getStatsCards().map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index}>
+            <Card key={index} className="bg-white shadow-sm border border-gray-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -125,15 +125,15 @@ const WhatsApp = () => {
         })}
       </div>
 
-      {/* Informações Importantes */}
+      {/* Aviso de Conexão */}
       {!connection.isConnected && (
-        <Card className="border-yellow-200 bg-yellow-50">
+        <Card className="border-red-200 bg-red-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-yellow-600" />
+              <AlertTriangle className="w-5 h-5 text-red-600" />
               <div>
-                <p className="font-medium text-yellow-800">WhatsApp não conectado</p>
-                <p className="text-sm text-yellow-700">
+                <p className="font-medium text-red-800">WhatsApp não conectado</p>
+                <p className="text-sm text-red-700">
                   Para usar o sistema de cobrança automática, você precisa conectar seu WhatsApp usando o QR Code.
                 </p>
               </div>
@@ -144,36 +144,36 @@ const WhatsApp = () => {
 
       {/* Tabs Principais */}
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-8 bg-white border border-gray-200">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <BarChart3 className="w-4 h-4" />
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="connection" className="flex items-center gap-2">
+          <TabsTrigger value="connection" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <Smartphone className="w-4 h-4" />
             Conexão
           </TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center gap-2">
+          <TabsTrigger value="logs" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <FileText className="w-4 h-4" />
             Logs ({logs.length})
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
+          <TabsTrigger value="templates" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <MessageSquare className="w-4 h-4" />
             Templates
           </TabsTrigger>
-          <TabsTrigger value="automation" className="flex items-center gap-2">
+          <TabsTrigger value="automation" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <Settings className="w-4 h-4" />
             Automação
           </TabsTrigger>
-          <TabsTrigger value="monitor" className="flex items-center gap-2">
+          <TabsTrigger value="monitor" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <Activity className="w-4 h-4" />
             Monitor
           </TabsTrigger>
-          <TabsTrigger value="alertas" className="flex items-center gap-2">
+          <TabsTrigger value="alertas" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <Bell className="w-4 h-4" />
             Alertas
           </TabsTrigger>
-          <TabsTrigger value="config" className="flex items-center gap-2">
+          <TabsTrigger value="config" className="flex items-center gap-2 text-gray-700 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <Settings className="w-4 h-4" />
             Config
           </TabsTrigger>
@@ -189,21 +189,21 @@ const WhatsApp = () => {
           </div>
           
           {connection.isConnected && (
-            <Card>
+            <Card className="bg-white shadow-sm border border-gray-200">
               <CardHeader>
-                <CardTitle>Informações da Conexão</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-gray-900">Informações da Conexão</CardTitle>
+                <CardDescription className="text-gray-600">
                   Detalhes sobre a conexão ativa do WhatsApp
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="font-medium">Número Conectado:</p>
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p className="font-medium text-gray-900">Número Conectado:</p>
                     <p className="text-gray-600">{connection.phoneNumber}</p>
                   </div>
-                  <div>
-                    <p className="font-medium">Última Atividade:</p>
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p className="font-medium text-gray-900">Última Atividade:</p>
                     <p className="text-gray-600">
                       {connection.lastSeen 
                         ? new Date(connection.lastSeen).toLocaleString('pt-BR')
@@ -211,14 +211,14 @@ const WhatsApp = () => {
                       }
                     </p>
                   </div>
-                  <div>
-                    <p className="font-medium">Status:</p>
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p className="font-medium text-gray-900">Status:</p>
                     <Badge variant="default" className="bg-green-100 text-green-800">
                       Conectado e Ativo
                     </Badge>
                   </div>
-                  <div>
-                    <p className="font-medium">Tentativas de Reconexão:</p>
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p className="font-medium text-gray-900">Tentativas de Reconexão:</p>
                     <p className="text-gray-600">{connection.retryCount}</p>
                   </div>
                 </div>
