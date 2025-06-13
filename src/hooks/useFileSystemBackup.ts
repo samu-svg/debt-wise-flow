@@ -11,11 +11,14 @@ interface BackupHook {
   showConfigModal: boolean;
   setShowConfigModal: (show: boolean) => void;
   isInIframe: boolean;
+  isFirstAccess: boolean;
+  forceConfiguration: () => void;
 }
 
 const DB_NAME = 'debt_manager_backup';
 const DB_VERSION = 1;
 const STORE_NAME = 'folder_handles';
+const CONFIGURED_KEY = 'pasta_configurada';
 
 export const useFileSystemBackup = (): BackupHook => {
   const [isConfigured, setIsConfigured] = useState(false);
@@ -23,6 +26,7 @@ export const useFileSystemBackup = (): BackupHook => {
   const [folderName, setFolderName] = useState('');
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [folderHandle, setFolderHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [isFirstAccess, setIsFirstAccess] = useState(false);
 
   // Verificar se estamos em um iframe
   const isInIframe = window.self !== window.top;
@@ -47,6 +51,21 @@ export const useFileSystemBackup = (): BackupHook => {
     });
   }, []);
 
+  const verificarPrimeiroAcesso = useCallback(() => {
+    const pastaConfigurada = localStorage.getItem(CONFIGURED_KEY);
+    if (!pastaConfigurada && isSupported) {
+      setIsFirstAccess(true);
+      setShowConfigModal(true);
+      return true;
+    }
+    return false;
+  }, [isSupported]);
+
+  const forceConfiguration = useCallback(() => {
+    setShowConfigModal(true);
+    setIsFirstAccess(true);
+  }, []);
+
   const saveFolderHandle = useCallback(async (handle: FileSystemDirectoryHandle) => {
     if (!isSupported) return;
     
@@ -62,6 +81,10 @@ export const useFileSystemBackup = (): BackupHook => {
           setFolderName(handle.name);
           setIsConfigured(true);
           setIsConnected(true);
+          setIsFirstAccess(false);
+          
+          // Marcar como configurado no localStorage
+          localStorage.setItem(CONFIGURED_KEY, 'true');
           resolve();
         };
         request.onerror = () => reject(request.error);
@@ -87,13 +110,20 @@ export const useFileSystemBackup = (): BackupHook => {
       
       if (handle) {
         try {
-          // Verificar se ainda temos permissão tentando acessar o handle
-          await handle.getFileHandle('test_permission.tmp', { create: true });
-          // Se chegou aqui, temos permissão
-          setFolderHandle(handle);
-          setFolderName(handle.name);
-          setIsConfigured(true);
-          setIsConnected(true);
+          // Verificar se ainda temos permissão
+          const permission = await handle.queryPermission({ mode: 'readwrite' });
+          if (permission === 'granted') {
+            setFolderHandle(handle);
+            setFolderName(handle.name);
+            setIsConfigured(true);
+            setIsConnected(true);
+            localStorage.setItem(CONFIGURED_KEY, 'true');
+          } else {
+            // Sem permissão - configurado mas desconectado
+            setFolderName(handle.name);
+            setIsConfigured(true);
+            setIsConnected(false);
+          }
         } catch (permissionError) {
           // Sem permissão - configurado mas desconectado
           setFolderName(handle.name);
@@ -101,18 +131,14 @@ export const useFileSystemBackup = (): BackupHook => {
           setIsConnected(false);
         }
       } else {
-        // Mostrar modal se não configurado (apenas se suportado)
-        if (isSupported) {
-          setShowConfigModal(true);
-        }
+        // Não configurado - verificar primeiro acesso
+        verificarPrimeiroAcesso();
       }
     } catch (error) {
       console.error('Erro ao carregar pasta:', error);
-      if (isSupported) {
-        setShowConfigModal(true);
-      }
+      verificarPrimeiroAcesso();
     }
-  }, [isSupported, openDB]);
+  }, [isSupported, openDB, verificarPrimeiroAcesso]);
 
   const configureFolder = useCallback(async (): Promise<boolean> => {
     if (!isSupported) {
@@ -129,10 +155,20 @@ export const useFileSystemBackup = (): BackupHook => {
       setShowConfigModal(false);
       return true;
     } catch (error) {
-      console.error('Erro ao configurar pasta:', error);
+      if (error.name === 'AbortError') {
+        // Usuário cancelou - se for primeiro acesso, forçar novamente
+        if (isFirstAccess) {
+          alert('A configuração da pasta é obrigatória para usar o sistema. Tente novamente.');
+          setTimeout(() => {
+            configureFolder();
+          }, 1000);
+        }
+      } else {
+        console.error('Erro ao configurar pasta:', error);
+      }
       return false;
     }
-  }, [isSupported, saveFolderHandle]);
+  }, [isSupported, saveFolderHandle, isFirstAccess]);
 
   const createBackup = useCallback(async (data: any): Promise<boolean> => {
     if (!folderHandle || !isConnected || !isSupported) return false;
@@ -175,8 +211,11 @@ export const useFileSystemBackup = (): BackupHook => {
   useEffect(() => {
     if (isSupported) {
       loadFolderHandle();
+    } else if (!isInIframe) {
+      // Navegador não suportado
+      setShowConfigModal(true);
     }
-  }, [isSupported, loadFolderHandle]);
+  }, [isSupported, loadFolderHandle, isInIframe]);
 
   return {
     isSupported,
@@ -187,6 +226,8 @@ export const useFileSystemBackup = (): BackupHook => {
     createBackup,
     showConfigModal,
     setShowConfigModal,
-    isInIframe
+    isInIframe,
+    isFirstAccess,
+    forceConfiguration
   };
 };

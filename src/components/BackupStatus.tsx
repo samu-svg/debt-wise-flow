@@ -10,7 +10,8 @@ import {
   XCircle, 
   Settings,
   Folder,
-  Code
+  Code,
+  Lock
 } from 'lucide-react';
 
 const BackupStatus = () => {
@@ -21,7 +22,9 @@ const BackupStatus = () => {
     folderName,
     configureFolder,
     setShowConfigModal,
-    isInIframe
+    isInIframe,
+    forceConfiguration,
+    isFirstAccess
   } = useFileSystemBackup();
 
   const getStatusInfo = () => {
@@ -37,16 +40,25 @@ const BackupStatus = () => {
     if (!isSupported) {
       return {
         icon: XCircle,
-        color: 'bg-gray-500',
-        text: 'Não suportado',
-        description: 'Navegador não compatível'
+        color: 'bg-red-500',
+        text: 'Não compatível',
+        description: 'Navegador não suporta backup automático'
+      };
+    }
+
+    if (isFirstAccess || (!isConfigured && isSupported)) {
+      return {
+        icon: Lock,
+        color: 'bg-red-500',
+        text: 'Obrigatório',
+        description: 'Configure pasta para continuar'
       };
     }
     
     if (!isConfigured) {
       return {
         icon: AlertCircle,
-        color: 'bg-yellow-500',
+        color: 'bg-orange-500',
         text: 'Não configurado',
         description: 'Configure uma pasta para backup'
       };
@@ -64,8 +76,8 @@ const BackupStatus = () => {
     return {
       icon: CheckCircle,
       color: 'bg-green-500',
-      text: 'Conectado',
-      description: `Salvando em: ${folderName}`
+      text: 'Configurada ✅',
+      description: `Pasta: ${folderName}`
     };
   };
 
@@ -75,6 +87,11 @@ const BackupStatus = () => {
   const handleReconnect = async () => {
     if (!isSupported || isInIframe) {
       setShowConfigModal(true);
+      return;
+    }
+    
+    if (isFirstAccess) {
+      forceConfiguration();
       return;
     }
     
@@ -90,7 +107,7 @@ const BackupStatus = () => {
             <HardDrive className="w-4 h-4" />
           </div>
           <Badge variant="outline" className="text-xs">
-            Backup
+            {statusInfo.text}
           </Badge>
         </Button>
       </PopoverTrigger>
@@ -100,9 +117,9 @@ const BackupStatus = () => {
           <div className="flex items-center gap-3">
             <StatusIcon className={`w-5 h-5 ${
               statusInfo.color === 'bg-green-500' ? 'text-green-500' :
-              statusInfo.color === 'bg-yellow-500' ? 'text-yellow-500' :
               statusInfo.color === 'bg-orange-500' ? 'text-orange-500' :
               statusInfo.color === 'bg-blue-500' ? 'text-blue-500' :
+              statusInfo.color === 'bg-red-500' ? 'text-red-500' :
               'text-gray-500'
             }`} />
             <div>
@@ -110,6 +127,17 @@ const BackupStatus = () => {
               <p className="text-sm text-muted-foreground">{statusInfo.description}</p>
             </div>
           </div>
+
+          {(isFirstAccess || (!isConfigured && isSupported)) && (
+            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+              <p className="text-sm text-red-800">
+                <strong>⚠️ Configuração Obrigatória</strong>
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                Configure uma pasta para usar o sistema com segurança
+              </p>
+            </div>
+          )}
           
           {isConnected && folderName && !isInIframe && (
             <div className="bg-green-50 p-3 rounded-lg">
@@ -134,35 +162,39 @@ const BackupStatus = () => {
           )}
           
           {!isSupported && !isInIframe && (
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-600">
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-sm text-red-600">
                 Use Chrome ou Edge para backup automático
               </p>
             </div>
           )}
           
           <div className="flex gap-2">
-            {(!isConfigured || !isConnected) && (
+            {(isFirstAccess || !isConfigured || !isConnected) && (
               <Button 
                 onClick={handleReconnect} 
                 size="sm"
                 className="flex items-center gap-2"
                 disabled={isInIframe}
+                variant={isFirstAccess ? "default" : "outline"}
               >
                 <Folder className="w-4 h-4" />
-                {!isConfigured ? 'Configurar' : 'Reconectar'}
+                {isFirstAccess ? 'Configurar Agora' : 
+                 !isConfigured ? 'Configurar' : 'Reconectar'}
               </Button>
             )}
             
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowConfigModal(true)}
-              className="flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              {isInIframe ? 'Info' : 'Configurações'}
-            </Button>
+            {!isFirstAccess && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowConfigModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {isInIframe ? 'Info' : 'Configurações'}
+              </Button>
+            )}
           </div>
         </div>
       </PopoverContent>

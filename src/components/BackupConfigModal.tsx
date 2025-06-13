@@ -2,7 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, Folder, HardDrive, Shield, ExternalLink } from 'lucide-react';
+import { AlertTriangle, Folder, HardDrive, Shield, ExternalLink, Lock } from 'lucide-react';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
 
 const BackupConfigModal = () => {
@@ -11,14 +11,23 @@ const BackupConfigModal = () => {
     showConfigModal, 
     configureFolder,
     setShowConfigModal,
-    isInIframe
+    isInIframe,
+    isFirstAccess
   } = useFileSystemBackup();
 
   const handleConfigureFolder = async () => {
     const success = await configureFolder();
-    if (!success) {
+    if (!success && !isFirstAccess) {
       alert('Não foi possível configurar a pasta. Tente novamente.');
     }
+  };
+
+  const handleSkip = () => {
+    if (isFirstAccess) {
+      alert('A configuração da pasta é obrigatória para usar o sistema com segurança.');
+      return;
+    }
+    setShowConfigModal(false);
   };
 
   // Se estamos em iframe (ambiente de desenvolvimento)
@@ -87,7 +96,7 @@ const BackupConfigModal = () => {
       <Dialog open={showConfigModal} onOpenChange={() => {}}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-orange-600">
+            <DialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="w-5 h-5" />
               Navegador Não Compatível
             </DialogTitle>
@@ -99,6 +108,15 @@ const BackupConfigModal = () => {
           <div className="space-y-4">
             <Card>
               <CardContent className="pt-6">
+                <div className="bg-red-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm text-red-800 mb-2">
+                    <strong>⚠️ Configuração Obrigatória</strong>
+                  </p>
+                  <p className="text-sm text-red-700">
+                    Para garantir a segurança dos seus dados, é necessário usar um navegador compatível.
+                  </p>
+                </div>
+                
                 <p className="text-sm text-gray-600 mb-4">
                   Para usar o backup automático, recomendamos:
                 </p>
@@ -118,8 +136,9 @@ const BackupConfigModal = () => {
             <Button 
               onClick={() => setShowConfigModal(false)} 
               className="w-full"
+              variant={isFirstAccess ? "outline" : "default"}
             >
-              Continuar sem Backup Automático
+              {isFirstAccess ? "Usar Backup Manual" : "Continuar sem Backup Automático"}
             </Button>
           </div>
         </DialogContent>
@@ -132,15 +151,32 @@ const BackupConfigModal = () => {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-blue-600">
-            <Shield className="w-5 h-5" />
-            Configure o Backup Local
+            <Lock className="w-5 h-5" />
+            {isFirstAccess ? "Configuração Obrigatória" : "Configure o Backup Local"}
           </DialogTitle>
           <DialogDescription>
-            Seus dados serão salvos automaticamente no seu computador
+            {isFirstAccess 
+              ? "Para garantir a segurança dos seus dados, configure uma pasta de backup"
+              : "Seus dados serão salvos automaticamente no seu computador"
+            }
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
+          {isFirstAccess && (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-orange-800 mb-2">
+                  <Lock className="w-5 h-5" />
+                  <h4 className="font-medium">Configuração Obrigatória</h4>
+                </div>
+                <p className="text-sm text-orange-700">
+                  Por segurança, você deve configurar uma pasta local para backup dos seus dados antes de usar o sistema.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -162,9 +198,9 @@ const BackupConfigModal = () => {
                 </ul>
               </div>
               
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h4 className="font-medium text-yellow-800 mb-2">Como funciona:</h4>
-                <p className="text-sm text-yellow-700">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">Como funciona:</h4>
+                <p className="text-sm text-blue-700">
                   Escolha uma pasta no seu computador onde os backups serão salvos automaticamente. 
                   Os arquivos ficarão sempre atualizados.
                 </p>
@@ -182,14 +218,22 @@ const BackupConfigModal = () => {
               Escolher Pasta para Backup
             </Button>
             
-            <Button 
-              variant="outline" 
-              onClick={() => setShowConfigModal(false)}
-              className="w-full text-gray-600"
-            >
-              Pular (não recomendado)
-            </Button>
+            {!isFirstAccess && (
+              <Button 
+                variant="outline" 
+                onClick={handleSkip}
+                className="w-full text-gray-600"
+              >
+                Pular (não recomendado)
+              </Button>
+            )}
           </div>
+
+          {isFirstAccess && (
+            <div className="text-center text-sm text-gray-500">
+              <p>⚠️ Não é possível pular esta configuração</p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
