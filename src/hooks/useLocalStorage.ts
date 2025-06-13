@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Client, Debt, Payment, DashboardMetrics } from '@/types';
 import { useFileSystemBackup } from './useFileSystemBackup';
@@ -7,49 +8,43 @@ const STORAGE_KEYS = {
   SETTINGS: 'debt_manager_settings'
 };
 
-// Hook para salvamento automático na pasta local
-let saveToFolderCallback: ((data: any) => void) | null = null;
-
-export const setSaveToFolderCallback = (callback: (data: any) => void) => {
-  saveToFolderCallback = callback;
-};
-
 export const useLocalStorage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { saveData, isConfigured, directoryHandle } = useFileSystemBackup();
+  const { saveData, isConfigured, directoryHandle, isConnected } = useFileSystemBackup();
 
   // Carregar dados iniciais
   useEffect(() => {
-    loadClients();
+    loadInitialData();
   }, []);
 
   // Tentar restaurar dados da pasta quando conectar
   useEffect(() => {
-    if (isConfigured && directoryHandle && !isInitialized) {
-      console.log('Tentando restaurar dados da pasta configurada...');
+    if (isConnected && directoryHandle && clients.length === 0) {
+      console.log('Sistema conectado à pasta - tentando restaurar dados...');
       restoreFromFolder();
     }
-  }, [isConfigured, directoryHandle, isInitialized]);
+  }, [isConnected, directoryHandle]);
 
-  const loadClients = () => {
-    console.log('Carregando dados do localStorage...');
+  const loadInitialData = async () => {
+    console.log('Carregando dados iniciais...');
+    
+    // Primeiro tentar carregar do localStorage
     const saved = localStorage.getItem(STORAGE_KEYS.CLIENTS);
     if (saved) {
       try {
         const parsedClients = JSON.parse(saved);
         console.log('Dados carregados do localStorage:', parsedClients.length, 'clientes');
         setClients(parsedClients);
+        setIsInitialized(true);
+        return;
       } catch (error) {
         console.error('Erro ao parsear dados do localStorage:', error);
-        setClients([]);
-      }
-    } else {
-      console.log('Nenhum dado encontrado no localStorage - tentando restaurar da pasta');
-      if (isConfigured && directoryHandle) {
-        restoreFromFolder();
       }
     }
+
+    // Se não há dados no localStorage, tentar restaurar da pasta
+    console.log('Nenhum dado no localStorage - aguardando conexão da pasta');
     setIsInitialized(true);
   };
 
@@ -62,7 +57,7 @@ export const useLocalStorage = () => {
     try {
       console.log('Procurando arquivos de backup na pasta...');
       
-      // Usar entries() method para iterar sobre os arquivos da pasta
+      // Procurar arquivos de backup
       const files = [];
       for await (const [name, handle] of directoryHandle.entries()) {
         if (handle.kind === 'file' && name.includes('debt_manager_backup_') && name.endsWith('.json')) {
@@ -97,22 +92,25 @@ export const useLocalStorage = () => {
 
   const saveClients = async (newClients: Client[]) => {
     console.log('Salvando', newClients.length, 'clientes');
+    
+    // Salvar no localStorage
     localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(newClients));
     setClients(newClients);
     
     // Salvar automaticamente na pasta configurada se disponível
-    if (isConfigured && saveData) {
+    if (isConnected && saveData) {
       try {
         const data = {
           clients: newClients,
           exportDate: new Date().toISOString(),
           version: '2.0',
-          type: 'local_data'
+          type: 'auto_backup'
         };
         
         const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
-        console.log('Salvando backup na pasta configurada:', filename);
+        console.log('Salvando backup automático na pasta:', filename);
         await saveData(JSON.stringify(data, null, 2), filename);
+        console.log('Backup salvo com sucesso na pasta!');
       } catch (error) {
         console.error('Erro ao salvar backup automático:', error);
       }

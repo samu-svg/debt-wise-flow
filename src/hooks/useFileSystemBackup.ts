@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
 import { useUserFolderConfig } from './useUserFolderConfig';
@@ -74,7 +75,7 @@ export const useFileSystemBackup = () => {
       if (!isInitialized || !user) return;
 
       try {
-        console.log('Inicializando sistema de arquivos...');
+        console.log('Inicializando sistema de arquivos para usuário:', user.email);
 
         // Se estamos em iframe, usar sempre modo download
         if (capabilities?.isInFrame) {
@@ -91,8 +92,7 @@ export const useFileSystemBackup = () => {
           if (handle) {
             try {
               // Testar se ainda temos acesso
-              const testFile = await handle.getFileHandle('test-access.tmp', { create: true });
-              await handle.removeEntry('test-access.tmp').catch(() => {});
+              await handle.queryPermission({ mode: 'readwrite' });
               
               setDirectoryHandle(handle);
               console.log('Acesso à pasta recuperado:', handle.name);
@@ -187,10 +187,12 @@ export const useFileSystemBackup = () => {
     return getSystemStatus();
   };
 
+  const isConnected = isConfigured && (directoryHandle !== null || !capabilities?.fileSystemAccess);
+
   return {
     isSupported: capabilities?.fileSystemAccess || true,
     isConfigured,
-    isConnected: isConfigured && (directoryHandle !== null || !capabilities?.fileSystemAccess),
+    isConnected,
     loading,
     directoryHandle,
     folderName: directoryHandle?.name || folderConfig?.folder_name || (capabilities?.isInFrame ? 'Download' : ''),
