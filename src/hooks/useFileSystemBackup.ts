@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
 import { useUserFolderConfig } from './useUserFolderConfig';
@@ -91,8 +92,8 @@ export const useFileSystemBackup = () => {
           if (handle) {
             try {
               // Testar se ainda temos acesso tentando listar o conteúdo
-              const entries = handle.entries();
-              await entries.next(); // Só testar se consegue acessar
+              const iterator = handle.entries()[Symbol.asyncIterator]();
+              await iterator.next(); // Testar se consegue acessar
               
               setDirectoryHandle(handle);
               console.log('Acesso à pasta recuperado:', handle.name);
