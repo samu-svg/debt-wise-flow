@@ -1,10 +1,16 @@
-
 import { useState, useEffect } from 'react';
 import { Client, Debt, Payment, DashboardMetrics } from '@/types';
 
 const STORAGE_KEYS = {
   CLIENTS: 'debt_manager_clients',
   SETTINGS: 'debt_manager_settings'
+};
+
+// Hook para backup automático
+let backupCallback: ((data: any) => void) | null = null;
+
+export const setBackupCallback = (callback: (data: any) => void) => {
+  backupCallback = callback;
 };
 
 export const useLocalStorage = () => {
@@ -24,6 +30,17 @@ export const useLocalStorage = () => {
   const saveClients = (newClients: Client[]) => {
     localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(newClients));
     setClients(newClients);
+    
+    // Trigger backup automático
+    if (backupCallback) {
+      const backupData = {
+        clients: newClients,
+        exportDate: new Date().toISOString(),
+        version: '2.0',
+        source: 'auto_backup'
+      };
+      backupCallback(backupData);
+    }
   };
 
   const addClient = (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'debts'>) => {
@@ -169,7 +186,7 @@ export const useLocalStorage = () => {
     const data = {
       clients,
       exportDate: new Date().toISOString(),
-      version: '1.0'
+      version: '2.0'
     };
     return JSON.stringify(data, null, 2);
   };

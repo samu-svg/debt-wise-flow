@@ -2,6 +2,11 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
+import { setBackupCallback } from '@/hooks/useLocalStorage';
+import BackupStatus from '@/components/BackupStatus';
+import BackupConfigModal from '@/components/BackupConfigModal';
+import { useEffect } from 'react';
 import { 
   Calendar, 
   Home, 
@@ -15,6 +20,7 @@ const PrivateLayout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { createBackup } = useFileSystemBackup();
 
   const handleLogout = () => {
     logout();
@@ -31,8 +37,18 @@ const PrivateLayout = () => {
     { title: 'WhatsApp', path: '/app/whatsapp', icon: MessageSquare },
   ];
 
+  // Configurar callback de backup automático
+  useEffect(() => {
+    setBackupCallback(async (data) => {
+      await createBackup(data);
+    });
+  }, [createBackup]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Modal de configuração de backup */}
+      <BackupConfigModal />
+      
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg border-r border-gray-200">
         <div className="p-6 border-b border-gray-200">
@@ -75,9 +91,12 @@ const PrivateLayout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-          <h1 className="text-2xl font-semibold text-gray-800">
-            Sistema de Gerenciamento de Dívidas
-          </h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-semibold text-gray-800">
+              Sistema de Gerenciamento de Dívidas
+            </h1>
+            <BackupStatus />
+          </div>
         </header>
         
         <main className="flex-1 p-6 overflow-auto">
