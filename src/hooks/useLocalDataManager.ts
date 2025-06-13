@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useFileSystemBackup } from './useFileSystemBackup';
 
@@ -65,7 +64,7 @@ const DEFAULT_SETTINGS: UserSettings = {
 const STORAGE_KEY = 'debt_manager_local_data';
 
 export const useLocalDataManager = () => {
-  const { saveData, isConnected } = useFileSystemBackup();
+  const { saveData, isConnected, isSupported } = useFileSystemBackup();
   const [database, setDatabase] = useState<LocalDatabase>({
     clients: [],
     debts: [],
@@ -113,20 +112,29 @@ export const useLocalDataManager = () => {
   const saveLocalData = async (newDatabase: LocalDatabase) => {
     try {
       console.log('Salvando dados localmente...');
-      // Salvar no localStorage
+      
+      // SEMPRE salvar no localStorage primeiro
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newDatabase));
       setDatabase(newDatabase);
-
       console.log('Dados salvos no localStorage:', newDatabase.clients.length, 'clientes,', newDatabase.debts.length, 'dívidas');
 
-      // Auto-backup na pasta se conectada
-      if (isConnected && saveData) {
-        const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
-        console.log('Salvando backup na pasta:', filename);
-        await saveData(JSON.stringify(newDatabase, null, 2), filename);
-        console.log('Backup automático salvo na pasta local');
+      // Tentar salvar na pasta local APENAS se conectada e suportada
+      if (isConnected && isSupported && saveData) {
+        try {
+          const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
+          console.log('Tentando salvar na pasta local:', filename);
+          
+          const success = await saveData(JSON.stringify(newDatabase, null, 2), filename);
+          if (success) {
+            console.log('✅ Backup salvo na pasta local com sucesso');
+          } else {
+            console.log('⚠️ Falha ao salvar na pasta local - dados mantidos no localStorage');
+          }
+        } catch (error) {
+          console.warn('Erro ao salvar na pasta local (dados seguros no localStorage):', error);
+        }
       } else {
-        console.log('Pasta não conectada - dados salvos apenas no navegador');
+        console.log('📁 Pasta não conectada - dados salvos apenas no navegador');
       }
     } catch (error) {
       console.error('Erro ao salvar dados:', error);
@@ -268,7 +276,7 @@ export const useLocalDataManager = () => {
     await saveLocalData(updatedDatabase);
   };
 
-  // Funções de Export/Import
+  // Backup manual para download (quando usuário solicita)
   const exportData = () => {
     return JSON.stringify(database, null, 2);
   };
@@ -290,6 +298,16 @@ export const useLocalDataManager = () => {
       console.error('Erro ao importar dados:', error);
       return false;
     }
+  };
+
+  // Restaurar dados da pasta local
+  const restoreFromFolder = async () => {
+    if (!isConnected || !saveData) {
+      throw new Error('Pasta não conectada');
+    }
+
+    // Implementar leitura da pasta quando necessário
+    console.log('Função de restauração será implementada conforme necessário');
   };
 
   // Estatísticas
@@ -347,6 +365,7 @@ export const useLocalDataManager = () => {
     // Import/Export
     exportData,
     importData,
+    restoreFromFolder,
 
     // Utilitários
     refresh: loadLocalData

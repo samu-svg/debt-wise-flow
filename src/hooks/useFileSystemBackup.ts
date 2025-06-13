@@ -144,7 +144,7 @@ export const useFileSystemBackup = () => {
           name: handle.name
         });
         
-        console.log('Configuração concluída com sucesso');
+        console.log('✅ Configuração concluída com sucesso');
         return true;
       }
 
@@ -169,13 +169,85 @@ export const useFileSystemBackup = () => {
     }
   };
 
+  // Função otimizada para salvar dados na pasta (sem downloads automáticos)
   const saveData = async (data: string, filename: string): Promise<boolean> => {
     try {
       clearError();
-      console.log('Salvando dados:', filename);
-      return await saveFile(data, filename, directoryHandle);
+      console.log('💾 Salvando na pasta local:', filename);
+      
+      // APENAS tentar salvar na pasta se tivermos handle ativo
+      if (directoryHandle && capabilities?.fileSystemAccess) {
+        const success = await saveFile(data, filename, directoryHandle);
+        if (success) {
+          console.log('✅ Arquivo salvo na pasta local');
+          return true;
+        }
+      }
+      
+      // Se não conseguiu salvar na pasta, NÃO fazer download automático
+      console.log('📝 Dados mantidos apenas no localStorage (pasta indisponível)');
+      return false;
     } catch (error) {
-      console.error('Erro ao salvar dados:', error);
+      console.error('Erro ao salvar na pasta:', error);
+      return false;
+    }
+  };
+
+  // Função específica para download manual (quando usuário solicita)
+  const downloadBackup = async (data: string, filename: string): Promise<boolean> => {
+    try {
+      console.log('📥 Iniciando download manual:', filename);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ Download concluído');
+      return true;
+    } catch (error) {
+      console.error('Erro no download:', error);
+      return false;
+    }
+  };
+
+  // Função para restaurar dados da pasta
+  const restoreFromFolder = async (): Promise<any> => {
+    if (!directoryHandle || !capabilities?.fileSystemAccess) {
+      throw new Error('Pasta não disponível para restauração');
+    }
+
+    try {
+      console.log('🔄 Procurando backups na pasta...');
+      const backupFiles: string[] = [];
+      
+      for await (const [name] of directoryHandle.entries()) {
+        if (name.includes('debt_manager_backup') && name.endsWith('.json')) {
+          backupFiles.push(name);
+        }
+      }
+      
+      if (backupFiles.length === 0) {
+        throw new Error('Nenhum backup encontrado na pasta');
+      }
+      
+      // Pegar o backup mais recente
+      const latestBackup = backupFiles.sort().reverse()[0];
+      console.log('📁 Restaurando do arquivo:', latestBackup);
+      
+      const fileHandle = await directoryHandle.getFileHandle(latestBackup);
+      const file = await fileHandle.getFile();
+      const content = await file.text();
+      
+      console.log('✅ Dados restaurados da pasta');
+      return JSON.parse(content);
+    } catch (error) {
+      console.error('Erro ao restaurar da pasta:', error);
       throw error;
     }
   };
@@ -184,9 +256,9 @@ export const useFileSystemBackup = () => {
     if (loading) return 'Verificando configuração...';
     if (lastError) return `Erro: ${lastError.message}`;
     if (!isConfigured) return 'Pasta não configurada';
-    if (isConfigured && directoryHandle) return `Pasta: ${directoryHandle.name}`;
-    if (isConfigured && folderConfig) return `Pasta: ${folderConfig.folder_name}`;
-    if (capabilities?.isInFrame) return 'Modo download ativo';
+    if (isConfigured && directoryHandle) return `✅ Pasta: ${directoryHandle.name}`;
+    if (isConfigured && folderConfig) return `📁 Pasta: ${folderConfig.folder_name}`;
+    if (capabilities?.isInFrame) return '📥 Modo download disponível';
     
     return getSystemStatus();
   };
@@ -206,7 +278,9 @@ export const useFileSystemBackup = () => {
     configureDirectory,
     configureFolder: configureDirectory,
     saveBackup: saveData,
-    saveData,
+    saveData, // Para salvamento na pasta (sem download)
+    downloadBackup, // Para download manual
+    restoreFromFolder, // Para restaurar da pasta
     getBackupStatus: getStatus,
     getStatus,
     forceConfiguration: () => {},

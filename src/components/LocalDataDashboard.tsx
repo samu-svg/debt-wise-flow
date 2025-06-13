@@ -13,26 +13,35 @@ import {
   Download, 
   Upload,
   Database,
-  TrendingUp
+  TrendingUp,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const LocalDataDashboard = () => {
-  const { statistics, exportData, importData, refresh } = useLocalDataManager();
-  const { isConnected, folderName } = useFileSystemBackup();
+  const { statistics, exportData, importData, refresh, restoreFromFolder } = useLocalDataManager();
+  const { isConnected, folderName, downloadBackup, restoreFromFolder: restoreFromBackup } = useFileSystemBackup();
 
-  const handleExport = () => {
+  // Export manual via download
+  const handleExport = async () => {
     try {
       const data = exportData();
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `debt_manager_export_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const filename = `debt_manager_export_${new Date().toISOString().split('T')[0]}.json`;
+      
+      if (downloadBackup) {
+        await downloadBackup(data, filename);
+      } else {
+        // Fallback para download tradicional
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
       
       toast({
         title: "Dados exportados",
@@ -82,6 +91,44 @@ const LocalDataDashboard = () => {
     input.click();
   };
 
+  // Restaurar da pasta local
+  const handleRestoreFromFolder = async () => {
+    if (!isConnected) {
+      toast({
+        title: "Pasta não conectada",
+        description: "Configure uma pasta local primeiro.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('Tentando restaurar da pasta...');
+      const backupData = await restoreFromBackup();
+      const success = await importData(JSON.stringify(backupData));
+      
+      if (success) {
+        toast({
+          title: "Dados restaurados",
+          description: "Backup da pasta restaurado com sucesso!",
+        });
+        refresh();
+      } else {
+        toast({
+          title: "Erro na restauração",
+          description: "Dados da pasta inválidos.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro na restauração",
+        description: error.message || "Não foi possível restaurar da pasta.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -98,6 +145,12 @@ const LocalDataDashboard = () => {
             <Upload className="w-4 h-4 mr-2" />
             Importar
           </Button>
+          {isConnected && (
+            <Button onClick={handleRestoreFromFolder} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Restaurar da Pasta
+            </Button>
+          )}
         </div>
       </div>
 
@@ -114,13 +167,23 @@ const LocalDataDashboard = () => {
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-orange-500'}`} />
               <span className="text-sm">
-                {isConnected ? `Pasta: ${folderName}` : 'Modo Local (sem pasta)'}
+                {isConnected ? `📁 Pasta: ${folderName}` : '💾 Apenas localStorage'}
               </span>
             </div>
             <Badge variant={isConnected ? "default" : "secondary"}>
-              {isConnected ? 'Backup Automático' : 'Manual'}
+              {isConnected ? 'Sincronização Ativa' : 'Local Apenas'}
             </Badge>
           </div>
+          {isConnected && (
+            <p className="text-xs text-green-600 mt-2">
+              ✅ Dados salvos automaticamente na pasta local a cada alteração
+            </p>
+          )}
+          {!isConnected && (
+            <p className="text-xs text-orange-600 mt-2">
+              ⚠️ Configure uma pasta para backup automático
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -250,29 +313,37 @@ const LocalDataDashboard = () => {
         <CardContent className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Armazenamento Local:</span>
-            <Badge variant="outline">Ativo</Badge>
+            <Badge variant="outline">✅ Ativo (localStorage)</Badge>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Backup Automático:</span>
+            <span className="text-sm text-gray-600">Backup na Pasta:</span>
             <Badge variant={isConnected ? "default" : "secondary"}>
-              {isConnected ? 'Ativado' : 'Desativado'}
+              {isConnected ? '✅ Ativado' : '❌ Desativado'}
             </Badge>
           </div>
           {isConnected && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Pasta de Backup:</span>
-              <span className="text-sm font-medium">{folderName}</span>
+              <span className="text-sm font-medium">📁 {folderName}</span>
             </div>
           )}
           <div className="pt-3 border-t">
             <p className="text-xs text-gray-500">
-              • Dados salvos localmente no navegador (localStorage)
+              • 💾 Dados sempre salvos no navegador (localStorage)
               <br />
-              {isConnected && '• Backup automático na pasta selecionada'}
+              {isConnected ? (
+                <>
+                  • 📁 Backup automático na pasta: {folderName}
+                  <br />
+                  • 🔄 Sincronização a cada alteração (sem downloads)
+                  <br />
+                </>
+              ) : (
+                '• ⚠️ Configure uma pasta para backup automático\n'
+              )}
+              • 📥 Use "Exportar" para download manual
               <br />
-              • Use Export/Import para backup manual
-              <br />
-              • Dados persistem entre sessões do navegador
+              • 🔄 Use "Restaurar da Pasta" para recuperar backups
             </p>
           </div>
         </CardContent>
