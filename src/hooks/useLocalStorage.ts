@@ -10,7 +10,7 @@ const STORAGE_KEYS = {
 export const useLocalStorage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { saveData, downloadBackup, isConfigured, directoryHandle, isConnected, isSupported } = useFileSystemBackup();
+  const { saveData, isConfigured, directoryHandle, isConnected, isSupported } = useFileSystemBackup();
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -105,32 +105,22 @@ export const useLocalStorage = () => {
     const filename = `debt_manager_data_${new Date().toISOString().split('T')[0]}.json`;
     const jsonData = JSON.stringify(data, null, 2);
 
-    // PRIORIDADE 1: Salvar na pasta local (armazenamento principal)
+    // SALVAMENTO PRINCIPAL: Apenas na pasta local (sem fallback para download)
     if (isConnected && saveData) {
       try {
         console.log('📁 Salvando na pasta principal:', filename);
-        await saveData(jsonData, filename);
-        console.log('✅ Dados salvos na pasta principal!');
-        return; // Sucesso na pasta, não precisa fazer download
+        const success = await saveData(jsonData, filename);
+        if (success) {
+          console.log('✅ Dados salvos na pasta principal!');
+        } else {
+          console.log('⚠️ Falha ao salvar na pasta principal');
+        }
       } catch (error) {
         console.error('❌ Erro ao salvar na pasta principal:', error);
-        // Continua para tentar download automático
       }
+    } else {
+      console.log('📁 Pasta não conectada - dados mantidos apenas no localStorage');
     }
-
-    // PRIORIDADE 2: Download automático quando pasta não disponível
-    if (!isConnected && downloadBackup) {
-      try {
-        console.log('📥 Pasta não disponível - fazendo download automático');
-        await downloadBackup(jsonData, filename);
-        console.log('✅ Download automático realizado!');
-      } catch (error) {
-        console.error('❌ Erro no download automático:', error);
-      }
-    }
-
-    // FALLBACK: Se nada funcionou, pelo menos temos no localStorage
-    console.log('💾 Dados mantidos no localStorage como fallback');
   };
 
   const addClient = (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'debts'>) => {

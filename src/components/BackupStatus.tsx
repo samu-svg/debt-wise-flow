@@ -14,8 +14,7 @@ import {
   Settings,
   Folder,
   Lock,
-  RefreshCw,
-  Download
+  RefreshCw
 } from 'lucide-react';
 
 const BackupStatus = () => {
@@ -53,30 +52,21 @@ const BackupStatus = () => {
       };
     }
     
-    if (isFirstAccess || (!isConfigured && isSupported)) {
+    if (!isSupported) {
+      return {
+        icon: XCircle,
+        color: 'bg-red-500',
+        text: 'Sistema Não Suportado',
+        description: 'File System API não disponível neste navegador'
+      };
+    }
+    
+    if (isFirstAccess || !isConfigured) {
       return {
         icon: Lock,
         color: 'bg-red-500',
         text: 'Configuração Necessária',
-        description: 'Configure pasta principal para seus dados'
-      };
-    }
-    
-    if (!isSupported) {
-      return {
-        icon: Download,
-        color: 'bg-blue-500',
-        text: 'Download Automático',
-        description: 'Dados salvos via download automático'
-      };
-    }
-    
-    if (!isConfigured) {
-      return {
-        icon: AlertCircle,
-        color: 'bg-orange-500',
-        text: 'Pasta não configurada',
-        description: 'Configure pasta principal'
+        description: 'Configure pasta principal para salvar seus dados'
       };
     }
     
@@ -84,7 +74,7 @@ const BackupStatus = () => {
       return {
         icon: AlertCircle,
         color: 'bg-orange-500',
-        text: 'Desconectado',
+        text: 'Pasta Desconectada',
         description: 'Reconecte à pasta principal'
       };
     }
@@ -93,7 +83,7 @@ const BackupStatus = () => {
       icon: CheckCircle,
       color: 'bg-green-500',
       text: 'Pasta Principal Ativa ✅',
-      description: `Dados salvos em: ${folderName}`
+      description: `Dados salvos automaticamente em: ${folderName}`
     };
   };
 
@@ -157,13 +147,24 @@ const BackupStatus = () => {
               </div>
             </div>
 
-            {(isFirstAccess || (!isConfigured && isSupported)) && (
+            {!isSupported && (
+              <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                <p className="text-sm text-red-800">
+                  <strong>❌ Navegador Não Suportado</strong>
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  Use um navegador baseado em Chromium (Chrome, Edge, Opera) para acessar o sistema de pasta local
+                </p>
+              </div>
+            )}
+
+            {isSupported && (isFirstAccess || !isConfigured) && (
               <div className="bg-red-50 p-3 rounded-lg border border-red-200">
                 <p className="text-sm text-red-800">
                   <strong>⚠️ Pasta Principal Necessária</strong>
                 </p>
                 <p className="text-xs text-red-600 mt-1">
-                  Configure uma pasta local como armazenamento principal dos seus dados
+                  Configure uma pasta local onde seus dados serão salvos automaticamente
                 </p>
               </div>
             )}
@@ -174,24 +175,13 @@ const BackupStatus = () => {
                   <strong>Pasta Principal:</strong> {folderName}
                 </p>
                 <p className="text-xs text-green-600 mt-1">
-                  Todos os dados são salvos automaticamente nesta pasta
-                </p>
-              </div>
-            )}
-            
-            {!isSupported && (
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-600">
-                  <strong>Download Automático Ativo</strong>
-                </p>
-                <p className="text-xs text-blue-500 mt-1">
-                  Dados salvos via download automático quando você faz alterações
+                  Todos os dados são salvos automaticamente nesta pasta (sem downloads)
                 </p>
               </div>
             )}
             
             <div className="flex gap-2 flex-wrap">
-              {(isFirstAccess || !isConfigured || !isConnected) && (
+              {isSupported && (isFirstAccess || !isConfigured || !isConnected) && (
                 <Button 
                   onClick={handleConfigure} 
                   size="sm"
@@ -218,36 +208,38 @@ const BackupStatus = () => {
                 </Button>
               )}
               
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => setShowConfigModal(true)}
-              >
-                <Settings className="w-4 h-4" />
-                Configurações
-              </Button>
+              {isSupported && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => setShowConfigModal(true)}
+                >
+                  <Settings className="w-4 h-4" />
+                  Configurações
+                </Button>
+              )}
             </div>
           </div>
         </PopoverContent>
       </Popover>
 
       {/* Modal de configuração automático */}
-      {showConfigModal && (
+      {showConfigModal && isSupported && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
             <h2 className="text-xl font-bold mb-4">Configuração da Pasta Principal</h2>
             <p className="text-gray-600 mb-4">
               Configure uma pasta local como armazenamento principal dos seus dados. 
-              Todos os clientes e dívidas serão salvos automaticamente nesta pasta.
+              Todos os clientes e dívidas serão salvos automaticamente nesta pasta (sem downloads).
             </p>
-            <div className="bg-blue-50 p-3 rounded-lg mb-4">
-              <p className="text-sm text-blue-800">
-                <strong>💡 Economia de Banco de Dados</strong>
+            <div className="bg-green-50 p-3 rounded-lg mb-4">
+              <p className="text-sm text-green-800">
+                <strong>💾 Salvamento Automático</strong>
               </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Os dados ficam na sua pasta local, economizando espaço no banco de dados.
-                Se a pasta não estiver disponível, o sistema fará downloads automáticos.
+              <p className="text-xs text-green-600 mt-1">
+                Os dados ficam na sua pasta local e são salvos automaticamente a cada alteração.
+                Sem downloads, sem spam, apenas salvamento direto na pasta que você escolher.
               </p>
             </div>
             <div className="flex gap-2">
@@ -260,6 +252,37 @@ const BackupStatus = () => {
                 onClick={() => setShowConfigModal(false)}
               >
                 Depois
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aviso para navegadores não suportados */}
+      {showConfigModal && !isSupported && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Navegador Não Suportado</h2>
+            <p className="text-gray-600 mb-4">
+              O sistema de pasta local requer um navegador baseado em Chromium para funcionar.
+            </p>
+            <div className="bg-blue-50 p-3 rounded-lg mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>📦 Navegadores Recomendados:</strong>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                • Google Chrome<br/>
+                • Microsoft Edge<br/>
+                • Opera<br/>
+                • Brave
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowConfigModal(false)}
+                className="flex-1"
+              >
+                Entendi
               </Button>
             </div>
           </div>

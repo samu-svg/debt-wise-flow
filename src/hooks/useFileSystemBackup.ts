@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
 import { useUserFolderConfig } from './useUserFolderConfig';
@@ -76,13 +77,6 @@ export const useFileSystemBackup = () => {
       try {
         console.log('Inicializando sistema principal de arquivos para:', user.email);
 
-        // Se estamos em iframe, usar sempre modo download
-        if (capabilities?.isInFrame) {
-          console.log('Modo iframe detectado - usando download automático');
-          setLoading(false);
-          return;
-        }
-
         // Se usuário tem pasta configurada, tentar recuperar handle
         if (isConfigured && capabilities?.fileSystemAccess) {
           console.log('Usuário tem pasta configurada, tentando recuperar acesso...');
@@ -120,10 +114,10 @@ export const useFileSystemBackup = () => {
       console.log('🔧 Configurando pasta principal...');
       clearError();
 
-      // Se estamos em iframe ou File System API não disponível, usar fallback
-      if (capabilities?.isInFrame || !capabilities?.fileSystemAccess) {
-        console.log('📥 Usando modo download automático por limitação do ambiente');
-        return true;
+      // Verificar se File System API está disponível
+      if (!capabilities?.fileSystemAccess) {
+        console.error('❌ File System API não disponível');
+        return false;
       }
 
       // Usar File System API
@@ -158,67 +152,33 @@ export const useFileSystemBackup = () => {
         return false;
       }
       
-      // Se é erro de segurança (iframe), usar fallback
-      if ((error as Error).name === 'SecurityError') {
-        console.log('Erro de segurança detectado, usando modo download');
-        return true;
-      }
-      
       throw error;
     }
   };
 
-  // FUNÇÃO PRINCIPAL: Salvar dados (pasta principal ou download automático)
+  // FUNÇÃO PRINCIPAL: Salvar dados APENAS na pasta principal
   const saveData = async (data: string, filename: string): Promise<boolean> => {
     try {
       clearError();
-      console.log('💾 Salvando dados principais:', filename);
+      console.log('💾 Salvando dados na pasta principal:', filename);
       
-      // PRIORIDADE 1: Tentar salvar na pasta principal
-      if (directoryHandle && capabilities?.fileSystemAccess) {
-        const success = await saveFile(data, filename, directoryHandle);
-        if (success) {
-          console.log('✅ Dados salvos na pasta principal');
-          return true;
-        }
-      }
-      
-      // PRIORIDADE 2: Download automático se pasta não disponível
-      console.log('📥 Pasta não disponível - iniciando download automático');
-      return await downloadBackup(data, filename);
-    } catch (error) {
-      console.error('❌ Erro ao salvar dados:', error);
-      // Tentar download como fallback
-      try {
-        console.log('🔄 Tentando download como fallback...');
-        return await downloadBackup(data, filename);
-      } catch (downloadError) {
-        console.error('❌ Erro também no download fallback:', downloadError);
+      // Verificar se temos acesso à pasta
+      if (!directoryHandle || !capabilities?.fileSystemAccess) {
+        console.error('❌ Pasta principal não disponível para salvamento');
         return false;
       }
-    }
-  };
-
-  // FUNÇÃO: Download automático/manual
-  const downloadBackup = async (data: string, filename: string): Promise<boolean> => {
-    try {
-      console.log('📥 Executando download:', filename);
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
       
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Salvar na pasta principal
+      const success = await saveFile(data, filename, directoryHandle);
+      if (success) {
+        console.log('✅ Dados salvos na pasta principal');
+        return true;
+      }
       
-      console.log('✅ Download concluído automaticamente');
-      return true;
+      console.error('❌ Falha ao salvar na pasta principal');
+      return false;
     } catch (error) {
-      console.error('❌ Erro no download:', error);
+      console.error('❌ Erro ao salvar dados:', error);
       return false;
     }
   };
@@ -265,33 +225,26 @@ export const useFileSystemBackup = () => {
     if (!isConfigured) return 'Pasta principal não configurada';
     if (isConfigured && directoryHandle) return `✅ Pasta Principal: ${directoryHandle.name}`;
     if (isConfigured && folderConfig) return `📁 Pasta: ${folderConfig.folder_name}`;
-    if (capabilities?.isInFrame) return '📥 Modo download automático ativo';
     
     return getSystemStatus();
   };
 
-  const isConnected = isConfigured && (directoryHandle !== null || !capabilities?.fileSystemAccess);
+  const isConnected = isConfigured && directoryHandle !== null && capabilities?.fileSystemAccess;
 
   return {
-    isSupported: capabilities?.fileSystemAccess || true,
+    isSupported: capabilities?.fileSystemAccess || false,
     isConfigured,
     isConnected,
     loading,
     directoryHandle,
-    folderName: directoryHandle?.name || folderConfig?.folder_name || (capabilities?.isInFrame ? 'Download Automático' : ''),
+    folderName: directoryHandle?.name || folderConfig?.folder_name || '',
     isFirstAccess: !isConfigured,
     lastError,
     errorSuggestions: lastError ? getErrorSuggestions(lastError) : [],
     configureDirectory,
-    configureFolder: configureDirectory,
-    saveBackup: saveData,
-    saveData, // Para salvamento na pasta principal (com fallback para download)
-    downloadBackup, // Para download manual/automático
-    restoreFromFolder, // Para restaurar da pasta principal
-    getBackupStatus: getStatus,
+    saveData, // APENAS salvamento na pasta principal
+    restoreFromFolder,
     getStatus,
-    forceConfiguration: () => {},
-    clearError,
-    setShowConfigModal: () => {}
+    clearError
   };
 };

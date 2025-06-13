@@ -118,17 +118,17 @@ export const useLocalDataManager = () => {
       setDatabase(newDatabase);
       console.log('Dados salvos no localStorage:', newDatabase.clients.length, 'clientes,', newDatabase.debts.length, 'dívidas');
 
-      // Tentar salvar na pasta local APENAS se conectada e suportada
+      // Salvar na pasta local APENAS se conectada e suportada (SEM download fallback)
       if (isConnected && isSupported && saveData) {
         try {
           const filename = `debt_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
-          console.log('Tentando salvar na pasta local:', filename);
+          console.log('Salvando automaticamente na pasta local:', filename);
           
           const success = await saveData(JSON.stringify(newDatabase, null, 2), filename);
           if (success) {
-            console.log('✅ Backup salvo na pasta local com sucesso');
+            console.log('✅ Backup salvo automaticamente na pasta local');
           } else {
-            console.log('⚠️ Falha ao salvar na pasta local - dados mantidos no localStorage');
+            console.log('⚠️ Falha ao salvar na pasta local - dados seguros no localStorage');
           }
         } catch (error) {
           console.warn('Erro ao salvar na pasta local (dados seguros no localStorage):', error);
@@ -276,7 +276,7 @@ export const useLocalDataManager = () => {
     await saveLocalData(updatedDatabase);
   };
 
-  // Backup manual para download (quando usuário solicita)
+  // Export manual (sem download automático - apenas retorna JSON)
   const exportData = () => {
     return JSON.stringify(database, null, 2);
   };
@@ -300,17 +300,14 @@ export const useLocalDataManager = () => {
     }
   };
 
-  // Restaurar dados da pasta local
   const restoreFromFolder = async () => {
     if (!isConnected || !saveData) {
       throw new Error('Pasta não conectada');
     }
 
-    // Implementar leitura da pasta quando necessário
     console.log('Função de restauração será implementada conforme necessário');
   };
 
-  // Estatísticas
   const getStatistics = () => {
     const totalClients = database.clients.length;
     const totalDebts = database.debts.length;
