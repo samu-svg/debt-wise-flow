@@ -7,7 +7,7 @@ const STORAGE_KEYS = {
   CONFIG: 'whatsapp_config'
 };
 
-const DEFAULT_CONFIG: WhatsAppConfig = {
+const DEFAULT_CONFIG: Partial<WhatsAppConfig> = {
   autoReconnect: true,
   retryInterval: 15000,
   maxRetries: 20,
@@ -26,7 +26,7 @@ export const useWhatsAppConnection = () => {
     retryCount: 0
   });
   const [logs, setLogs] = useState<WhatsAppLog[]>([]);
-  const [config, setConfig] = useState<WhatsAppConfig>(DEFAULT_CONFIG);
+  const [config, setConfig] = useState<Partial<WhatsAppConfig>>(DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const qrTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -64,7 +64,7 @@ export const useWhatsAppConnection = () => {
         setLogs(JSON.parse(savedLogs));
       }
       if (savedConfig) {
-        setConfig(JSON.parse(savedConfig));
+        setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(savedConfig) });
       }
     } catch (error) {
       addLog('error', 'Erro ao carregar dados salvos', { error });
@@ -82,7 +82,7 @@ export const useWhatsAppConnection = () => {
     setLogs(trimmedLogs);
   };
 
-  const saveConfig = (newConfig: WhatsAppConfig) => {
+  const saveConfig = (newConfig: Partial<WhatsAppConfig>) => {
     localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(newConfig));
     setConfig(newConfig);
   };
@@ -257,8 +257,8 @@ export const useWhatsAppConnection = () => {
         console.log('Conexão WebSocket fechada:', event.code, event.reason);
         addLog('connection', 'Conexão com servidor fechada');
         
-        if (event.code !== 1000 && config.autoReconnect && connection.retryCount < config.maxRetries) {
-          setTimeout(() => retry(), config.retryInterval);
+        if (event.code !== 1000 && config.autoReconnect && connection.retryCount < (config.maxRetries || 20)) {
+          setTimeout(() => retry(), config.retryInterval || 15000);
         }
       };
 
@@ -316,18 +316,18 @@ export const useWhatsAppConnection = () => {
   }, [addLog]);
 
   const retry = useCallback(async () => {
-    if (connection.retryCount >= config.maxRetries) {
-      addLog('error', `Máximo de ${config.maxRetries} tentativas excedido`);
+    if (connection.retryCount >= (config.maxRetries || 20)) {
+      addLog('error', `Máximo de ${config.maxRetries || 20} tentativas excedido`);
       saveConnection({
         ...connection,
         status: 'error',
-        lastError: `Máximo de tentativas excedido (${config.maxRetries})`
+        lastError: `Máximo de tentativas excedido (${config.maxRetries || 20})`
       });
       return;
     }
 
     const newRetryCount = connection.retryCount + 1;
-    addLog('system', `Tentativa de reconexão ${newRetryCount}/${config.maxRetries}`);
+    addLog('system', `Tentativa de reconexão ${newRetryCount}/${config.maxRetries || 20}`);
     
     saveConnection({
       ...connection,
@@ -338,7 +338,7 @@ export const useWhatsAppConnection = () => {
 
     setTimeout(() => {
       connect();
-    }, config.retryInterval);
+    }, config.retryInterval || 15000);
   }, [connection, config, connect, addLog]);
 
   const clearLogs = useCallback(() => {
