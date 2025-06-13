@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Button } from '@/components/ui/button';
@@ -79,7 +78,7 @@ const Reports = () => {
     const overdueDebts = allDebts.filter(d => d.status === 'overdue');
     const paidDebts = allDebts.filter(d => d.status === 'paid');
 
-    const totalOriginal =债务s.reduce((sum, debt) => sum + debt.originalAmount, 0);
+    const totalOriginal = allDebts.reduce((sum, debt) => sum + debt.originalAmount, 0);
     const totalCurrent = allDebts.reduce((sum, debt) => sum + debt.currentAmount, 0);
     const totalPaid = allDebts.reduce((sum, debt) => 
       sum + debt.payments.reduce((pSum, payment) => pSum + payment.amount, 0), 0
@@ -148,18 +147,18 @@ const Reports = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-[#343A40]">Relatórios e Backup</h1>
+      <h1 className="text-3xl font-bold text-[#374151]">Relatórios e Backup</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white border-[#DEE2E6]">
+        <Card className="bg-white border-[#E5E7EB]">
           <CardHeader>
-            <CardTitle className="text-[#343A40]">Backup dos Dados</CardTitle>
-            <CardDescription className="text-[#6C757D]">
+            <CardTitle className="text-[#374151]">Backup dos Dados</CardTitle>
+            <CardDescription className="text-[#6B7280]">
               Faça backup e restaure seus dados localmente
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={handleExport} className="w-full bg-[#08872B] hover:bg-[#059669] text-white">
+            <Button onClick={handleExport} className="w-full bg-[#10B981] hover:bg-[#059669] text-white">
               <FileText className="w-4 h-4 mr-2" />
               Fazer Backup
             </Button>
@@ -172,27 +171,27 @@ const Reports = () => {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 disabled={importing}
               />
-              <Button variant="outline" className="w-full border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]" disabled={importing}>
+              <Button variant="outline" className="w-full border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]" disabled={importing}>
                 <Plus className="w-4 h-4 mr-2" />
                 {importing ? 'Importando...' : 'Restaurar Backup'}
               </Button>
             </div>
             
-            <p className="text-xs text-[#6C757D] text-center">
+            <p className="text-xs text-[#6B7280] text-center">
               Seus dados são armazenados localmente no navegador
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-[#DEE2E6]">
+        <Card className="bg-white border-[#E5E7EB]">
           <CardHeader>
-            <CardTitle className="text-[#343A40]">Relatório Completo</CardTitle>
-            <CardDescription className="text-[#6C757D]">
+            <CardTitle className="text-[#374151]">Relatório Completo</CardTitle>
+            <CardDescription className="text-[#6B7280]">
               Gere um relatório detalhado de todos os dados
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={generateReport} className="w-full bg-[#08872B] hover:bg-[#059669] text-white">
+            <Button onClick={generateReport} className="w-full bg-[#10B981] hover:bg-[#059669] text-white">
               <FileText className="w-4 h-4 mr-2" />
               Gerar Relatório
             </Button>
@@ -200,48 +199,48 @@ const Reports = () => {
         </Card>
       </div>
 
-      <Card className="bg-white border-[#DEE2E6]">
+      <Card className="bg-white border-[#E5E7EB]">
         <CardHeader>
-          <CardTitle className="text-[#343A40]">Resumo Atual</CardTitle>
-          <CardDescription className="text-[#6C757D]">
+          <CardTitle className="text-[#374151]">Resumo Atual</CardTitle>
+          <CardDescription className="text-[#6B7280]">
             Visão geral dos dados no sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-[#F8F9FA] rounded-lg border border-[#DEE2E6]">
-              <p className="text-2xl font-bold text-[#08872B]">{clients.length}</p>
-              <p className="text-sm text-[#6C757D]">Clientes</p>
+            <div className="text-center p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+              <p className="text-2xl font-bold text-[#10B981]">{clients.length}</p>
+              <p className="text-sm text-[#6B7280]">Clientes</p>
             </div>
-            <div className="text-center p-4 bg-[#F8F9FA] rounded-lg border border-[#DEE2E6]">
-              <p className="text-2xl font-bold text-[#08872B]">{allDebts.length}</p>
-              <p className="text-sm text-[#6C757D]">Dívidas Total</p>
+            <div className="text-center p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+              <p className="text-2xl font-bold text-[#10B981]">{allDebts.length}</p>
+              <p className="text-sm text-[#6B7280]">Dívidas Total</p>
             </div>
-            <div className="text-center p-4 bg-[#F8F9FA] rounded-lg border border-[#DEE2E6]">
-              <p className="text-2xl font-bold text-[#343A40]">
+            <div className="text-center p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+              <p className="text-2xl font-bold text-[#374151]">
                 {formatCurrency(totalCurrent)}
               </p>
-              <p className="text-sm text-[#6C757D]">Valor em Aberto</p>
+              <p className="text-sm text-[#6B7280]">Valor em Aberto</p>
             </div>
           </div>
           
-          <div className="mt-6 pt-6 border-t border-[#DEE2E6]">
+          <div className="mt-6 pt-6 border-t border-[#E5E7EB]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex justify-between">
-                <span className="text-[#343A40]">Valor Original Total:</span>
-                <span className="font-medium text-[#343A40]">{formatCurrency(totalOriginal)}</span>
+                <span className="text-[#374151]">Valor Original Total:</span>
+                <span className="font-medium text-[#374151]">{formatCurrency(totalOriginal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#343A40]">Total Recebido:</span>
-                <span className="font-medium text-[#08872B]">{formatCurrency(totalPaid)}</span>
+                <span className="text-[#374151]">Total Recebido:</span>
+                <span className="font-medium text-[#10B981]">{formatCurrency(totalPaid)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#343A40]">Dívidas Ativas:</span>
-                <span className="font-medium text-[#343A40]">{allDebts.filter(d => d.status === 'active').length}</span>
+                <span className="text-[#374151]">Dívidas Ativas:</span>
+                <span className="font-medium text-[#374151]">{allDebts.filter(d => d.status === 'active').length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#343A40]">Dívidas Vencidas:</span>
-                <span className="font-medium text-[#DC3545]">{allDebts.filter(d => d.status === 'overdue').length}</span>
+                <span className="text-[#374151]">Dívidas Vencidas:</span>
+                <span className="font-medium text-[#EF4444]">{allDebts.filter(d => d.status === 'overdue').length}</span>
               </div>
             </div>
           </div>
