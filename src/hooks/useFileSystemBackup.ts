@@ -1,17 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
 import { useUserFolderConfig } from './useUserFolderConfig';
 import { useAuth } from './useAuth';
-
-// Extend Window interface for File System Access API
-declare global {
-  interface Window {
-    showDirectoryPicker?: (options?: {
-      mode?: 'read' | 'readwrite';
-    }) => Promise<FileSystemDirectoryHandle>;
-  }
-}
 
 // Função para abrir IndexedDB
 const openDB = (): Promise<IDBDatabase> => {
