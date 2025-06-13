@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
 import { 
-  HardDrive, 
+  Database, 
   CheckCircle, 
   AlertCircle, 
   XCircle, 
@@ -28,8 +28,8 @@ const BackupStatus = () => {
       return {
         icon: Lock,
         color: 'bg-red-500',
-        text: 'Configuração Obrigatória',
-        description: 'Configure pasta local para continuar'
+        text: 'Configuração Necessária',
+        description: 'Configure pasta para armazenar dados'
       };
     }
     
@@ -38,7 +38,7 @@ const BackupStatus = () => {
         icon: XCircle,
         color: 'bg-orange-500',
         text: 'Modo Download',
-        description: 'Backup via download automático'
+        description: 'Dados salvos via download'
       };
     }
     
@@ -47,7 +47,7 @@ const BackupStatus = () => {
         icon: AlertCircle,
         color: 'bg-orange-500',
         text: 'Não configurado',
-        description: 'Configure uma pasta para backup'
+        description: 'Configure pasta para dados'
       };
     }
     
@@ -56,15 +56,15 @@ const BackupStatus = () => {
         icon: AlertCircle,
         color: 'bg-orange-500',
         text: 'Desconectado',
-        description: 'Reconecte à pasta de backup'
+        description: 'Reconecte à pasta de dados'
       };
     }
     
     return {
       icon: CheckCircle,
       color: 'bg-green-500',
-      text: 'Pasta Configurada ✅',
-      description: `Pasta: ${folderName}`
+      text: 'Pasta Ativa ✅',
+      description: `Dados em: ${folderName}`
     };
   };
 
@@ -85,7 +85,7 @@ const BackupStatus = () => {
         <Button variant="ghost" size="sm" className="flex items-center gap-2 px-3">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${statusInfo.color}`} />
-            <HardDrive className="w-4 h-4" />
+            <Database className="w-4 h-4" />
           </div>
           <Badge variant="outline" className="text-xs">
             {statusInfo.text}
@@ -111,10 +111,10 @@ const BackupStatus = () => {
           {(isFirstAccess || (!isConfigured && isSupported)) && (
             <div className="bg-red-50 p-3 rounded-lg border border-red-200">
               <p className="text-sm text-red-800">
-                <strong>⚠️ Configuração Obrigatória</strong>
+                <strong>⚠️ Pasta Necessária</strong>
               </p>
               <p className="text-xs text-red-600 mt-1">
-                Configure uma pasta local para usar o sistema com segurança
+                Configure uma pasta local para armazenar os dados dos clientes e dívidas
               </p>
             </div>
           )}
@@ -122,10 +122,10 @@ const BackupStatus = () => {
           {isConnected && folderName && (
             <div className="bg-green-50 p-3 rounded-lg">
               <p className="text-sm text-green-800">
-                <strong>Pasta:</strong> {folderName}
+                <strong>Pasta Ativa:</strong> {folderName}
               </p>
               <p className="text-xs text-green-600 mt-1">
-                Backup automático ativo - Sincronização a cada login
+                Dados salvos automaticamente na pasta local
               </p>
             </div>
           )}
@@ -133,7 +133,7 @@ const BackupStatus = () => {
           {!isSupported && (
             <div className="bg-orange-50 p-3 rounded-lg">
               <p className="text-sm text-orange-600">
-                Use Chrome ou Edge para backup em pasta local
+                Use Chrome ou Edge para armazenamento em pasta local
               </p>
             </div>
           )}
@@ -147,8 +147,8 @@ const BackupStatus = () => {
                 variant={isFirstAccess ? "default" : "outline"}
               >
                 <Folder className="w-4 h-4" />
-                {isFirstAccess ? 'Configurar Agora' : 
-                 !isConfigured ? 'Configurar Pasta' : 'Reconectar'}
+                {isFirstAccess ? 'Configurar Pasta' : 
+                 !isConfigured ? 'Selecionar Pasta' : 'Reconectar'}
               </Button>
             )}
             

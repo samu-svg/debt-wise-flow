@@ -6,11 +6,11 @@ const STORAGE_KEYS = {
   SETTINGS: 'debt_manager_settings'
 };
 
-// Hook para backup automático
-let backupCallback: ((data: any) => void) | null = null;
+// Hook para salvamento automático na pasta local
+let saveToFolderCallback: ((data: any) => void) | null = null;
 
-export const setBackupCallback = (callback: (data: any) => void) => {
-  backupCallback = callback;
+export const setSaveToFolderCallback = (callback: (data: any) => void) => {
+  saveToFolderCallback = callback;
 };
 
 export const useLocalStorage = () => {
@@ -31,15 +31,17 @@ export const useLocalStorage = () => {
     localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(newClients));
     setClients(newClients);
     
-    // Trigger backup automático
-    if (backupCallback) {
-      const backupData = {
+    // Salvar automaticamente na pasta local configurada
+    if (saveToFolderCallback) {
+      const data = {
         clients: newClients,
         exportDate: new Date().toISOString(),
         version: '2.0',
-        source: 'auto_backup'
+        type: 'local_data'
       };
-      backupCallback(backupData);
+      
+      console.log('Salvando dados na pasta local...');
+      saveToFolderCallback(data);
     }
   };
 

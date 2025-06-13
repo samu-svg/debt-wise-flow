@@ -34,7 +34,8 @@ const saveDirectoryHandle = async (handle: FileSystemDirectoryHandle): Promise<v
     const db = await openDB();
     const transaction = db.transaction(['directoryHandles'], 'readwrite');
     const store = transaction.objectStore('directoryHandles');
-    await store.put(handle, 'backupDirectory');
+    await store.put(handle, 'dataDirectory');
+    console.log('Handle da pasta salvo com sucesso');
   } catch (error) {
     console.error('Erro ao salvar handle:', error);
     throw error;
@@ -49,7 +50,7 @@ const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | null> =
     const store = transaction.objectStore('directoryHandles');
     
     return new Promise((resolve, reject) => {
-      const request = store.get('backupDirectory');
+      const request = store.get('dataDirectory');
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result || null);
     });
@@ -81,9 +82,11 @@ export const useFileSystemBackup = () => {
       if (!isInitialized) return;
 
       try {
+        console.log('Verificando configuração da pasta de dados...');
         const hasConfigured = localStorage.getItem('pastaConfigurada') === 'true';
         
         if (!hasConfigured) {
+          console.log('Primeira configuração necessária');
           setIsFirstAccess(true);
           setIsConfigured(false);
           setLoading(false);
@@ -95,18 +98,27 @@ export const useFileSystemBackup = () => {
           const handle = await getDirectoryHandle();
           if (handle) {
             try {
-              // Test if we still have permission
-              await handle.getDirectoryHandle('test', { create: false }).catch(() => {});
-              setDirectoryHandle(handle);
-              setIsConfigured(true);
-              setIsFirstAccess(false);
+              // Testar se ainda temos permissão
+              const testPermission = await handle.queryPermission({ mode: 'readwrite' });
+              if (testPermission === 'granted') {
+                setDirectoryHandle(handle);
+                setIsConfigured(true);
+                setIsFirstAccess(false);
+                console.log('Pasta configurada e acessível:', handle.name);
+              } else {
+                console.log('Permissão perdida, solicitando reconfiguração');
+                localStorage.removeItem('pastaConfigurada');
+                setIsConfigured(false);
+                setIsFirstAccess(true);
+              }
             } catch (error) {
-              console.log('Permissão de pasta perdida, precisa reconfigurar');
+              console.log('Erro ao verificar permissão:', error);
               localStorage.removeItem('pastaConfigurada');
               setIsConfigured(false);
               setIsFirstAccess(true);
             }
           } else {
+            console.log('Handle não encontrado, reconfiguração necessária');
             setIsConfigured(false);
             setIsFirstAccess(true);
             localStorage.removeItem('pastaConfigurada');
@@ -115,6 +127,7 @@ export const useFileSystemBackup = () => {
           // Para fallback, marcar como configurado se já foi aceito antes
           setIsConfigured(hasConfigured);
           setIsFirstAccess(false);
+          console.log('Modo fallback ativo');
         }
       } catch (error) {
         console.error('Erro ao verificar configuração:', error);
@@ -130,10 +143,12 @@ export const useFileSystemBackup = () => {
 
   const configureDirectory = async (): Promise<boolean> => {
     try {
+      console.log('Iniciando configuração da pasta...');
       clearError();
 
       // Se File System API não estiver disponível, usar fallback
       if (!capabilities?.fileSystemAccess) {
+        console.log('File System API não disponível, usando fallback');
         setIsConfigured(true);
         setIsFirstAccess(false);
         localStorage.setItem('pastaConfigurada', 'true');
@@ -141,44 +156,61 @@ export const useFileSystemBackup = () => {
       }
 
       // Usar File System API
+      console.log('Solicitando seleção de pasta...');
       const handle = await handleDirectoryAccess();
       
       if (handle) {
+        console.log('Pasta selecionada:', handle.name);
+        
+        // Salvar handle
         await saveDirectoryHandle(handle);
         setDirectoryHandle(handle);
         setIsConfigured(true);
         setIsFirstAccess(false);
         localStorage.setItem('pastaConfigurada', 'true');
         
-        console.log('Pasta configurada com sucesso:', handle.name);
+        console.log('Configuração concluída com sucesso');
         return true;
       }
 
+      console.log('Nenhuma pasta foi selecionada');
       return false;
     } catch (error) {
       console.error('Erro ao configurar pasta:', error);
+      
+      // Se foi cancelado pelo usuário, não mostrar como erro
+      if ((error as Error).name === 'AbortError') {
+        console.log('Seleção cancelada pelo usuário');
+        return false;
+      }
+      
       throw error;
     }
   };
 
-  const saveBackup = async (data: string, filename: string): Promise<boolean> => {
+  const saveData = async (data: string, filename: string): Promise<boolean> => {
     try {
       clearError();
+      console.log('Salvando dados:', filename);
       return await saveFile(data, filename, directoryHandle);
     } catch (error) {
-      console.error('Erro ao salvar backup:', error);
+      console.error('Erro ao salvar dados:', error);
       throw error;
     }
   };
 
-  const getBackupStatus = () => {
-    if (loading) return 'Verificando...';
+  const getStatus = () => {
+    if (loading) return 'Verificando configuração...';
     if (lastError) return `Erro: ${lastError.message}`;
+    if (!isConfigured) return 'Pasta não configurada';
+    if (isConfigured && directoryHandle) return `Pasta: ${directoryHandle.name}`;
+    if (isConfigured) return 'Modo download ativo';
     
     return getSystemStatus();
   };
 
   const forceConfiguration = () => {
+    console.log('Forçando nova configuração');
     setIsFirstAccess(true);
     setIsConfigured(false);
     localStorage.removeItem('pastaConfigurada');
@@ -186,7 +218,7 @@ export const useFileSystemBackup = () => {
   };
 
   return {
-    isSupported: capabilities?.fileSystemAccess || true, // Sempre permitir configuração
+    isSupported: capabilities?.fileSystemAccess || true,
     isConfigured,
     isConnected: isConfigured && (directoryHandle !== null || !capabilities?.fileSystemAccess),
     loading,
@@ -197,8 +229,10 @@ export const useFileSystemBackup = () => {
     errorSuggestions: lastError ? getErrorSuggestions(lastError) : [],
     configureDirectory,
     configureFolder: configureDirectory,
-    saveBackup,
-    getBackupStatus,
+    saveBackup: saveData,
+    saveData,
+    getBackupStatus: getStatus,
+    getStatus,
     forceConfiguration,
     clearError,
     setShowConfigModal: () => {}

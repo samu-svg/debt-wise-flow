@@ -4,6 +4,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
+import { setSaveToFolderCallback } from '@/hooks/useLocalStorage';
 import { 
   Home, 
   Users,
@@ -21,7 +22,7 @@ const PrivateLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { isConfigured, loading } = useFileSystemBackup();
+  const { isConfigured, loading, saveData } = useFileSystemBackup();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
 
@@ -32,6 +33,21 @@ const PrivateLayout = () => {
     { path: '/app/reports', icon: BarChart3, label: 'Relatórios' },
     { path: '/app/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
   ];
+
+  // Configurar callback para salvamento automático na pasta
+  useEffect(() => {
+    if (isConfigured && saveData) {
+      setSaveToFolderCallback(async (data) => {
+        try {
+          const filename = `dados_${new Date().toISOString().split('T')[0]}.json`;
+          await saveData(JSON.stringify(data, null, 2), filename);
+          console.log('Dados salvos na pasta local automaticamente');
+        } catch (error) {
+          console.error('Erro ao salvar dados na pasta:', error);
+        }
+      });
+    }
+  }, [isConfigured, saveData]);
 
   useEffect(() => {
     // Verificar se precisa mostrar modal de configuração
@@ -56,7 +72,7 @@ const PrivateLayout = () => {
     return location.pathname.startsWith(path);
   };
 
-  // Se ainda está carregando ou modal de configuração está aberto, não renderizar o layout principal
+  // Se ainda está carregando ou modal de configuração está aberto, mostrar modal
   if (loading || showConfigModal) {
     return <BackupConfigModal open={showConfigModal} onConfigured={handleConfigured} />;
   }

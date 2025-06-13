@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useFileSystemBackup } from '@/hooks/useFileSystemBackup';
 import { toast } from '@/hooks/use-toast';
-import { FolderOpen, AlertTriangle, RefreshCw, Download } from 'lucide-react';
+import { FolderOpen, AlertTriangle, RefreshCw, Download, Database } from 'lucide-react';
 
 interface BackupConfigModalProps {
   open: boolean;
@@ -27,23 +27,32 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
   const handleConfigure = async () => {
     setConfiguring(true);
     try {
+      console.log('Tentando configurar pasta de dados...');
       clearError();
-      await configureDirectory();
-      toast({
-        title: "Pasta configurada!",
-        description: isSupported 
-          ? "Pasta configurada para backup automático." 
-          : "Sistema configurado para download manual.",
-      });
-      onConfigured();
-    } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        console.error('Erro ao configurar:', error);
+      const success = await configureDirectory();
+      
+      if (success) {
         toast({
-          title: "Erro na configuração",
+          title: "Pasta configurada com sucesso!",
+          description: isSupported 
+            ? "Pasta local configurada para armazenar seus dados." 
+            : "Sistema configurado para salvar dados via download.",
+        });
+        onConfigured();
+      } else {
+        console.log('Configuração não foi concluída');
+      }
+    } catch (error) {
+      console.error('Erro na configuração:', error);
+      
+      if ((error as Error).name !== 'AbortError') {
+        toast({
+          title: "Erro na configuração da pasta",
           description: "Verifique as sugestões abaixo e tente novamente.",
           variant: "destructive",
         });
+      } else {
+        console.log('Usuário cancelou a seleção');
       }
     } finally {
       setConfiguring(false);
@@ -51,8 +60,14 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
   };
 
   const handleRetry = () => {
+    console.log('Tentando novamente...');
     clearError();
     handleConfigure();
+  };
+
+  const handleSkip = () => {
+    console.log('Usuário optou por pular configuração');
+    onConfigured();
   };
 
   if (loading) {
@@ -64,11 +79,12 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-blue-600" />
-            Configuração de Backup
+            <Database className="w-5 h-5 text-blue-600" />
+            Configuração de Armazenamento Local
           </DialogTitle>
           <DialogDescription>
-            Configure uma pasta local para salvar seus dados com segurança. Esta pasta será sincronizada automaticamente a cada login.
+            Selecione uma pasta no seu computador para armazenar os dados dos clientes e dívidas. 
+            Os dados serão salvos automaticamente nesta pasta a cada alteração.
           </DialogDescription>
         </DialogHeader>
 
@@ -82,7 +98,7 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
                   <p className="font-medium">{lastError.message}</p>
                   {errorSuggestions.length > 0 && (
                     <div className="text-sm">
-                      <p className="font-medium mb-1">Sugestões:</p>
+                      <p className="font-medium mb-1">Sugestões para resolver:</p>
                       <ul className="list-disc list-inside space-y-1">
                         {errorSuggestions.map((suggestion, index) => (
                           <li key={index}>{suggestion}</li>
@@ -100,11 +116,11 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
             <Card className="border-green-200 bg-green-50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <FolderOpen className="w-5 h-5 text-green-600" />
+                  <Database className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-800">Sistema Completo Disponível</p>
+                    <p className="font-medium text-green-800">Armazenamento Local Disponível</p>
                     <p className="text-sm text-green-700 mt-1">
-                      Selecione uma pasta para backup automático direto.
+                      Seus dados serão salvos diretamente na pasta selecionada.
                     </p>
                   </div>
                 </div>
@@ -118,7 +134,7 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
                   <div>
                     <p className="font-medium text-orange-800">Modo Compatibilidade</p>
                     <p className="text-sm text-orange-700 mt-1">
-                      Backup via download automático. Use Chrome/Edge para melhor experiência.
+                      Dados salvos via download. Use Chrome/Edge para melhor experiência.
                     </p>
                   </div>
                 </div>
@@ -139,7 +155,7 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
                   {configuring ? 'Tentando...' : 'Tentar Novamente'}
                 </Button>
                 <Button 
-                  onClick={onConfigured}
+                  onClick={handleSkip}
                   variant="outline"
                 >
                   Pular
@@ -153,7 +169,7 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
               >
                 <FolderOpen className="w-4 h-4 mr-2" />
                 {configuring ? 'Configurando...' : 
-                 isSupported ? 'Selecionar Pasta Local' : 'Configurar Download'}
+                 isSupported ? 'Selecionar Pasta para Dados' : 'Configurar Armazenamento'}
               </Button>
             )}
           </div>
@@ -161,11 +177,12 @@ const BackupConfigModal = ({ open, onConfigured }: BackupConfigModalProps) => {
           {/* Info */}
           <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
             <div className="text-xs text-gray-600 space-y-1">
-              <p className="font-medium">Por que configurar uma pasta?</p>
-              <p>• Seus dados ficam salvos automaticamente no seu computador</p>
-              <p>• Sincronização automática a cada login</p>
-              <p>• Backup seguro e privado dos seus dados</p>
-              <p>• Acesso offline aos arquivos salvos</p>
+              <p className="font-medium">Por que configurar uma pasta local?</p>
+              <p>• Seus dados de clientes e dívidas ficam no seu computador</p>
+              <p>• Sincronização automática a cada alteração</p>
+              <p>• Controle total sobre seus dados sensíveis</p>
+              <p>• Acesso aos arquivos mesmo offline</p>
+              <p>• Backup automático dos dados importantes</p>
             </div>
           </div>
         </div>
