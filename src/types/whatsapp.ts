@@ -2,6 +2,7 @@
 export interface WhatsAppConnection {
   isConnected: boolean;
   phoneNumberId?: string;
+  phoneNumber?: string; // Para compatibilidade com componentes existentes
   businessAccountId?: string;
   accessToken?: string;
   webhookToken?: string;
@@ -9,6 +10,7 @@ export interface WhatsAppConnection {
   status: 'disconnected' | 'connecting' | 'connected' | 'error';
   retryCount: number;
   lastError?: string;
+  qrCode?: string; // Para compatibilidade com componentes existentes
 }
 
 export interface WhatsAppLog {
@@ -37,6 +39,10 @@ export interface WhatsAppConfig {
   webhookToken: string;
   webhookUrl: string;
   messageDelay: number;
+  // Propriedades para configurações avançadas (compatibilidade)
+  autoReconnect?: boolean;
+  retryInterval?: number;
+  maxRetries?: number;
   businessHours: {
     enabled: boolean;
     start: string;

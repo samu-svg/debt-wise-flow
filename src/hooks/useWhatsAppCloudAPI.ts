@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { WhatsAppConnection, WhatsAppLog, WhatsAppConfig, WhatsAppTemplate } from '@/types/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,9 @@ const STORAGE_KEYS = {
 
 const DEFAULT_CONFIG: Partial<WhatsAppConfig> = {
   messageDelay: 2000,
+  autoReconnect: true,
+  retryInterval: 15000,
+  maxRetries: 5,
   businessHours: {
     enabled: false,
     start: '09:00',
@@ -111,6 +113,7 @@ export const useWhatsAppCloudAPI = () => {
           isConnected: true,
           status: 'connected',
           phoneNumberId: config.phoneNumberId,
+          phoneNumber: data.data?.phoneNumber, // Para compatibilidade
           businessAccountId: config.businessAccountId,
           accessToken: config.accessToken,
           lastSeen: new Date().toISOString(),
