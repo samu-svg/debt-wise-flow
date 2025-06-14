@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System - Paleta Minimalista */
+/* Design System - Paleta Minimalista SEM AMARELO */
 
 @layer base {
   :root {
@@ -15,10 +15,11 @@
     --color-text-secondary: #6C757D;
     --color-border: #DEE2E6;
     
-    /* Estados */
+    /* Estados - SEM AMARELO */
     --color-success: #5FED83;
     --color-error: #DC3545;
-    --color-warning: #6C757D !important; /* Forçando cinza em vez de amarelo */
+    --color-warning: #6C757D !important; /* FORÇADO: Cinza em vez de amarelo */
+    --color-info: #6C757D !important; /* FORÇADO: Cinza em vez de azul */
 
     --background: 248 249 250;
     --foreground: 52 58 64;
@@ -59,10 +60,10 @@
     --sidebar-border: 222 226 230;
     --sidebar-ring: 8 135 43;
 
-    /* Custom variables - Design minimalista */
+    /* Custom variables - Design minimalista SEM AMARELO */
     --success: 95 237 131;
-    --info: 108 117 125;
-    --warning: 108 117 125 !important; /* Cinza em vez de amarelo */
+    --info: 107 114 128 !important; /* FORÇADO: Cinza */
+    --warning: 107 114 128 !important; /* FORÇADO: Cinza em vez de amarelo */
     --gradient-primary: linear-gradient(135deg, rgb(8 135 43) 0%, rgb(95 237 131) 100%);
     --gradient-success: linear-gradient(135deg, rgb(95 237 131) 0%, rgb(8 135 43) 100%);
     --gradient-card: linear-gradient(145deg, rgb(255 255 255) 0%, rgb(248 249 250) 100%);
@@ -113,6 +114,10 @@
     --gradient-card: linear-gradient(145deg, rgb(73 80 87) 0%, rgb(108 117 125) 100%);
     --shadow-elevation: 0 25px 50px -12px rgb(0 0 0 / 0.25);
     --shadow-card: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* DARK MODE - Forçar cores sem amarelo */
+    --warning: 107 114 128 !important;
+    --info: 107 114 128 !important;
   }
 }
 
@@ -127,32 +132,32 @@
     color: var(--color-text-primary) !important;
   }
 
-  /* Typography System */
+  /* Typography System - SEM AMARELO */
   h1 {
     @apply text-3xl font-bold tracking-tight;
-    color: var(--color-text-primary) !important;
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
   }
 
   h2 {
     @apply text-2xl font-semibold tracking-tight;
-    color: var(--color-text-primary) !important;
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
   }
 
   h3 {
     @apply text-xl font-semibold;
-    color: var(--color-text-primary) !important;
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
   }
 
   h4 {
     @apply text-lg font-medium;
-    color: var(--color-text-secondary) !important;
+    color: #6B7280 !important; /* FORÇADO: Cinza médio */
   }
 
-  /* Professional Components - Paleta Minimalista */
+  /* Professional Components - Paleta Minimalista SEM AMARELO */
   .card-modern {
     @apply rounded-xl shadow-lg border backdrop-blur-sm;
-    background: var(--color-background) !important;
-    border-color: var(--color-border) !important;
+    background: #FFFFFF !important;
+    border-color: #E5E7EB !important;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   }
 
@@ -163,108 +168,112 @@
 
   .btn-primary {
     @apply text-white font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: var(--color-primary) !important;
-    border-color: var(--color-primary) !important;
+    background-color: #10B981 !important; /* FORÇADO: Verde suave */
+    border-color: #10B981 !important;
+    color: #FFFFFF !important;
   }
 
   .btn-primary:hover {
-    background-color: rgb(95 237 131) !important;
+    background-color: #059669 !important; /* FORÇADO: Verde mais escuro no hover */
   }
 
   .btn-success {
     @apply text-white font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background: var(--gradient-success) !important;
+    background-color: #10B981 !important; /* FORÇADO: Verde */
+    color: #FFFFFF !important;
   }
 
   .btn-danger {
     @apply font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: var(--color-error) !important;
-    color: white !important;
+    background-color: #EF4444 !important; /* FORÇADO: Vermelho suave */
+    color: #FFFFFF !important;
   }
 
   .btn-secondary {
     @apply font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: var(--color-text-secondary) !important;
-    color: white !important;
-    border: 1px solid var(--color-border) !important;
+    background-color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    color: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
   }
 
-  /* FORÇAR REMOÇÃO DE QUALQUER AMARELO - WARNING STYLES */
+  /* ELIMINAÇÃO TOTAL DE AMARELO - WARNING STYLES */
   .btn-warning,
   .alert-warning,
   .warning,
   .text-warning,
-  .bg-warning {
-    background-color: #6B7280 !important;
-    color: white !important;
+  .bg-warning,
+  .border-warning {
+    background-color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    color: #FFFFFF !important;
     border-color: #6B7280 !important;
   }
 
   .metric-card {
     @apply rounded-xl p-6 shadow-lg border transition-all duration-200 hover:shadow-xl hover:scale-[1.02];
-    background: var(--color-background) !important;
-    border-color: var(--color-border) !important;
+    background: #FFFFFF !important;
+    border-color: #E5E7EB !important;
   }
 
   .status-online {
-    background-color: var(--color-primary) !important;
-    color: white !important;
+    background-color: #10B981 !important; /* FORÇADO: Verde */
+    color: #FFFFFF !important;
   }
 
   .status-offline {
-    background-color: var(--color-error) !important;
-    color: white !important;
+    background-color: #EF4444 !important; /* FORÇADO: Vermelho */
+    color: #FFFFFF !important;
   }
 
   .status-info {
-    background-color: var(--color-background) !important;
-    color: var(--color-text-primary) !important;
-    border: 1px solid var(--color-border) !important;
+    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
+    border: 1px solid #E5E7EB !important;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 
   .status-pending {
-    background-color: var(--color-text-secondary) !important;
-    color: white !important;
+    background-color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    color: #FFFFFF !important;
   }
 
   /* Loading Animations */
   .loading-skeleton {
     @apply animate-pulse rounded;
-    background-color: var(--color-background-secondary) !important;
+    background-color: #F9FAFB !important;
   }
 
   .loading-spinner {
     @apply animate-spin rounded-full border-2;
-    border-color: var(--color-background-secondary) !important;
-    border-top-color: var(--color-primary) !important;
+    border-color: #F9FAFB !important;
+    border-top-color: #10B981 !important;
   }
 
-  /* Form Improvements */
+  /* Form Improvements - SEM AMARELO */
   .form-floating {
     @apply relative;
   }
 
   .form-floating input {
     @apply block w-full px-4 pt-6 pb-2 text-base rounded-lg focus:ring-2 focus:border-transparent transition-all duration-200;
-    background-color: var(--color-background) !important;
-    border: 1px solid var(--color-border) !important;
-    color: var(--color-text-primary) !important;
+    background-color: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    color: #374151 !important;
   }
 
   .form-floating input:focus {
-    ring-color: var(--color-primary) !important;
+    ring-color: #10B981 !important; /* FORÇADO: Verde */
+    border-color: #10B981 !important;
   }
 
   .form-floating label {
     @apply absolute left-4 top-4 text-sm transition-all duration-200 transform origin-top-left pointer-events-none;
-    color: var(--color-text-secondary) !important;
+    color: #6B7280 !important;
   }
 
   .form-floating input:focus + label,
   .form-floating input:not(:placeholder-shown) + label {
     @apply -translate-y-2 scale-90;
-    color: var(--color-primary) !important;
+    color: #10B981 !important; /* FORÇADO: Verde */
   }
 
   /* Micro-interactions */
@@ -280,19 +289,19 @@
     @apply animate-in slide-in-from-bottom-4 duration-300;
   }
 
-  /* Professional Navigation */
+  /* Professional Navigation - SEM AMARELO */
   .nav-item {
     @apply relative px-4 py-3 rounded-lg transition-all duration-200;
     background-color: transparent !important;
   }
 
   .nav-item:hover {
-    background-color: var(--color-background-secondary) !important;
+    background-color: #F9FAFB !important;
   }
 
   .nav-item.active {
-    background-color: var(--color-primary) !important;
-    color: white !important;
+    background-color: #10B981 !important; /* FORÇADO: Verde */
+    color: #FFFFFF !important;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   }
 
@@ -300,71 +309,71 @@
     @apply content-[''] absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full;
   }
 
-  /* Status Badges - Paleta Minimalista */
+  /* Status Badges - Paleta Minimalista SEM AMARELO */
   .badge-success {
-    background-color: rgb(95 237 131 / 0.1) !important;
-    color: var(--color-primary) !important;
+    background-color: rgb(16 185 129 / 0.1) !important; /* FORÇADO: Verde */
+    color: #10B981 !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
   .badge-info {
-    background-color: rgb(108 117 125 / 0.1) !important;
-    color: var(--color-text-secondary) !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-danger {
-    background-color: rgb(220 53 69 / 0.1) !important;
-    color: var(--color-error) !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-primary {
-    background-color: rgb(8 135 43 / 0.1) !important;
-    color: var(--color-primary) !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-secondary {
-    background-color: var(--color-background-secondary) !important;
-    color: var(--color-text-secondary) !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-pending {
-    background-color: rgb(108 117 125 / 0.1) !important;
-    color: var(--color-text-secondary) !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-paid {
-    background-color: rgb(95 237 131 / 0.1) !important;
-    color: var(--color-primary) !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-overdue {
-    background-color: rgb(220 53 69 / 0.1) !important;
-    color: var(--color-error) !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  /* FORÇAR REMOÇÃO DE AMARELO EM BADGES WARNING */
-  .badge-warning {
-    background-color: rgb(107 114 128 / 0.1) !important;
+    background-color: rgb(107 114 128 / 0.1) !important; /* FORÇADO: Cinza */
     color: #6B7280 !important;
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
-  /* Progress Bars */
+  .badge-danger {
+    background-color: rgb(239 68 68 / 0.1) !important; /* FORÇADO: Vermelho */
+    color: #EF4444 !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-primary {
+    background-color: rgb(16 185 129 / 0.1) !important; /* FORÇADO: Verde */
+    color: #10B981 !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-secondary {
+    background-color: #F9FAFB !important;
+    color: #6B7280 !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-pending {
+    background-color: rgb(107 114 128 / 0.1) !important; /* FORÇADO: Cinza */
+    color: #6B7280 !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-paid {
+    background-color: rgb(16 185 129 / 0.1) !important; /* FORÇADO: Verde */
+    color: #10B981 !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-overdue {
+    background-color: rgb(239 68 68 / 0.1) !important; /* FORÇADO: Vermelho */
+    color: #EF4444 !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  /* ELIMINAÇÃO COMPLETA DE AMARELO EM BADGES WARNING */
+  .badge-warning {
+    background-color: rgb(107 114 128 / 0.1) !important; /* FORÇADO: Cinza */
+    color: #6B7280 !important;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  /* Progress Bars - SEM AMARELO */
   .progress-bar {
     @apply w-full rounded-full h-3 overflow-hidden;
-    background-color: var(--color-background-secondary) !important;
+    background-color: #F9FAFB !important;
   }
 
   .progress-fill {
     @apply h-full rounded-full transition-all duration-500 ease-out;
-    background-color: var(--color-primary) !important;
+    background-color: #10B981 !important; /* FORÇADO: Verde */
   }
 
   /* Glass Effect */
@@ -374,61 +383,69 @@
     border-color: rgb(255 255 255 / 0.2) !important;
   }
 
-  /* Focus States */
+  /* Focus States - SEM AMARELO */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
-    --tw-ring-color: var(--color-primary) !important;
+    --tw-ring-color: #10B981 !important; /* FORÇADO: Verde */
   }
 
-  /* Login Page Specific Styles - Minimalist Design FORÇADO */
-  .login-container {
+  /* LOGIN E CADASTRO - DESIGN MINIMALISTA FORÇADO SEM AMARELO */
+  .login-container,
+  .register-container {
     @apply bg-white border shadow-sm;
     background-color: #FFFFFF !important;
     border-color: #E5E7EB !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
 
-  .login-title {
-    color: #374151 !important;
+  .login-title,
+  .register-title {
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
     font-weight: 600 !important;
   }
 
   .form-label {
-    color: #374151 !important;
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
     font-weight: 500 !important;
   }
 
-  .login-input {
+  .login-input,
+  .register-input {
     background-color: #FFFFFF !important;
     border: 1px solid #E5E7EB !important;
     color: #374151 !important;
   }
 
-  .login-input:focus {
-    border-color: #10B981 !important;
+  .login-input:focus,
+  .register-input:focus {
+    border-color: #10B981 !important; /* FORÇADO: Verde */
     ring-color: #10B981 !important;
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
   }
 
-  .btn-login {
-    background-color: #10B981 !important;
+  .btn-login,
+  .btn-register {
+    background-color: #10B981 !important; /* FORÇADO: Verde suave */
     color: #FFFFFF !important;
     border: none !important;
     font-weight: 500 !important;
   }
 
-  .btn-login:hover:not(:disabled) {
-    background-color: #059669 !important;
+  .btn-login:hover:not(:disabled),
+  .btn-register:hover:not(:disabled) {
+    background-color: #059669 !important; /* FORÇADO: Verde mais escuro */
   }
 
-  .register-link {
-    color: #6B7280 !important;
+  .register-link,
+  .login-link {
+    color: #6B7280 !important; /* FORÇADO: Cinza médio */
     text-decoration: none !important;
     transition: color 0.2s ease !important;
   }
 
-  .register-link:hover {
-    color: #10B981 !important;
+  .register-link:hover,
+  .login-link:hover {
+    color: #10B981 !important; /* FORÇADO: Verde */
   }
 
   .forgot-password {
@@ -438,58 +455,100 @@
   }
 
   .forgot-password:hover {
-    color: #10B981 !important;
+    color: #10B981 !important; /* FORÇADO: Verde */
   }
 
   .error-message {
-    background-color: #F9FAFB !important;
-    color: #374151 !important;
+    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
     border-left: 3px solid #6B7280 !important;
     padding: 0.75rem !important;
     border-radius: 0.375rem !important;
   }
 
-  /* ANULAR QUALQUER COR AMARELA NO SISTEMA INTEIRO */
+  /* ELIMINAÇÃO TOTAL DE QUALQUER COR AMARELA NO SISTEMA INTEIRO */
   * {
     color: inherit !important;
   }
   
+  /* FORÇAR REMOÇÃO TOTAL DE AMARELO */
   *[style*="yellow"], 
   *[style*="#FFD700"], 
   *[style*="#FFC107"], 
   *[style*="#FFEB3B"],
+  *[style*="#F59E0B"],
+  *[style*="#FBBF24"],
+  *[style*="#FDE047"],
+  .text-yellow-50,
+  .text-yellow-100,
+  .text-yellow-200,
+  .text-yellow-300,
   .text-yellow-400,
   .text-yellow-500,
   .text-yellow-600,
+  .text-yellow-700,
+  .text-yellow-800,
+  .text-yellow-900,
+  .bg-yellow-50,
+  .bg-yellow-100,
+  .bg-yellow-200,
+  .bg-yellow-300,
   .bg-yellow-400,
   .bg-yellow-500,
   .bg-yellow-600,
+  .bg-yellow-700,
+  .bg-yellow-800,
+  .bg-yellow-900,
+  .border-yellow-50,
+  .border-yellow-100,
+  .border-yellow-200,
+  .border-yellow-300,
   .border-yellow-400,
   .border-yellow-500,
-  .border-yellow-600 {
-    color: #6B7280 !important;
+  .border-yellow-600,
+  .border-yellow-700,
+  .border-yellow-800,
+  .border-yellow-900 {
+    color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
+    border-color: #E5E7EB !important; /* FORÇADO: Cinza claro */
+  }
+
+  /* FORÇAR ALERTAS E NOTIFICAÇÕES SEM AMARELO */
+  .alert,
+  .notification,
+  .toast {
     background-color: #F9FAFB !important;
     border-color: #E5E7EB !important;
+    color: #374151 !important;
+  }
+
+  .alert-warning,
+  .notification-warning,
+  .toast-warning {
+    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
+    border-color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    color: #374151 !important; /* FORÇADO: Cinza escuro */
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - SEM AMARELO */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: var(--color-background-secondary) !important;
+  background-color: #F9FAFB !important;
   border-radius: 0.5rem;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-text-secondary) !important;
+  background-color: #6B7280 !important;
   border-radius: 0.5rem;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-primary) !important;
+  background-color: #10B981 !important; /* FORÇADO: Verde */
 }
 
 /* Print Styles */
@@ -497,4 +556,44 @@
   .no-print {
     display: none !important;
   }
+  
+  /* FORÇAR CORES ADEQUADAS PARA IMPRESSÃO */
+  * {
+    color: #000000 !important;
+    background-color: #FFFFFF !important;
+  }
+}
+
+/* VERIFICAÇÃO FINAL - ANULAR QUALQUER AMARELO RESTANTE */
+body *,
+body *::before,
+body *::after {
+  /* Se algum elemento ainda tiver amarelo, forçar para cinza */
+  color: inherit !important;
+}
+
+/* FORÇAR INPUTS E FORMS SEM AMARELO */
+input, textarea, select, button {
+  background-color: #FFFFFF !important;
+  border-color: #E5E7EB !important;
+  color: #374151 !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #10B981 !important;
+  ring-color: #10B981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* BOTÕES DE FORMULÁRIO FORÇADOS */
+button[type="submit"],
+.submit-button {
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+
+button[type="submit"]:hover,
+.submit-button:hover {
+  background-color: #059669 !important;
 }
