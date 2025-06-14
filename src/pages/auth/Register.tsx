@@ -80,12 +80,14 @@ const Register = () => {
                 color: '#374151'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#10B981';
-                e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                const target = e.target as HTMLInputElement;
+                target.style.borderColor = '#10B981';
+                target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#E5E7EB';
-                e.target.style.boxShadow = 'none';
+                const target = e.target as HTMLInputElement;
+                target.style.borderColor = '#E5E7EB';
+                target.style.boxShadow = 'none';
               }}
               required
             />
@@ -107,12 +109,14 @@ const Register = () => {
                 color: '#374151'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#10B981';
-                e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                const target = e.target as HTMLInputElement;
+                target.style.borderColor = '#10B981';
+                target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#E5E7EB';
-                e.target.style.boxShadow = 'none';
+                const target = e.target as HTMLInputElement;
+                target.style.borderColor = '#E5E7EB';
+                target.style.boxShadow = 'none';
               }}
               required
             />
@@ -134,12 +138,14 @@ const Register = () => {
                 color: '#374151'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#10B981';
-                e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                const target = e.target as HTMLInputElement;
+                target.style.borderColor = '#10B981';
+                target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#E5E7EB';
-                e.target.style.boxShadow = 'none';
+                const target = e.target as HTMLInputElement;
+                target.style.borderColor = '#E5E7EB';
+                target.style.boxShadow = 'none';
               }}
               required
             />
@@ -155,10 +161,16 @@ const Register = () => {
               fontWeight: '500'
             }}
             onMouseEnter={(e) => {
-              if (!loading) e.target.style.backgroundColor = '#059669';
+              if (!loading) {
+                const target = e.target as HTMLButtonElement;
+                target.style.backgroundColor = '#059669';
+              }
             }}
             onMouseLeave={(e) => {
-              if (!loading) e.target.style.backgroundColor = '#10B981';
+              if (!loading) {
+                const target = e.target as HTMLButtonElement;
+                target.style.backgroundColor = '#10B981';
+              }
             }}
           >
             {loading ? 'Criando conta...' : 'Criar Conta'}
@@ -176,8 +188,14 @@ const Register = () => {
                 textDecoration: 'none',
                 transition: 'color 0.2s ease'
               }}
-              onMouseEnter={(e) => e.target.style.color = '#10B981'}
-              onMouseLeave={(e) => e.target.style.color = '#6B7280'}
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLAnchorElement;
+                target.style.color = '#10B981';
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLAnchorElement;
+                target.style.color = '#6B7280';
+              }}
             >
               Faça login
             </Link>
