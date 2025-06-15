@@ -92,6 +92,43 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     }
   }, [addLog]);
 
+  // Declare loadTemplates first
+  const loadTemplates = useCallback(async (): Promise<void> => {
+    if (!config.accessToken || !config.businessAccountId) {
+      addLog('error', 'Configuração incompleta para carregar templates');
+      return;
+    }
+
+    setIsLoading(true);
+    addLog('system', 'Carregando templates...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-cloud-api', {
+        body: {
+          action: 'get_templates',
+          config
+        }
+      });
+
+      if (error) {
+        throw new Error(`Erro na função: ${error.message}`);
+      }
+
+      if (data?.success) {
+        const loadedTemplates = data.templates || [];
+        saveTemplates(loadedTemplates);
+        addLog('system', `${loadedTemplates.length} templates carregados (${data.approved || 0} aprovados)`);
+      } else {
+        throw new Error(data?.error || 'Erro ao carregar templates');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar templates';
+      addLog('error', `Erro ao carregar templates: ${errorMessage}`, { error });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [config, addLog, saveTemplates]);
+
   const validateConfiguration = useCallback(async (): Promise<boolean> => {
     if (!config.accessToken || !config.phoneNumberId || !config.businessAccountId) {
       addLog('error', 'Configuração incompleta - Todos os campos são obrigatórios');
@@ -250,42 +287,6 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
       throw error;
     }
   }, [connection, config, addLog]);
-
-  const loadTemplates = useCallback(async (): Promise<void> => {
-    if (!config.accessToken || !config.businessAccountId) {
-      addLog('error', 'Configuração incompleta para carregar templates');
-      return;
-    }
-
-    setIsLoading(true);
-    addLog('system', 'Carregando templates...');
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('whatsapp-cloud-api', {
-        body: {
-          action: 'get_templates',
-          config
-        }
-      });
-
-      if (error) {
-        throw new Error(`Erro na função: ${error.message}`);
-      }
-
-      if (data?.success) {
-        const loadedTemplates = data.templates || [];
-        saveTemplates(loadedTemplates);
-        addLog('system', `${loadedTemplates.length} templates carregados (${data.approved || 0} aprovados)`);
-      } else {
-        throw new Error(data?.error || 'Erro ao carregar templates');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar templates';
-      addLog('error', `Erro ao carregar templates: ${errorMessage}`, { error });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [config, addLog, saveTemplates]);
 
   // Carregar dados salvos na inicialização
   useState(() => {
