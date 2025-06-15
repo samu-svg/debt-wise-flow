@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { useWhatsAppConnection } from './useWhatsAppConnection';
+import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { useMessageTemplates } from './useMessageTemplates';
 import { CommunicationLog, AutomationConfig, ClientSettings, AutomationStats } from '@/types/automation';
 import { Client, Debt } from '@/types';
@@ -37,8 +37,13 @@ const DEFAULT_CONFIG: AutomationConfig = {
 
 export const useCollectionAutomation = () => {
   const { clients } = useLocalStorage();
-  const { connection, addLog } = useWhatsAppConnection();
+  const { connection, logs } = useWhatsAppCloudAPI();
   const { templates, calculateDebtValues } = useMessageTemplates();
+
+  // Função de log local para substituir addLog
+  const addLog = useCallback((type: string, message: string, data?: any) => {
+    console.log(`[${type.toUpperCase()}] ${message}`, data);
+  }, []);
 
   const [communications, setCommunications] = useState<CommunicationLog[]>([]);
   const [config, setConfig] = useState<AutomationConfig>(DEFAULT_CONFIG);

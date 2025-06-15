@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useWhatsAppConnection } from '@/hooks/useWhatsAppConnection';
+import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { toast } from '@/hooks/use-toast';
 import { Settings, Clock, RefreshCw, Save } from 'lucide-react';
 import { WhatsAppConfig as ConfigType } from '@/types/whatsapp';
 
 const WhatsAppConfig = () => {
-  const { config, updateConfig } = useWhatsAppConnection();
+  const { config, updateConfig } = useWhatsAppCloudAPI();
   const [formData, setFormData] = useState<Partial<ConfigType>>(config);
   const [hasChanges, setHasChanges] = useState(false);
 

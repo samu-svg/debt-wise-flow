@@ -8,6 +8,11 @@ interface UseWhatsAppConnectionReturn {
   connection: WhatsAppConnection;
   updateConnection: (newConnection: WhatsAppConnection) => void;
   resetConnection: () => void;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+  retry: () => Promise<void>;
+  generateNewQR: () => Promise<void>;
+  isLoading: boolean;
 }
 
 export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
@@ -16,6 +21,7 @@ export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
     status: 'disconnected',
     retryCount: 0
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   // Carregar conexão salva
   const loadSavedConnection = useCallback(() => {
@@ -53,6 +59,51 @@ export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
     saveConnection(disconnectedConnection);
   }, [saveConnection]);
 
+  const connect = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const connectingConnection: WhatsAppConnection = {
+        isConnected: false,
+        status: 'connecting',
+        retryCount: 0
+      };
+      saveConnection(connectingConnection);
+      // Lógica de conexão seria implementada aqui
+      console.log('Tentando conectar...');
+    } catch (error) {
+      console.error('Erro ao conectar:', error);
+      const errorConnection: WhatsAppConnection = {
+        isConnected: false,
+        status: 'error',
+        retryCount: connection.retryCount + 1,
+        lastError: error instanceof Error ? error.message : 'Erro desconhecido'
+      };
+      saveConnection(errorConnection);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection.retryCount, saveConnection]);
+
+  const disconnect = useCallback((): void => {
+    resetConnection();
+  }, [resetConnection]);
+
+  const retry = useCallback(async (): Promise<void> => {
+    await connect();
+  }, [connect]);
+
+  const generateNewQR = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      // Lógica para gerar novo QR seria implementada aqui
+      console.log('Gerando novo QR...');
+    } catch (error) {
+      console.error('Erro ao gerar QR:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Carregar dados salvos na inicialização
   useState(() => {
     loadSavedConnection();
@@ -61,6 +112,11 @@ export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
   return useMemo(() => ({
     connection,
     updateConnection,
-    resetConnection
-  }), [connection, updateConnection, resetConnection]);
+    resetConnection,
+    connect,
+    disconnect,
+    retry,
+    generateNewQR,
+    isLoading
+  }), [connection, updateConnection, resetConnection, connect, disconnect, retry, generateNewQR, isLoading]);
 };
