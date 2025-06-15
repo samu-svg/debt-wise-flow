@@ -50,7 +50,7 @@ export class ClientService {
   static async getActiveClients(userId: string): Promise<LocalClient[]> {
     try {
       const userData = await hybridDataManager.loadUserData(userId);
-      return userData.clients.filter(client => client.ativo !== false);
+      return userData.clients; // Removendo filtro por 'ativo' que não existe no tipo
     } catch (error) {
       console.error('❌ ClientService: Erro ao buscar clientes ativos:', error);
       return [];
@@ -63,7 +63,7 @@ export class ClientService {
       const searchTerm = query.toLowerCase();
       return userData.clients.filter(client => 
         client.nome.toLowerCase().includes(searchTerm) ||
-        client.telefone.includes(query) ||
+        client.whatsapp.includes(query) || // Corrigido: whatsapp em vez de telefone
         client.email?.toLowerCase().includes(searchTerm)
       );
     } catch (error) {

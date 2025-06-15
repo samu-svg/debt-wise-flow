@@ -41,7 +41,7 @@ export class DebtService {
     try {
       await this.updateDebt(userId, debtId, { 
         status: 'pago',
-        dataPagamento: new Date().toISOString()
+        updatedAt: new Date().toISOString() // Usando updatedAt em vez de dataPagamento
       });
     } catch (error) {
       console.error('❌ DebtService: Erro ao marcar dívida como paga:', error);
@@ -77,7 +77,7 @@ export class DebtService {
   static async getDebtsByClient(userId: string, clientId: string): Promise<LocalDebt[]> {
     try {
       const userData = await hybridDataManager.loadUserData(userId);
-      return userData.debts.filter(debt => debt.clienteId === clientId);
+      return userData.debts.filter(debt => debt.clientId === clientId); // Corrigido: clientId
     } catch (error) {
       console.error('❌ DebtService: Erro ao buscar dívidas do cliente:', error);
       return [];

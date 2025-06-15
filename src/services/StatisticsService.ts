@@ -78,7 +78,7 @@ export class StatisticsService {
   static async getClientStatistics(userId: string, clientId: string) {
     try {
       const userData = await hybridDataManager.loadUserData(userId);
-      const clientDebts = userData.debts.filter(debt => debt.clienteId === clientId);
+      const clientDebts = userData.debts.filter(debt => debt.clientId === clientId); // Corrigido: clientId
       
       return {
         totalDebts: clientDebts.length,
@@ -87,8 +87,8 @@ export class StatisticsService {
         paidDebts: clientDebts.filter(d => d.status === 'pago').length,
         totalAmount: clientDebts.filter(d => d.status !== 'pago').reduce((sum, debt) => sum + debt.valor, 0),
         lastPayment: clientDebts
-          .filter(d => d.status === 'pago' && d.dataPagamento)
-          .sort((a, b) => new Date(b.dataPagamento!).getTime() - new Date(a.dataPagamento!).getTime())[0]?.dataPagamento
+          .filter(d => d.status === 'pago')
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0]?.updatedAt // Usando updatedAt
       };
     } catch (error) {
       console.error('❌ StatisticsService: Erro ao calcular estatísticas do cliente:', error);
