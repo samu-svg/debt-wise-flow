@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +30,8 @@ const BackupStatus = () => {
     isFirstAccess,
     loading,
     reconnecting,
-    attemptAutoReconnect
+    attemptAutoReconnect,
+    resetConfiguration
   } = useFileSystemBackup();
 
   const { restoreFromFolder } = useLocalStorage();
@@ -41,7 +41,7 @@ const BackupStatus = () => {
     if (user && !loading && !reconnecting && !isConfigured && isSupported) {
       const timer = setTimeout(() => {
         setShowConfigModal(true);
-      }, 2000); // Aguarda 2 segundos após login
+      }, 3000); // Aguarda 3 segundos após login para dar tempo da reconexão automática
       return () => clearTimeout(timer);
     }
   }, [user, loading, reconnecting, isConfigured, isSupported]);
@@ -61,7 +61,7 @@ const BackupStatus = () => {
         icon: RefreshCw,
         color: 'bg-blue-500',
         text: 'Reconectando...',
-        description: 'Tentando reconectar à pasta configurada'
+        description: 'Tentando reconectar à pasta configurada automaticamente'
       };
     }
     
@@ -121,13 +121,22 @@ const BackupStatus = () => {
   const handleReconnect = async () => {
     if (user && isSupported) {
       try {
-        const success = await attemptAutoReconnect();
-        if (!success) {
-          // Se reconexão falhou, oferecer nova configuração
-          await handleConfigure();
-        }
+        await attemptAutoReconnect();
       } catch (error) {
         console.error('Erro ao reconectar:', error);
+      }
+    }
+  };
+
+  const handleResetAndConfigure = async () => {
+    if (user && isSupported) {
+      try {
+        await resetConfiguration();
+        setTimeout(() => {
+          handleConfigure();
+        }, 500);
+      } catch (error) {
+        console.error('Erro ao resetar configuração:', error);
       }
     }
   };
@@ -218,8 +227,19 @@ const BackupStatus = () => {
               </div>
             )}
             
+            {reconnecting && (
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>🔄 Reconexão Automática Ativa</strong>
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Sistema tentando reconectar automaticamente à pasta configurada anteriormente.
+                </p>
+              </div>
+            )}
+            
             <div className="flex gap-2 flex-wrap">
-              {isSupported && (isFirstAccess || !isConfigured) && (
+              {isSupported && (isFirstAccess || !isConfigured) && !reconnecting && (
                 <Button 
                   onClick={handleConfigure} 
                   size="sm"
@@ -232,17 +252,29 @@ const BackupStatus = () => {
                 </Button>
               )}
 
-              {isConfigured && !isConnected && isSupported && (
-                <Button 
-                  onClick={handleReconnect}
-                  size="sm"
-                  variant="default"
-                  className="flex items-center gap-2"
-                  disabled={loading || reconnecting}
-                >
-                  <RefreshCw className={`w-4 h-4 ${reconnecting ? 'animate-spin' : ''}`} />
-                  {reconnecting ? 'Reconectando...' : 'Reconectar'}
-                </Button>
+              {isConfigured && !isConnected && isSupported && !reconnecting && (
+                <>
+                  <Button 
+                    onClick={handleReconnect}
+                    size="sm"
+                    variant="default"
+                    className="flex items-center gap-2"
+                    disabled={loading || reconnecting}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reconectar
+                  </Button>
+                  <Button 
+                    onClick={handleResetAndConfigure}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    disabled={loading || reconnecting}
+                  >
+                    <Folder className="w-4 h-4" />
+                    Nova Pasta
+                  </Button>
+                </>
               )}
 
               {isConfigured && isConnected && (
