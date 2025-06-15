@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useLocalDataManager } from '@/hooks/useLocalDataManager';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, X, FileText } from 'lucide-react';
 
 const Clients = () => {
-  const { database, addClient, deleteClient, isLoaded } = useLocalDataManager();
+  const { clientes, dividas, addCliente, deleteCliente, loading } = useSupabaseData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
@@ -31,13 +31,13 @@ const Clients = () => {
     }
 
     try {
-      await addClient(formData);
+      await addCliente(formData);
       setFormData({ nome: '', email: '', whatsapp: '' });
       setIsDialogOpen(false);
       
       toast({
         title: "Cliente adicionado!",
-        description: "Cliente cadastrado com sucesso e salvo na pasta local",
+        description: "Cliente cadastrado com sucesso",
       });
     } catch (error) {
       toast({
@@ -51,7 +51,7 @@ const Clients = () => {
   const handleDelete = async (id: string, nome: string) => {
     if (window.confirm(`Tem certeza que deseja excluir o cliente ${nome}?`)) {
       try {
-        await deleteClient(id);
+        await deleteCliente(id);
         toast({
           title: "Cliente excluído",
           description: "Cliente removido com sucesso",
@@ -67,10 +67,10 @@ const Clients = () => {
   };
 
   const getClientDebts = (clientId: string) => {
-    return database.debts.filter(debt => debt.clientId === clientId);
+    return dividas.filter(debt => debt.cliente_id === clientId);
   };
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -86,7 +86,7 @@ const Clients = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-[#343A40]">Clientes</h1>
-          <p className="text-[#6C757D]">{database.clients.length} clientes cadastrados</p>
+          <p className="text-[#6C757D]">{clientes.length} clientes cadastrados</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -148,7 +148,7 @@ const Clients = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {database.clients.map((client) => {
+        {clientes.map((client) => {
           const clientDebts = getClientDebts(client.id);
           const activeDebts = clientDebts.filter(d => d.status === 'pendente' || d.status === 'atrasado');
           const totalAmount = activeDebts.reduce((sum, debt) => sum + debt.valor, 0);
@@ -180,7 +180,7 @@ const Clients = () => {
                       {activeDebts.length} ativas • R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-[#6C757D]">
-                      Cadastrado em: {new Date(client.createdAt).toLocaleDateString('pt-BR')}
+                      Cadastrado em: {new Date(client.created_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                 </div>
@@ -190,7 +190,7 @@ const Clients = () => {
         })}
       </div>
 
-      {database.clients.length === 0 && (
+      {clientes.length === 0 && (
         <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
             <p className="text-[#6C757D]">Nenhum cliente cadastrado ainda.</p>

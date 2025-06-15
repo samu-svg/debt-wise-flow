@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useLocalDataManager } from '@/hooks/useLocalDataManager';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,13 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 const Debts = () => {
-  const { database, addDebt, addCollectionMessage, isLoaded } = useLocalDataManager();
+  const { clientes, dividas, addDivida, loading } = useSupabaseData();
   const [isDebtDialogOpen, setIsDebtDialogOpen] = useState(false);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [selectedDebt, setSelectedDebt] = useState<{ clientId: string; debtId: string } | null>(null);
   
   const [debtForm, setDebtForm] = useState({
     clientId: '',
@@ -22,12 +20,6 @@ const Debts = () => {
     valor: '',
     dataVencimento: '',
     status: 'pendente' as const
-  });
-
-  const [paymentForm, setPaymentForm] = useState({
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-    description: ''
   });
 
   const formatCurrency = (value: number) => {
@@ -50,7 +42,7 @@ const Debts = () => {
     }
 
     try {
-      await addDebt({
+      await addDivida({
         clientId: debtForm.clientId,
         valor: parseFloat(debtForm.valor),
         dataVencimento: debtForm.dataVencimento,
@@ -98,11 +90,11 @@ const Debts = () => {
   };
 
   const getClientName = (clientId: string) => {
-    const client = database.clients.find(c => c.id === clientId);
+    const client = clientes.find(c => c.id === clientId);
     return client ? client.nome : 'Cliente não encontrado';
   };
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -138,7 +130,7 @@ const Debts = () => {
                     <SelectValue placeholder="Selecione o cliente" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-[#DEE2E6]">
-                    {database.clients.map((client) => (
+                    {clientes.map((client) => (
                       <SelectItem key={client.id} value={client.id} className="text-[#343A40]">
                         {client.nome}
                       </SelectItem>
@@ -192,13 +184,13 @@ const Debts = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {database.debts.map((debt) => (
+        {dividas.map((debt) => (
           <Card key={debt.id} className="bg-white border-[#DEE2E6]">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-lg text-[#343A40]">{debt.descricao}</CardTitle>
-                  <CardDescription className="text-[#6C757D]">{getClientName(debt.clientId)}</CardDescription>
+                  <CardDescription className="text-[#6C757D]">{getClientName(debt.cliente_id)}</CardDescription>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(debt.status)}`}>
                   {getStatusText(debt.status)}
@@ -211,15 +203,15 @@ const Debts = () => {
                   <span className="text-[#343A40]">Valor:</span>
                   <span className="font-medium text-[#343A40]">{formatCurrency(debt.valor)}</span>
                 </div>
-                {debt.dataVencimento && (
+                {debt.data_vencimento && (
                   <div className="flex justify-between">
                     <span className="text-[#343A40]">Vencimento:</span>
-                    <span className="font-medium text-[#343A40]">{new Date(debt.dataVencimento).toLocaleDateString('pt-BR')}</span>
+                    <span className="font-medium text-[#343A40]">{new Date(debt.data_vencimento).toLocaleDateString('pt-BR')}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-[#343A40]">Criado em:</span>
-                  <span className="font-medium text-[#343A40]">{new Date(debt.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span className="font-medium text-[#343A40]">{new Date(debt.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
             </CardContent>
@@ -227,7 +219,7 @@ const Debts = () => {
         ))}
       </div>
 
-      {database.debts.length === 0 && (
+      {dividas.length === 0 && (
         <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
             <p className="text-[#6C757D]">Nenhuma dívida cadastrada ainda.</p>

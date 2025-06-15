@@ -1,11 +1,10 @@
 
-import { useEffect } from 'react';
-import { useLocalDataManager } from '@/hooks/useLocalDataManager';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 const Dashboard = () => {
-  const { statistics, database, isLoaded } = useLocalDataManager();
+  const { getStatistics, loading } = useSupabaseData();
+  const statistics = getStatistics();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -14,7 +13,7 @@ const Dashboard = () => {
     }).format(value);
   };
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -30,7 +29,7 @@ const Dashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-[#343A40]">Dashboard</h1>
         <div className="text-sm text-[#6C757D]">
-          Última atualização: {new Date(database.lastBackup).toLocaleString('pt-BR')}
+          Última atualização: {new Date().toLocaleString('pt-BR')}
         </div>
       </div>
 
