@@ -3,6 +3,8 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import BackupStatus from '@/components/BackupStatus';
+import DataIntegrityChecker from '@/components/DataIntegrityChecker';
+import { useDataIntegrity } from '@/hooks/useDataIntegrity';
 import { 
   LayoutDashboard, 
   Users, 
@@ -10,12 +12,17 @@ import {
   MessageSquare, 
   BarChart, 
   Settings,
-  LogOut 
+  LogOut,
+  Shield,
+  AlertTriangle 
 } from 'lucide-react';
+import { useState } from 'react';
 
 const PrivateLayout = () => {
   const { signOut } = useAuth();
   const location = useLocation();
+  const { needsAttention, stats } = useDataIntegrity();
+  const [showIntegrityPanel, setShowIntegrityPanel] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
@@ -67,7 +74,33 @@ const PrivateLayout = () => {
         </nav>
 
         <div className="absolute bottom-4 left-4 right-4 space-y-4">
+          {/* Status de Integridade */}
+          <Button
+            onClick={() => setShowIntegrityPanel(!showIntegrityPanel)}
+            variant="ghost"
+            size="sm"
+            className={`w-full flex items-center gap-2 px-3 ${
+              needsAttention ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                needsAttention ? 'bg-red-500 animate-pulse' : 'bg-green-500'
+              }`} />
+              {needsAttention ? <AlertTriangle className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+            </div>
+            <span className="text-xs">
+              {needsAttention ? 'Atenção Necessária' : 'Dados Íntegros'}
+            </span>
+            {stats && stats.totalIssues > 0 && (
+              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                {stats.totalIssues}
+              </span>
+            )}
+          </Button>
+
           <BackupStatus />
+          
           <Button
             onClick={handleSignOut}
             variant="outline"
@@ -81,6 +114,27 @@ const PrivateLayout = () => {
 
       {/* Main content */}
       <div className="pl-64">
+        {/* Painel de Integridade (Flutuante) */}
+        {showIntegrityPanel && (
+          <div className="fixed top-4 right-4 w-96 z-40">
+            <div className="bg-white rounded-lg shadow-xl border p-1">
+              <div className="flex justify-between items-center p-3 border-b">
+                <h3 className="font-medium">Integridade dos Dados</h3>
+                <Button
+                  onClick={() => setShowIntegrityPanel(false)}
+                  variant="ghost"
+                  size="sm"
+                >
+                  ×
+                </Button>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                <DataIntegrityChecker />
+              </div>
+            </div>
+          </div>
+        )}
+
         <main className="py-8 px-8">
           <Outlet />
         </main>
