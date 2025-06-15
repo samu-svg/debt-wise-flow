@@ -7,6 +7,7 @@ import { useWhatsAppConfig } from './useWhatsAppConfig';
 import { useWhatsAppLogs } from './useWhatsAppLogs';
 
 const STORAGE_KEY_CONNECTION = 'whatsapp_cloud_connection';
+const STORAGE_KEY_TEMPLATES = 'whatsapp_cloud_templates';
 
 interface UseWhatsAppCloudAPIReturn {
   connection: WhatsAppConnection;
@@ -21,6 +22,7 @@ interface UseWhatsAppCloudAPIReturn {
   disconnect: () => void;
   sendMessage: (phoneNumber: string, message: string, templateName?: string) => Promise<string>;
   loadTemplates: () => Promise<void>;
+  validateConfiguration: () => Promise<boolean>;
   clearLogs: () => void;
   updateConfig: (newConfig: Partial<import('@/types/whatsapp').WhatsAppConfig>) => void;
 }
@@ -39,6 +41,31 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
   const { config, updateConfig, isConfigDirty } = useWhatsAppConfig();
   const { logs, logStats, addLog, clearLogs } = useWhatsAppLogs();
   const metrics = useWhatsAppMetrics(logs);
+
+  // Carregar templates salvos
+  const loadSavedTemplates = useCallback(() => {
+    try {
+      const savedTemplates = localStorage.getItem(STORAGE_KEY_TEMPLATES);
+      if (savedTemplates) {
+        const parsedTemplates = JSON.parse(savedTemplates) as WhatsAppTemplate[];
+        setTemplates(parsedTemplates);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar templates:', error);
+      addLog('error', 'Erro ao carregar templates salvos', { error });
+    }
+  }, [addLog]);
+
+  // Salvar templates
+  const saveTemplates = useCallback((newTemplates: WhatsAppTemplate[]): void => {
+    try {
+      localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(newTemplates));
+      setTemplates(newTemplates);
+    } catch (error) {
+      console.error('Erro ao salvar templates:', error);
+      addLog('error', 'Erro ao salvar templates', { error });
+    }
+  }, [addLog]);
 
   // Carregar conexão salva
   const loadSavedConnection = useCallback(() => {
@@ -64,6 +91,44 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
       addLog('error', 'Erro ao salvar dados da conexão', { error });
     }
   }, [addLog]);
+
+  const validateConfiguration = useCallback(async (): Promise<boolean> => {
+    if (!config.accessToken || !config.phoneNumberId || !config.businessAccountId) {
+      addLog('error', 'Configuração incompleta - Todos os campos são obrigatórios');
+      return false;
+    }
+
+    setIsLoading(true);
+    addLog('system', 'Validando configuração...');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-cloud-api', {
+        body: {
+          action: 'validate_config',
+          config
+        }
+      });
+
+      if (error) {
+        throw new Error(`Erro na validação: ${error.message}`);
+      }
+
+      if (data?.success && data.configValid) {
+        addLog('system', 'Configuração validada com sucesso!', data);
+        return true;
+      } else {
+        const errors = data?.errors || ['Configuração inválida'];
+        addLog('error', `Configuração inválida: ${errors.join(', ')}`, data);
+        return false;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido na validação';
+      addLog('error', `Erro na validação: ${errorMessage}`, { error });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [config, addLog]);
 
   const testConnection = useCallback(async (): Promise<boolean> => {
     if (!config.accessToken || !config.phoneNumberId) {
@@ -100,6 +165,10 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
         
         saveConnection(newConnection);
         addLog('connection', 'Conexão estabelecida com sucesso!', data.data);
+        
+        // Auto-carregar templates após conexão bem-sucedida
+        setTimeout(() => loadTemplates(), 1000);
+        
         return true;
       } else {
         throw new Error(data?.error || 'Erro na conexão');
@@ -121,7 +190,7 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [config, connection, addLog, saveConnection]);
+  }, [config, connection, addLog, saveConnection, loadTemplates]);
 
   const disconnect = useCallback((): void => {
     const disconnectedConnection: WhatsAppConnection = {
@@ -131,6 +200,8 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     };
     
     saveConnection(disconnectedConnection);
+    setTemplates([]);
+    localStorage.removeItem(STORAGE_KEY_TEMPLATES);
     addLog('connection', 'WhatsApp desconectado');
   }, [addLog, saveConnection]);
 
@@ -139,8 +210,8 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
       throw new Error('WhatsApp não está conectado');
     }
 
-    if (!phoneNumber || !message) {
-      throw new Error('Número e mensagem são obrigatórios');
+    if (!phoneNumber || (!message && !templateName)) {
+      throw new Error('Número e mensagem/template são obrigatórios');
     }
 
     try {
@@ -159,10 +230,15 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
       }
 
       if (data?.success) {
-        addLog('message', `Mensagem enviada para ${phoneNumber}`, { 
+        const logMessage = templateName 
+          ? `Template "${templateName}" enviado para ${phoneNumber}`
+          : `Mensagem enviada para ${phoneNumber}`;
+          
+        addLog('message', logMessage, { 
           messageId: data.messageId,
-          message,
-          phoneNumber
+          message: templateName || message,
+          phoneNumber,
+          type: templateName ? 'template' : 'text'
         });
         return data.messageId as string;
       } else {
@@ -182,6 +258,7 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     }
 
     setIsLoading(true);
+    addLog('system', 'Carregando templates...');
     
     try {
       const { data, error } = await supabase.functions.invoke('whatsapp-cloud-api', {
@@ -197,8 +274,8 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
 
       if (data?.success) {
         const loadedTemplates = data.templates || [];
-        setTemplates(loadedTemplates);
-        addLog('system', `${loadedTemplates.length} templates carregados`);
+        saveTemplates(loadedTemplates);
+        addLog('system', `${loadedTemplates.length} templates carregados (${data.approved || 0} aprovados)`);
       } else {
         throw new Error(data?.error || 'Erro ao carregar templates');
       }
@@ -208,11 +285,12 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [config, addLog]);
+  }, [config, addLog, saveTemplates]);
 
   // Carregar dados salvos na inicialização
   useState(() => {
     loadSavedConnection();
+    loadSavedTemplates();
   });
 
   return {
@@ -228,6 +306,7 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     disconnect,
     sendMessage,
     loadTemplates,
+    validateConfiguration,
     clearLogs,
     updateConfig
   };

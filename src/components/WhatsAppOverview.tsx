@@ -20,11 +20,21 @@ import {
   Loader2,
   Cloud,
   ExternalLink,
-  Shield
+  Shield,
+  Zap
 } from 'lucide-react';
 
 const WhatsAppOverview = memo(() => {
-  const { config, connection, updateConfig, testConnection, isLoading, isConfigDirty } = useWhatsAppCloudAPI();
+  const { 
+    config, 
+    connection, 
+    updateConfig, 
+    testConnection, 
+    validateConfiguration, 
+    isLoading, 
+    isConfigDirty 
+  } = useWhatsAppCloudAPI();
+  
   const [formData, setFormData] = useState({
     accessToken: config.accessToken || '',
     phoneNumberId: config.phoneNumberId || '',
@@ -45,6 +55,23 @@ const WhatsAppOverview = memo(() => {
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     updateConfig({ [field]: value });
+  };
+
+  const handleValidate = async () => {
+    updateConfig(formData);
+    const isValid = await validateConfiguration();
+    if (isValid) {
+      toast({
+        title: "Configuração válida!",
+        description: "Todas as credenciais foram validadas com sucesso",
+      });
+    } else {
+      toast({
+        title: "Configuração inválida",
+        description: "Verifique suas credenciais e tente novamente",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleTest = async () => {
@@ -101,7 +128,8 @@ const WhatsAppOverview = memo(() => {
 
   const statusInfo = getStatusInfo();
   const StatusIcon = statusInfo.icon;
-  const hasConfig = config.accessToken && config.phoneNumberId;
+  const hasConfig = config.accessToken && config.phoneNumberId && config.businessAccountId;
+  const hasBasicConfig = config.accessToken && config.phoneNumberId;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -129,23 +157,42 @@ const WhatsAppOverview = memo(() => {
               </div>
             </div>
             
-            {/* Test Connection Button - Mobile Responsive */}
-            {hasConfig && (
-              <Button 
-                onClick={handleTest}
-                disabled={isLoading}
-                size="sm"
-                className="flex items-center gap-2 w-full sm:w-auto"
-                variant={connection.isConnected ? "outline" : "default"}
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <TestTube className="w-4 h-4" />
-                )}
-                {isLoading ? 'Testando...' : 'Testar Conexão'}
-              </Button>
-            )}
+            {/* Action Buttons - Mobile Responsive */}
+            <div className="flex gap-2 w-full sm:w-auto">
+              {hasConfig && (
+                <Button 
+                  onClick={handleValidate}
+                  disabled={isLoading}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-2 flex-1 sm:flex-none"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Shield className="w-4 h-4" />
+                  )}
+                  Validar
+                </Button>
+              )}
+              
+              {hasBasicConfig && (
+                <Button 
+                  onClick={handleTest}
+                  disabled={isLoading}
+                  size="sm"
+                  className="flex items-center gap-2 flex-1 sm:flex-none"
+                  variant={connection.isConnected ? "outline" : "default"}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <TestTube className="w-4 h-4" />
+                  )}
+                  {isLoading ? 'Testando...' : 'Testar'}
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -177,6 +224,9 @@ const WhatsAppOverview = memo(() => {
               onChange={(e) => handleChange('accessToken', e.target.value)}
               className="font-mono text-sm"
             />
+            <p className="text-xs text-gray-500">
+              Token de acesso permanente da sua aplicação Meta Business
+            </p>
           </div>
 
           {/* Phone Number ID */}
@@ -192,6 +242,9 @@ const WhatsAppOverview = memo(() => {
               onChange={(e) => handleChange('phoneNumberId', e.target.value)}
               className="font-mono text-sm"
             />
+            <p className="text-xs text-gray-500">
+              ID do número de telefone configurado no WhatsApp Business
+            </p>
           </div>
 
           {/* Business Account ID */}
@@ -207,6 +260,9 @@ const WhatsAppOverview = memo(() => {
               onChange={(e) => handleChange('businessAccountId', e.target.value)}
               className="font-mono text-sm"
             />
+            <p className="text-xs text-gray-500">
+              ID da conta comercial do WhatsApp Business
+            </p>
           </div>
 
           <Separator />
@@ -245,11 +301,26 @@ const WhatsAppOverview = memo(() => {
             </div>
           )}
 
-          {/* Info Section */}
+          {/* Webhook Configuration */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
             <div className="flex items-start gap-2">
               <Cloud className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-blue-700">
+                <p className="font-medium mb-2">Configuração do Webhook</p>
+                <div className="bg-white p-3 rounded border border-blue-200 font-mono text-xs break-all">
+                  <p><strong>URL:</strong> https://errzltarqbkkcldzivud.supabase.co/functions/v1/whatsapp-cloud-api/webhook</p>
+                  <p><strong>Token:</strong> whatsapp_webhook_token</p>
+                </div>
+                <p className="mt-2">Configure esta URL no seu app Meta Business para receber webhooks.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Section */}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="flex items-start gap-2">
+              <Cloud className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-gray-700">
                 <p className="font-medium mb-1">WhatsApp Cloud API</p>
                 <p className="mb-2">API oficial da Meta para integração com WhatsApp Business.</p>
                 <a 
