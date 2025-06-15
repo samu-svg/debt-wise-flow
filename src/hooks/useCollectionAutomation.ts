@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { useMessageTemplates } from './useMessageTemplates';
 import { CommunicationLog, AutomationConfig, ClientSettings, AutomationStats } from '@/types/automation';
-import { Client, Debt } from '@/types';
 
 const STORAGE_KEYS = {
   COMMUNICATIONS: 'whatsapp_communications',
@@ -36,11 +35,11 @@ const DEFAULT_CONFIG: AutomationConfig = {
 };
 
 export const useCollectionAutomation = () => {
-  const { clients } = useLocalStorage();
-  const { connection, logs } = useWhatsAppCloudAPI();
-  const { templates, calculateDebtValues } = useMessageTemplates();
+  const { dividas, clientes } = useSupabaseData();
+  const { connection, sendMessage } = useWhatsAppCloudAPI();
+  const { templates, calculateDebtValues, previewTemplate } = useMessageTemplates();
 
-  // Função de log local para substituir addLog
+  // Função de log local
   const addLog = useCallback((type: string, message: string, data?: any) => {
     console.log(`[${type.toUpperCase()}] ${message}`, data);
   }, []);
@@ -168,7 +167,7 @@ export const useCollectionAutomation = () => {
     return { canSend: true, reason: '' };
   };
 
-  // Processar cobranças automáticas
+  // Processar cobranças automáticas - CONECTADO COM DADOS REAIS
   const processAutomaticCollections = useCallback(async () => {
     if (!config.enabled || !connection.isConnected || isProcessing) {
       return;
@@ -186,11 +185,6 @@ export const useCollectionAutomation = () => {
         return;
       }
 
-      const currentTime = now.toTimeString().slice(0, 5);
-      if (!config.checkTimes.includes(currentTime)) {
-        return; // Não é hora de verificar
-      }
-
       let messagesSent = 0;
       const todayStr = now.toISOString().split('T')[0];
       const todayMessages = communications.filter(comm => 
@@ -202,65 +196,95 @@ export const useCollectionAutomation = () => {
         return;
       }
 
-      // Processar cada cliente e suas dívidas
-      for (const client of clients) {
-        for (const debt of client.debts) {
-          if (debt.status !== 'overdue' && debt.status !== 'active') continue;
+      // Processar dívidas vencidas do Supabase
+      const overdueDebts = dividas.filter(debt => {
+        if (debt.status === 'pago') return false;
+        const dueDate = new Date(debt.data_vencimento || '');
+        return dueDate < now;
+      });
 
-          const daysOverdue = calculateDaysOverdue(debt.dueDate);
-          const messageType = getMessageType(daysOverdue);
-          
-          // Verificar se pode enviar para este cliente
-          const canSend = canSendToClient(client.id, debt.id);
-          if (!canSend.canSend) {
-            console.log(`Não pode enviar para ${client.name}: ${canSend.reason}`);
-            continue;
-          }
+      addLog('system', `Encontradas ${overdueDebts.length} dívidas vencidas`);
 
-          // Criar comunicação
-          const communication: CommunicationLog = {
-            id: `comm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            clientId: client.id,
-            debtId: debt.id,
-            messageType,
-            templateId: 'template-cobranca-default', // Usar template padrão
-            status: 'enviado',
-            sentAt: now.toISOString(),
-            conversationState: 'AGUARDANDO',
-            retryCount: 0,
-            nextRetryAt: new Date(now.getTime() + config.responseTimeout).toISOString()
-          };
+      // Processar cada dívida vencida
+      for (const debt of overdueDebts) {
+        const client = clientes.find(c => c.id === debt.cliente_id);
+        if (!client) continue;
 
-          // Simular envio da mensagem
-          const debtCalc = calculateDebtValues(debt.originalAmount, debt.dueDate);
-          const messageData = {
-            nome: client.name,
-            valor: debt.originalAmount.toFixed(2),
-            dataVencimento: new Date(debt.dueDate).toLocaleDateString('pt-BR'),
-            diasAtraso: Math.max(0, daysOverdue),
-            multa: debtCalc.fine.toFixed(2),
-            juros: debtCalc.interest.toFixed(2),
-            valorTotal: debtCalc.totalValue.toFixed(2),
-            chavePix: 'sua-chave-pix@empresa.com'
-          };
-
-          console.log(`Enviando ${messageType} para ${client.name}:`, messageData);
-          
-          // Adicionar à lista de comunicações
-          saveCommunications([...communications, communication]);
-          
-          addLog('message', `Cobrança enviada para ${client.name}`, {
-            messageType,
-            daysOverdue,
-            amount: debtCalc.totalValue
-          });
-
-          messagesSent++;
-          
-          // Limite de segurança para não sobrecarregar
-          if (messagesSent >= 10) break;
-        }
+        const daysOverdue = calculateDaysOverdue(debt.data_vencimento || '');
+        const messageType = getMessageType(daysOverdue);
         
+        // Verificar se pode enviar para este cliente
+        const canSend = canSendToClient(client.id, debt.id);
+        if (!canSend.canSend) {
+          console.log(`Não pode enviar para ${client.nome}: ${canSend.reason}`);
+          continue;
+        }
+
+        // Buscar template de cobrança
+        const template = templates.find(t => t.type === 'cobranca' && t.isActive);
+        if (!template) {
+          addLog('error', 'Template de cobrança não encontrado');
+          continue;
+        }
+
+        // Calcular valores da dívida
+        const debtCalc = calculateDebtValues(debt.valor, debt.data_vencimento || '');
+        
+        // Preparar variáveis do template
+        const templateVars = {
+          nome: client.nome,
+          valor: debt.valor.toFixed(2),
+          dataVencimento: new Date(debt.data_vencimento || '').toLocaleDateString('pt-BR'),
+          diasAtraso: Math.max(0, daysOverdue),
+          multa: debtCalc.fine.toFixed(2),
+          juros: debtCalc.interest.toFixed(2),
+          valorTotal: debtCalc.totalValue.toFixed(2),
+          chavePix: 'sua-chave-pix@empresa.com'
+        };
+
+        // Gerar mensagem
+        const message = previewTemplate(template, templateVars);
+
+        try {
+          // ENVIAR MENSAGEM REAL via WhatsApp
+          if (client.whatsapp) {
+            await sendMessage(client.whatsapp, message);
+            
+            // Criar comunicação
+            const communication: CommunicationLog = {
+              id: `comm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              clientId: client.id,
+              debtId: debt.id,
+              messageType,
+              templateId: template.id,
+              status: 'enviado',
+              sentAt: now.toISOString(),
+              conversationState: 'AGUARDANDO',
+              retryCount: 0,
+              nextRetryAt: new Date(now.getTime() + config.responseTimeout).toISOString()
+            };
+
+            // Adicionar à lista de comunicações
+            saveCommunications([...communications, communication]);
+            
+            addLog('message', `Cobrança enviada para ${client.nome}`, {
+              messageType,
+              daysOverdue,
+              amount: debtCalc.totalValue
+            });
+
+            messagesSent++;
+            
+            // Delay entre mensagens
+            if (messagesSent < 10) {
+              await new Promise(resolve => setTimeout(resolve, config.messageDelay || 2000));
+            }
+          }
+        } catch (error) {
+          addLog('error', `Erro ao enviar mensagem para ${client.nome}`, { error });
+        }
+
+        // Limite de segurança
         if (messagesSent >= 10) break;
       }
 
@@ -280,7 +304,20 @@ export const useCollectionAutomation = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [config, connection, clients, communications, stats, addLog, calculateDebtValues, isProcessing]);
+  }, [
+    config, 
+    connection, 
+    dividas, 
+    clientes, 
+    communications, 
+    stats, 
+    templates,
+    sendMessage,
+    calculateDebtValues,
+    previewTemplate,
+    addLog, 
+    isProcessing
+  ]);
 
   // Processar resposta do cliente
   const processClientResponse = useCallback((clientId: string, response: string) => {

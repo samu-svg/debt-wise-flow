@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy, memo, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,7 +14,8 @@ import {
   AlertTriangle,
   Activity,
   Settings,
-  Zap
+  Zap,
+  Bot
 } from 'lucide-react';
 
 // Lazy loading otimizado
@@ -39,6 +39,12 @@ const MessageTemplates = lazy(() =>
 
 const WhatsAppConfig = lazy(() => 
   import('@/components/WhatsAppConfig').then(module => ({
+    default: module.default
+  }))
+);
+
+const AutomationDashboard = lazy(() => 
+  import('@/components/AutomationDashboard').then(module => ({
     default: module.default
   }))
 );
@@ -216,7 +222,7 @@ const WhatsApp: React.FC = () => {
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <Tabs defaultValue="overview" className="space-y-6">
               <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
-                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-gray-100 h-auto rounded-xl p-1">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 bg-gray-100 h-auto rounded-xl p-1">
                   <TabsTrigger 
                     value="overview" 
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
@@ -225,6 +231,16 @@ const WhatsApp: React.FC = () => {
                     <span className="hidden sm:inline">Visão Geral</span>
                     <span className="sm:hidden">Geral</span>
                   </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="automation" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm"
+                  >
+                    <Bot className="w-4 h-4" />
+                    <span className="hidden sm:inline">Automação</span>
+                    <span className="sm:hidden">Auto</span>
+                  </TabsTrigger>
+                  
                   <TabsTrigger 
                     value="templates" 
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm"
@@ -233,14 +249,16 @@ const WhatsApp: React.FC = () => {
                     <span className="hidden sm:inline">Templates</span>
                     <span className="sm:hidden">Msgs</span>
                   </TabsTrigger>
+                  
                   <TabsTrigger 
                     value="config" 
-                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm"
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm"
                   >
                     <Settings className="w-4 h-4" />
                     <span className="hidden sm:inline">Configurações</span>
                     <span className="sm:hidden">Config</span>
                   </TabsTrigger>
+                  
                   <TabsTrigger 
                     value="logs" 
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
@@ -260,6 +278,10 @@ const WhatsApp: React.FC = () => {
                   <Suspense fallback={<LoadingFallback />}>
                     <TabsContent value="overview" className="space-y-6 mt-0">
                       <WhatsAppOverview />
+                    </TabsContent>
+
+                    <TabsContent value="automation" className="mt-0">
+                      <AutomationDashboard />
                     </TabsContent>
 
                     <TabsContent value="templates" className="mt-0">
