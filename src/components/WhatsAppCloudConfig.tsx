@@ -15,7 +15,6 @@ import {
   TestTube,
   CheckCircle,
   AlertCircle,
-  ExternalLink,
   Save
 } from 'lucide-react';
 
@@ -57,8 +56,6 @@ const WhatsAppCloudConfig = () => {
     }
   };
 
-  const webhookUrl = `https://errzltarqbkkcldzivud.supabase.co/functions/v1/whatsapp-cloud-api`;
-
   return (
     <div className="space-y-6">
       {/* Status Card */}
@@ -97,7 +94,7 @@ const WhatsAppCloudConfig = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="w-5 h-5" />
-            Configuração da WhatsApp Cloud API
+            Credenciais da API
           </CardTitle>
           <CardDescription>
             Configure suas credenciais da Meta Business para usar a WhatsApp Cloud API
@@ -116,9 +113,6 @@ const WhatsAppCloudConfig = () => {
               value={formData.accessToken}
               onChange={(e) => handleChange('accessToken', e.target.value)}
             />
-            <p className="text-xs text-gray-600">
-              Token de acesso permanente obtido no Meta Business Manager
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -132,9 +126,6 @@ const WhatsAppCloudConfig = () => {
               value={formData.phoneNumberId}
               onChange={(e) => handleChange('phoneNumberId', e.target.value)}
             />
-            <p className="text-xs text-gray-600">
-              ID do número de telefone configurado no WhatsApp Business
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -148,21 +139,6 @@ const WhatsAppCloudConfig = () => {
               value={formData.businessAccountId}
               onChange={(e) => handleChange('businessAccountId', e.target.value)}
             />
-            <p className="text-xs text-gray-600">
-              ID da conta comercial do WhatsApp Business
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="webhookToken">Token de Verificação do Webhook</Label>
-            <Input
-              id="webhookToken"
-              value={formData.webhookToken}
-              onChange={(e) => handleChange('webhookToken', e.target.value)}
-            />
-            <p className="text-xs text-gray-600">
-              Token usado para verificar webhooks (pode manter o padrão)
-            </p>
           </div>
 
           <div className="flex gap-3 pt-4 border-t">
@@ -171,7 +147,7 @@ const WhatsAppCloudConfig = () => {
               className="flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              Salvar Configurações
+              Salvar
             </Button>
             
             <Button 
@@ -184,55 +160,6 @@ const WhatsAppCloudConfig = () => {
               {isLoading ? 'Testando...' : 'Testar Conexão'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Webhook Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuração do Webhook</CardTitle>
-          <CardDescription>
-            Configure este URL no seu Meta Business Manager para receber mensagens
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div>
-              <Label>URL do Webhook:</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input value={webhookUrl} readOnly className="bg-gray-50" />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigator.clipboard.writeText(webhookUrl)}
-                >
-                  Copiar
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <Label>Token de Verificação:</Label>
-              <Input value={formData.webhookToken} readOnly className="bg-gray-50 mt-1" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Setup Instructions */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-blue-800">Como Configurar</CardTitle>
-        </CardHeader>
-        <CardContent className="text-blue-700">
-          <ol className="list-decimal list-inside space-y-2 text-sm">
-            <li>Acesse o <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center gap-1">Meta Business Manager <ExternalLink className="w-3 h-3" /></a></li>
-            <li>Crie um app e configure o WhatsApp Business API</li>
-            <li>Obtenha o Access Token permanente</li>
-            <li>Configure o número de telefone</li>
-            <li>Configure o webhook com a URL fornecida acima</li>
-            <li>Cole as credenciais nos campos acima e teste a conexão</li>
-          </ol>
         </CardContent>
       </Card>
     </div>

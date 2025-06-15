@@ -4,18 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { 
-  Smartphone, 
   CheckCircle, 
   AlertCircle,
   Settings,
   Cloud,
-  MessageSquare,
   TestTube,
   ExternalLink
 } from 'lucide-react';
 
 const WhatsAppCloudStatus = () => {
-  const { connection, config, testConnection, isLoading, templates } = useWhatsAppCloudAPI();
+  const { connection, config, testConnection, isLoading } = useWhatsAppCloudAPI();
 
   const getStatusInfo = () => {
     switch (connection.status) {
@@ -77,29 +75,17 @@ const WhatsAppCloudStatus = () => {
               <span className="font-medium">WhatsApp Cloud API Ativa!</span>
             </div>
             <div className="space-y-2 text-sm text-green-700">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-2">
                 <div>
                   <p><strong>Phone ID:</strong></p>
                   <p className="text-xs font-mono bg-white p-1 rounded border border-green-300">
                     {connection.phoneNumberId}
                   </p>
                 </div>
-                <div>
-                  <p><strong>Business ID:</strong></p>
-                  <p className="text-xs font-mono bg-white p-1 rounded border border-green-300">
-                    {connection.businessAccountId}
-                  </p>
-                </div>
               </div>
               {connection.lastSeen && (
                 <p><strong>Última atividade:</strong> {new Date(connection.lastSeen).toLocaleString('pt-BR')}</p>
               )}
-              <div className="flex items-center gap-2 mt-3 p-2 bg-white rounded border border-green-200">
-                <MessageSquare className="w-4 h-4" />
-                <span className="text-xs">
-                  {templates.length} templates disponíveis
-                </span>
-              </div>
             </div>
           </div>
         )}
@@ -116,11 +102,6 @@ const WhatsAppCloudStatus = () => {
                 {connection.lastError}
               </p>
             )}
-            {connection.retryCount > 0 && (
-              <p className="text-xs text-red-600">
-                Tentativas realizadas: {connection.retryCount}
-              </p>
-            )}
           </div>
         )}
 
@@ -130,16 +111,8 @@ const WhatsAppCloudStatus = () => {
             <Settings className="w-12 h-12 mx-auto mb-3 text-blue-600" />
             <h3 className="font-medium text-blue-800 mb-2">Configuração Necessária</h3>
             <p className="text-sm text-blue-700 mb-4">
-              Para usar a WhatsApp Cloud API, você precisa configurar suas credenciais da Meta Business.
+              Configure suas credenciais da Meta Business para usar a WhatsApp Cloud API.
             </p>
-            <div className="space-y-2">
-              <p className="text-xs text-blue-600">Você precisará de:</p>
-              <ul className="text-xs text-blue-600 space-y-1">
-                <li>• Access Token da Meta Business</li>
-                <li>• Phone Number ID do WhatsApp Business</li>
-                <li>• Business Account ID</li>
-              </ul>
-            </div>
           </div>
         )}
 
@@ -163,15 +136,15 @@ const WhatsAppCloudStatus = () => {
           <div className="flex items-start gap-2">
             <Cloud className="w-4 h-4 text-blue-600 mt-0.5" />
             <div className="text-xs text-blue-700">
-              <p className="font-medium mb-1">WhatsApp Cloud API:</p>
-              <p>API oficial da Meta para integração com WhatsApp Business. Permite envio de mensagens, templates aprovados e recebimento via webhooks.</p>
+              <p className="font-medium mb-1">WhatsApp Cloud API</p>
+              <p>API oficial da Meta para integração com WhatsApp Business.</p>
               <a 
                 href="https://developers.facebook.com/docs/whatsapp/cloud-api"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 underline"
               >
-                Documentação oficial <ExternalLink className="w-3 h-3" />
+                Documentação <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           </div>
