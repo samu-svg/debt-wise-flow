@@ -4,52 +4,120 @@ import { useFileSystemManager } from './useFileSystemManager';
 import { useUserFolderConfig } from './useUserFolderConfig';
 import { useAuth } from './useAuth';
 
-// Função para abrir IndexedDB
+// Função para abrir IndexedDB com melhor estrutura
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('DebtManagerDB', 1);
+    const request = indexedDB.open('DebtManagerDB', 2);
     
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
     
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      
+      // Criar store para handles de diretório se não existir
       if (!db.objectStoreNames.contains('directoryHandles')) {
-        db.createObjectStore('directoryHandles');
+        const handleStore = db.createObjectStore('directoryHandles');
+        handleStore.createIndex('userId', 'userId', { unique: false });
+      }
+      
+      // Criar store para metadados de pasta
+      if (!db.objectStoreNames.contains('folderMetadata')) {
+        const metaStore = db.createObjectStore('folderMetadata');
+        metaStore.createIndex('userId', 'userId', { unique: false });
       }
     };
   });
 };
 
-// Função para salvar handle da pasta
-const saveDirectoryHandle = async (handle: FileSystemDirectoryHandle): Promise<void> => {
+// Função para salvar handle da pasta com metadados do usuário
+const saveDirectoryHandle = async (handle: FileSystemDirectoryHandle, userId: string): Promise<void> => {
   try {
     const db = await openDB();
-    const transaction = db.transaction(['directoryHandles'], 'readwrite');
-    const store = transaction.objectStore('directoryHandles');
-    await store.put(handle, 'dataDirectory');
-    console.log('Handle da pasta salvo com sucesso');
+    const transaction = db.transaction(['directoryHandles', 'folderMetadata'], 'readwrite');
+    
+    // Salvar handle
+    const handleStore = transaction.objectStore('directoryHandles');
+    await handleStore.put({ handle, userId }, `user_${userId}`);
+    
+    // Salvar metadados
+    const metaStore = transaction.objectStore('folderMetadata');
+    await metaStore.put({
+      userId,
+      folderName: handle.name,
+      lastAccessed: new Date().toISOString(),
+      isValid: true
+    }, `meta_${userId}`);
+    
+    console.log('✅ Handle da pasta salvo com metadados para usuário:', userId);
   } catch (error) {
-    console.error('Erro ao salvar handle:', error);
+    console.error('❌ Erro ao salvar handle:', error);
     throw error;
   }
 };
 
-// Função para recuperar handle da pasta
-const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | null> => {
+// Função para recuperar handle da pasta do usuário específico
+const getDirectoryHandle = async (userId: string): Promise<FileSystemDirectoryHandle | null> => {
   try {
     const db = await openDB();
     const transaction = db.transaction(['directoryHandles'], 'readonly');
     const store = transaction.objectStore('directoryHandles');
     
     return new Promise((resolve, reject) => {
-      const request = store.get('dataDirectory');
+      const request = store.get(`user_${userId}`);
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || null);
+      request.onsuccess = () => {
+        const result = request.result;
+        resolve(result ? result.handle : null);
+      };
     });
   } catch (error) {
-    console.error('Erro ao recuperar handle:', error);
+    console.error('❌ Erro ao recuperar handle:', error);
     return null;
+  }
+};
+
+// Função para validar se ainda temos acesso à pasta
+const validateDirectoryAccess = async (handle: FileSystemDirectoryHandle): Promise<boolean> => {
+  try {
+    // Tentar listar o conteúdo da pasta
+    const iterator = handle.entries();
+    await iterator.next();
+    
+    // Tentar criar um arquivo de teste
+    const testFile = await handle.getFileHandle('_debt_manager_test.tmp', { create: true });
+    const writable = await testFile.createWritable();
+    await writable.write('test');
+    await writable.close();
+    
+    // Remover arquivo de teste
+    await handle.removeEntry('_debt_manager_test.tmp');
+    
+    return true;
+  } catch (error) {
+    console.log('❌ Pasta não acessível:', error);
+    return false;
+  }
+};
+
+// Função para invalidar handle no IndexedDB
+const invalidateDirectoryHandle = async (userId: string): Promise<void> => {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction(['folderMetadata'], 'readwrite');
+    const store = transaction.objectStore('folderMetadata');
+    
+    const request = store.get(`meta_${userId}`);
+    request.onsuccess = () => {
+      const metadata = request.result;
+      if (metadata) {
+        metadata.isValid = false;
+        metadata.lastError = new Date().toISOString();
+        store.put(metadata, `meta_${userId}`);
+      }
+    };
+  } catch (error) {
+    console.error('Erro ao invalidar handle:', error);
   }
 };
 
@@ -58,6 +126,7 @@ export const useFileSystemBackup = () => {
   const { folderConfig, saveFolderConfig, isConfigured } = useUserFolderConfig();
   const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const {
     capabilities,
@@ -70,37 +139,76 @@ export const useFileSystemBackup = () => {
     getSystemStatus
   } = useFileSystemManager();
 
+  // Função para reconexão automática
+  const attemptAutoReconnect = async (userId: string): Promise<boolean> => {
+    if (!capabilities?.fileSystemAccess) {
+      console.log('📱 File System API não disponível - usando modo fallback');
+      return false;
+    }
+
+    setReconnecting(true);
+    console.log('🔄 Tentando reconexão automática para usuário:', userId);
+
+    try {
+      // Recuperar handle salvo
+      const savedHandle = await getDirectoryHandle(userId);
+      
+      if (!savedHandle) {
+        console.log('📁 Nenhum handle salvo encontrado');
+        return false;
+      }
+
+      console.log('📁 Handle recuperado, validando acesso...');
+      
+      // Validar se ainda temos acesso
+      const isValid = await validateDirectoryAccess(savedHandle);
+      
+      if (isValid) {
+        setDirectoryHandle(savedHandle);
+        console.log('✅ Reconexão automática bem-sucedida:', savedHandle.name);
+        return true;
+      } else {
+        console.log('❌ Handle não é mais válido');
+        await invalidateDirectoryHandle(userId);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Erro na reconexão automática:', error);
+      if (userId) {
+        await invalidateDirectoryHandle(userId);
+      }
+      return false;
+    } finally {
+      setReconnecting(false);
+    }
+  };
+
   useEffect(() => {
     const initializeFileSystem = async () => {
-      if (!isInitialized || !user) return;
+      if (!isInitialized || !user) {
+        setLoading(false);
+        return;
+      }
 
       try {
-        console.log('Inicializando sistema principal de arquivos para:', user.email);
+        console.log('🚀 Inicializando sistema de arquivos para:', user.email);
+        clearError();
 
-        // Se usuário tem pasta configurada, tentar recuperar handle
+        // Se usuário tem pasta configurada, tentar reconexão automática
         if (isConfigured && capabilities?.fileSystemAccess) {
-          console.log('Usuário tem pasta configurada, tentando recuperar acesso...');
-          const handle = await getDirectoryHandle();
+          console.log('⚙️ Pasta configurada detectada, iniciando reconexão automática...');
           
-          if (handle) {
-            try {
-              // Testar se ainda temos acesso tentando listar conteúdo
-              let hasAccess = false;
-              for await (const [name] of handle.entries()) {
-                hasAccess = true;
-                break; // Se conseguiu listar pelo menos uma entrada, tem acesso
-              }
-              
-              setDirectoryHandle(handle);
-              console.log('✅ Acesso à pasta principal recuperado:', handle.name);
-            } catch (error) {
-              console.log('❌ Erro ao verificar acesso à pasta:', error);
-              // Pasta não acessível mais, usuário precisará reconfigurar
-            }
+          const reconnected = await attemptAutoReconnect(user.id);
+          
+          if (!reconnected) {
+            console.log('⚠️ Reconexão automática falhou - usuário precisará reconfigurar');
+            // Não setamos erro aqui, apenas informamos que reconexão falhou
           }
+        } else if (!capabilities?.fileSystemAccess) {
+          console.log('📱 Modo compatibilidade ativo (File System API não disponível)');
         }
       } catch (error) {
-        console.error('Erro ao inicializar sistema de arquivos:', error);
+        console.error('❌ Erro ao inicializar sistema de arquivos:', error);
       } finally {
         setLoading(false);
       }
@@ -110,8 +218,13 @@ export const useFileSystemBackup = () => {
   }, [isInitialized, user, isConfigured, capabilities]);
 
   const configureDirectory = async (): Promise<boolean> => {
+    if (!user) {
+      console.error('❌ Usuário não autenticado');
+      return false;
+    }
+
     try {
-      console.log('🔧 Configurando pasta principal...');
+      console.log('🔧 Configurando pasta para usuário:', user.id);
       clearError();
 
       // Verificar se File System API está disponível
@@ -121,30 +234,31 @@ export const useFileSystemBackup = () => {
       }
 
       // Usar File System API
-      console.log('📁 Solicitando seleção de pasta principal...');
+      console.log('📁 Solicitando seleção de pasta...');
       const handle = await handleDirectoryAccess();
       
       if (handle) {
-        console.log('✅ Pasta principal selecionada:', handle.name);
+        console.log('✅ Pasta selecionada:', handle.name);
         
-        // Salvar handle no IndexedDB
-        await saveDirectoryHandle(handle);
+        // Salvar handle no IndexedDB com ID do usuário
+        await saveDirectoryHandle(handle, user.id);
         setDirectoryHandle(handle);
 
         // Salvar configuração no banco de dados
         await saveFolderConfig(handle.name, {
           type: 'file_system_access',
-          name: handle.name
+          name: handle.name,
+          userId: user.id
         });
         
-        console.log('✅ Configuração da pasta principal concluída');
+        console.log('✅ Configuração concluída para usuário:', user.id);
         return true;
       }
 
       console.log('❌ Nenhuma pasta foi selecionada');
       return false;
     } catch (error) {
-      console.error('Erro ao configurar pasta principal:', error);
+      console.error('❌ Erro ao configurar pasta:', error);
       
       // Se foi cancelado pelo usuário, não mostrar como erro
       if ((error as Error).name === 'AbortError') {
@@ -156,15 +270,15 @@ export const useFileSystemBackup = () => {
     }
   };
 
-  // FUNÇÃO PRINCIPAL: Salvar dados APENAS na pasta principal
+  // FUNÇÃO PRINCIPAL: Salvar dados na pasta principal
   const saveData = async (data: string, filename: string): Promise<boolean> => {
     try {
       clearError();
-      console.log('💾 Salvando dados na pasta principal:', filename);
+      console.log('💾 Salvando dados:', filename);
       
       // Verificar se temos acesso à pasta
       if (!directoryHandle || !capabilities?.fileSystemAccess) {
-        console.error('❌ Pasta principal não disponível para salvamento');
+        console.log('📱 Pasta não disponível - usando fallback');
         return false;
       }
       
@@ -186,11 +300,11 @@ export const useFileSystemBackup = () => {
   // Função para restaurar dados da pasta
   const restoreFromFolder = async (): Promise<any> => {
     if (!directoryHandle || !capabilities?.fileSystemAccess) {
-      throw new Error('Pasta principal não disponível para restauração');
+      throw new Error('Pasta não disponível para restauração');
     }
 
     try {
-      console.log('🔄 Procurando dados na pasta principal...');
+      console.log('🔄 Procurando dados na pasta...');
       const dataFiles: string[] = [];
       
       for await (const [name] of directoryHandle.entries()) {
@@ -200,7 +314,7 @@ export const useFileSystemBackup = () => {
       }
       
       if (dataFiles.length === 0) {
-        throw new Error('Nenhum arquivo de dados encontrado na pasta principal');
+        throw new Error('Nenhum arquivo de dados encontrado na pasta');
       }
       
       // Pegar o arquivo mais recente
@@ -211,40 +325,43 @@ export const useFileSystemBackup = () => {
       const file = await fileHandle.getFile();
       const content = await file.text();
       
-      console.log('✅ Dados restaurados da pasta principal');
+      console.log('✅ Dados restaurados da pasta');
       return JSON.parse(content);
     } catch (error) {
-      console.error('❌ Erro ao restaurar da pasta principal:', error);
+      console.error('❌ Erro ao restaurar da pasta:', error);
       throw error;
     }
   };
 
   const getStatus = () => {
-    if (loading) return 'Verificando configuração...';
+    if (loading) return 'Inicializando sistema...';
+    if (reconnecting) return 'Reconectando à pasta...';
     if (lastError) return `Erro: ${lastError.message}`;
-    if (!isConfigured) return 'Pasta principal não configurada';
-    if (isConfigured && directoryHandle) return `✅ Pasta Principal: ${directoryHandle.name}`;
-    if (isConfigured && folderConfig) return `📁 Pasta: ${folderConfig.folder_name}`;
+    if (!isConfigured) return 'Pasta não configurada';
+    if (isConfigured && directoryHandle) return `✅ Conectado: ${directoryHandle.name}`;
+    if (isConfigured && folderConfig) return `⚠️ Pasta configurada mas desconectada: ${folderConfig.folder_name}`;
     
     return getSystemStatus();
   };
 
-  const isConnected = isConfigured && directoryHandle !== null && capabilities?.fileSystemAccess;
+  const isConnected = isConfigured && directoryHandle !== null && capabilities?.fileSystemAccess && !reconnecting;
 
   return {
     isSupported: capabilities?.fileSystemAccess || false,
     isConfigured,
     isConnected,
     loading,
+    reconnecting,
     directoryHandle,
     folderName: directoryHandle?.name || folderConfig?.folder_name || '',
     isFirstAccess: !isConfigured,
     lastError,
     errorSuggestions: lastError ? getErrorSuggestions(lastError) : [],
     configureDirectory,
-    saveData, // APENAS salvamento na pasta principal
+    saveData,
     restoreFromFolder,
     getStatus,
-    clearError
+    clearError,
+    attemptAutoReconnect: () => user ? attemptAutoReconnect(user.id) : Promise.resolve(false)
   };
 };
