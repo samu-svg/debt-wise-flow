@@ -85,11 +85,11 @@ const WhatsApp = () => {
     <div className="space-y-6 bg-white min-h-screen">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: '#374151 !important' }}>
-            <Cloud className="w-8 h-8" style={{ color: '#10B981 !important' }} />
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: '#374151' }}>
+            <Cloud className="w-8 h-8" style={{ color: '#10B981' }} />
             Sistema WhatsApp Cloud API
           </h1>
-          <p className="mt-2" style={{ color: '#6B7280 !important' }}>
+          <p className="mt-2" style={{ color: '#6B7280' }}>
             Plataforma completa de automação usando WhatsApp Business Cloud API
           </p>
         </div>
@@ -99,13 +99,13 @@ const WhatsApp = () => {
             variant={connection.isConnected ? "default" : "secondary"}
             className="flex items-center gap-2"
             style={{
-              backgroundColor: connection.isConnected ? '#10B981 !important' : '#6B7280 !important',
-              color: '#FFFFFF !important',
-              borderColor: connection.isConnected ? '#10B981 !important' : '#6B7280 !important'
+              backgroundColor: connection.isConnected ? '#10B981' : '#6B7280',
+              color: '#FFFFFF',
+              borderColor: connection.isConnected ? '#10B981' : '#6B7280'
             }}
           >
-            <div className={`w-2 h-2 rounded-full`} style={{
-              backgroundColor: connection.isConnected ? '#FFFFFF !important' : '#F9FAFB !important'
+            <div className="w-2 h-2 rounded-full" style={{
+              backgroundColor: connection.isConnected ? '#FFFFFF' : '#F9FAFB'
             }} />
             {connection.isConnected ? 'API Online' : 'API Offline'}
           </Badge>
@@ -118,13 +118,13 @@ const WhatsApp = () => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="shadow-sm" style={{ 
-              backgroundColor: '#FFFFFF !important', 
-              borderColor: '#E5E7EB !important' 
+              backgroundColor: '#FFFFFF', 
+              borderColor: '#E5E7EB' 
             }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium" style={{ color: '#6B7280 !important' }}>
+                    <p className="text-xs font-medium" style={{ color: '#6B7280' }}>
                       {stat.title}
                     </p>
                     <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
@@ -142,21 +142,21 @@ const WhatsApp = () => {
       {/* Aviso de Configuração */}
       {!connection.isConnected && (
         <Card className="border-blue-200" style={{ 
-          backgroundColor: '#F9FAFB !important',
-          borderColor: '#E5E7EB !important' 
+          backgroundColor: '#F9FAFB',
+          borderColor: '#E5E7EB' 
         }}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               {hasValidConfig ? (
-                <AlertTriangle className="w-5 h-5" style={{ color: '#6B7280 !important' }} />
+                <AlertTriangle className="w-5 h-5" style={{ color: '#6B7280' }} />
               ) : (
-                <Settings className="w-5 h-5" style={{ color: '#6B7280 !important' }} />
+                <Settings className="w-5 h-5" style={{ color: '#6B7280' }} />
               )}
               <div>
-                <p className="font-medium" style={{ color: '#374151 !important' }}>
+                <p className="font-medium" style={{ color: '#374151' }}>
                   {hasValidConfig ? 'WhatsApp Cloud API com problemas' : 'Configure a WhatsApp Cloud API'}
                 </p>
-                <p className="text-sm" style={{ color: '#6B7280 !important' }}>
+                <p className="text-sm" style={{ color: '#6B7280' }}>
                   {hasValidConfig 
                     ? 'Verifique suas credenciais na aba de configuração e teste a conexão novamente.'
                     : 'Para usar o sistema de cobrança automática, configure suas credenciais da Meta Business na aba de configuração.'
@@ -170,38 +170,32 @@ const WhatsApp = () => {
 
       {/* Sucesso da Migração */}
       <Card className="border-green-200" style={{ 
-        backgroundColor: '#F9FAFB !important',
-        borderColor: '#10B981 !important' 
+        backgroundColor: '#F9FAFB',
+        borderColor: '#10B981' 
       }}>
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5" style={{ color: '#10B981 !important' }} />
+            <CheckCircle2 className="w-5 h-5" style={{ color: '#10B981' }} />
             <div>
-              <p className="font-medium" style={{ color: '#374151 !important' }}>Sistema Atualizado!</p>
-              <p className="text-sm" style={{ color: '#6B7280 !important' }}>
+              <p className="font-medium" style={{ color: '#374151' }}>Sistema Atualizado!</p>
+              <p className="text-sm" style={{ color: '#6B7280' }}>
                 Migração concluída! Agora usando WhatsApp Cloud API - mais estável, oficial e sem dependência do Node.js.
               </p>
             </div>
           </div>
         </CardContent>
-      )}
+      </Card>
 
       {/* Tabs Principais */}
       <Tabs defaultValue="status" className="space-y-6">
         <TabsList className="grid w-full grid-cols-8" style={{ 
-          backgroundColor: '#FFFFFF !important', 
-          borderColor: '#E5E7EB !important' 
+          backgroundColor: '#FFFFFF', 
+          borderColor: '#E5E7EB' 
         }}>
           <TabsTrigger 
             value="status" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <Cloud className="w-4 h-4" />
             Status
@@ -209,13 +203,7 @@ const WhatsApp = () => {
           <TabsTrigger 
             value="config" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <Settings className="w-4 h-4" />
             Config
@@ -223,13 +211,7 @@ const WhatsApp = () => {
           <TabsTrigger 
             value="dashboard" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <BarChart3 className="w-4 h-4" />
             Dashboard
@@ -237,13 +219,7 @@ const WhatsApp = () => {
           <TabsTrigger 
             value="logs" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <FileText className="w-4 h-4" />
             Logs ({logs.length})
@@ -251,13 +227,7 @@ const WhatsApp = () => {
           <TabsTrigger 
             value="templates" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <MessageSquare className="w-4 h-4" />
             Templates
@@ -265,13 +235,7 @@ const WhatsApp = () => {
           <TabsTrigger 
             value="automation" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <Settings className="w-4 h-4" />
             Automação
@@ -279,13 +243,7 @@ const WhatsApp = () => {
           <TabsTrigger 
             value="monitor" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <Activity className="w-4 h-4" />
             Monitor
@@ -293,13 +251,7 @@ const WhatsApp = () => {
           <TabsTrigger 
             value="alertas" 
             className="flex items-center gap-2" 
-            style={{ 
-              color: '#6B7280 !important' 
-            }}
-            data-[state=active]:style={{ 
-              backgroundColor: '#F9FAFB !important', 
-              color: '#374151 !important' 
-            }}
+            style={{ color: '#6B7280' }}
           >
             <Bell className="w-4 h-4" />
             Alertas
