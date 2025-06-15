@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,7 +61,7 @@ export const useSupabaseData = () => {
         id: item.id,
         nome: item.nome,
         whatsapp: item.whatsapp,
-        email: item.email || undefined,
+        // Note: email não está disponível na tabela clientes_cobranca
         user_id: item.user_id,
         created_at: item.created_at || '',
         updated_at: item.updated_at || undefined
@@ -152,7 +151,7 @@ export const useSupabaseData = () => {
         .insert({
           nome: clienteData.nome,
           whatsapp: clienteData.whatsapp,
-          email: clienteData.email,
+          // Note: email não é suportado pela tabela atual
           user_id: user.id,
           valor_divida: 0,
           data_vencimento: new Date().toISOString().split('T')[0],
