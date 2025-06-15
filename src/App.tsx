@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -18,7 +17,6 @@ import Clients from '@/pages/app/Clients';
 import Debts from '@/pages/app/Debts';
 import WhatsApp from '@/pages/app/WhatsApp';
 import Reports from '@/pages/app/Reports';
-import LocalData from '@/pages/app/LocalData';
 
 // Other pages
 import Index from '@/pages/Index';
@@ -56,7 +54,6 @@ function App() {
               <Route path="debts" element={<Debts />} />
               <Route path="whatsapp" element={<WhatsApp />} />
               <Route path="reports" element={<Reports />} />
-              <Route path="local-data" element={<LocalData />} />
             </Route>
 
             {/* Catch all */}

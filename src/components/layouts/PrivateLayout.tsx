@@ -10,7 +10,6 @@ import {
   MessageSquare, 
   BarChart, 
   Settings,
-  Database,
   LogOut 
 } from 'lucide-react';
 
@@ -24,7 +23,6 @@ const PrivateLayout = () => {
     { name: 'Dívidas', href: '/app/debts', icon: Receipt },
     { name: 'WhatsApp', href: '/app/whatsapp', icon: MessageSquare },
     { name: 'Relatórios', href: '/app/reports', icon: BarChart },
-    { name: 'Dados Locais', href: '/app/local-data', icon: Database },
   ];
 
   const handleSignOut = async () => {
