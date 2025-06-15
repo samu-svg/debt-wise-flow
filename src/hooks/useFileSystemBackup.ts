@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useFileSystemManager } from './useFileSystemManager';
 import { useUserFolderConfig } from './useUserFolderConfig';
@@ -81,7 +80,7 @@ const getDirectoryHandle = async (userId: string): Promise<FileSystemDirectoryHa
 const validateDirectoryAccess = async (handle: FileSystemDirectoryHandle): Promise<boolean> => {
   try {
     // Tentar listar o conteúdo da pasta
-    const iterator = handle.entries();
+    const iterator = handle.entries()[Symbol.asyncIterator]();
     await iterator.next();
     
     // Tentar criar um arquivo de teste
