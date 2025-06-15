@@ -1,6 +1,6 @@
-
 import { useState } from 'react';
 import { useLocalDataManager } from '@/hooks/useLocalDataManager';
+import { useFilters } from '@/hooks/useFilters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { Plus, X, FileText } from 'lucide-react';
+import FiltersBar from '@/components/FiltersBar';
 
 const Clients = () => {
   const { database, addClient, deleteClient, loading } = useLocalDataManager();
@@ -20,6 +21,40 @@ const Clients = () => {
 
   const clientes = database?.clients || [];
   const dividas = database?.debts || [];
+
+  // Sistema de filtros
+  const {
+    searchValue,
+    setSearchValue,
+    filters,
+    updateFilter,
+    resetFilters,
+    filteredData: filteredClients,
+    hasActiveFilters,
+    resultCount
+  } = useFilters({
+    data: clientes,
+    searchFields: ['nome', 'whatsapp', 'email'],
+    filterFunctions: {
+      hasDebts: (client, filterValue) => {
+        const clientDebts = dividas.filter(d => d.clientId === client.id);
+        const activeDebts = clientDebts.filter(d => d.status === 'pendente' || d.status === 'atrasado');
+        if (filterValue === 'with-debts') return activeDebts.length > 0;
+        if (filterValue === 'without-debts') return activeDebts.length === 0;
+        return true;
+      },
+      createdAt: (client, filterValue) => {
+        const clientDate = new Date(client.createdAt);
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - clientDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (filterValue === 'recent') return diffDays <= 7;
+        if (filterValue === 'month') return diffDays <= 30;
+        if (filterValue === 'older') return diffDays > 30;
+        return true;
+      }
+    }
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +124,12 @@ const Clients = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-[#343A40]">Clientes</h1>
-          <p className="text-[#6C757D]">{clientes.length} clientes cadastrados</p>
+          <p className="text-[#6C757D]">
+            {hasActiveFilters 
+              ? `${resultCount} de ${clientes.length} clientes encontrados`
+              : `${clientes.length} clientes cadastrados`
+            }
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -150,8 +190,39 @@ const Clients = () => {
         </Dialog>
       </div>
 
+      {/* Sistema de Filtros */}
+      <FiltersBar
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        searchPlaceholder="Buscar por nome, WhatsApp ou email..."
+        filters={[
+          {
+            value: filters.hasDebts || 'all',
+            onChange: (value) => updateFilter('hasDebts', value),
+            options: [
+              { value: 'all', label: 'Todas as Dívidas' },
+              { value: 'with-debts', label: 'Com Dívidas' },
+              { value: 'without-debts', label: 'Sem Dívidas' }
+            ],
+            placeholder: 'Filtrar por dívidas'
+          },
+          {
+            value: filters.createdAt || 'all',
+            onChange: (value) => updateFilter('createdAt', value),
+            options: [
+              { value: 'all', label: 'Todos os Períodos' },
+              { value: 'recent', label: 'Últimos 7 dias' },
+              { value: 'month', label: 'Último mês' },
+              { value: 'older', label: 'Mais antigos' }
+            ],
+            placeholder: 'Filtrar por período'
+          }
+        ]}
+        onReset={resetFilters}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {clientes.map((client) => {
+        {filteredClients.map((client) => {
           const clientDebts = getClientDebts(client.id);
           const activeDebts = clientDebts.filter(d => d.status === 'pendente' || d.status === 'atrasado');
           const totalAmount = activeDebts.reduce((sum, debt) => sum + debt.valor, 0);
@@ -192,6 +263,21 @@ const Clients = () => {
           );
         })}
       </div>
+
+      {filteredClients.length === 0 && clientes.length > 0 && (
+        <Card className="bg-white border-[#DEE2E6]">
+          <CardContent className="text-center py-12">
+            <p className="text-[#6C757D]">Nenhum cliente encontrado com os filtros aplicados.</p>
+            <Button 
+              onClick={resetFilters}
+              variant="outline"
+              className="mt-4 border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]"
+            >
+              Limpar filtros
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {clientes.length === 0 && (
         <Card className="bg-white border-[#DEE2E6]">
