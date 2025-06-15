@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useLocalDataManager } from '@/hooks/useLocalDataManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,13 +10,16 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, X, FileText } from 'lucide-react';
 
 const Clients = () => {
-  const { clientes, dividas, addCliente, deleteCliente, loading } = useSupabaseData();
+  const { database, addClient, deleteClient, loading } = useLocalDataManager();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     whatsapp: ''
   });
+
+  const clientes = database?.clients || [];
+  const dividas = database?.debts || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +34,7 @@ const Clients = () => {
     }
 
     try {
-      await addCliente(formData);
+      await addClient(formData);
       setFormData({ nome: '', email: '', whatsapp: '' });
       setIsDialogOpen(false);
       
@@ -51,7 +54,7 @@ const Clients = () => {
   const handleDelete = async (id: string, nome: string) => {
     if (window.confirm(`Tem certeza que deseja excluir o cliente ${nome}?`)) {
       try {
-        await deleteCliente(id);
+        await deleteClient(id);
         toast({
           title: "Cliente excluído",
           description: "Cliente removido com sucesso",
@@ -67,7 +70,7 @@ const Clients = () => {
   };
 
   const getClientDebts = (clientId: string) => {
-    return dividas.filter(debt => debt.cliente_id === clientId);
+    return dividas.filter(debt => debt.clientId === clientId);
   };
 
   if (loading) {
@@ -180,7 +183,7 @@ const Clients = () => {
                       {activeDebts.length} ativas • R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-[#6C757D]">
-                      Cadastrado em: {new Date(client.created_at).toLocaleDateString('pt-BR')}
+                      Cadastrado em: {new Date(client.createdAt).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                 </div>
