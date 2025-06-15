@@ -1,5 +1,4 @@
 
-
 export interface CommunicationLog {
   id: string;
   clientId: string;
@@ -22,6 +21,7 @@ export interface AutomationConfig {
   workDays: number[]; // [1,2,3,4,5] - Segunda a Sexta
   holidays: string[]; // ['2024-12-25', '2024-01-01']
   maxMessagesPerDay: number;
+  messageDelay: number; // Delay entre mensagens em ms
   responseTimeout: number; // 48 horas em ms
   
   // Escalonamento por dias de atraso
@@ -68,4 +68,3 @@ export interface AutomationStats {
   conversionsToday: number;
   pendingConversations: number;
 }
-

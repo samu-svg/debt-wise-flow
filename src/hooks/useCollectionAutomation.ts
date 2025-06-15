@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
@@ -18,6 +19,7 @@ const DEFAULT_CONFIG: AutomationConfig = {
   workDays: [1, 2, 3, 4, 5], // Segunda a Sexta
   holidays: [],
   maxMessagesPerDay: 50,
+  messageDelay: 2000, // 2 segundos entre mensagens
   responseTimeout: 48 * 60 * 60 * 1000, // 48 horas
   escalation: {
     beforeDue: -3,

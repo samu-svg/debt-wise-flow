@@ -32,7 +32,7 @@ const AutomationDashboard = () => {
     processAutomaticCollections 
   } = useCollectionAutomation();
   
-  const { dividas, loading } = useSupabaseData();
+  const { dividas, clientes, loading } = useSupabaseData();
 
   // Calcular dívidas vencidas
   const overdueDebts = dividas.filter(debt => {
@@ -323,10 +323,14 @@ const AutomationDashboard = () => {
                   / (1000 * 60 * 60 * 24)
                 );
                 
+                // Find the client name through the cliente_id relationship
+                const client = clientes.find(c => c.id === debt.cliente_id);
+                const clientName = client ? client.nome : 'Cliente não encontrado';
+                
                 return (
                   <div key={debt.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{debt.nome}</p>
+                      <p className="font-medium text-gray-900">{clientName}</p>
                       <p className="text-sm text-gray-600">
                         Valor: R$ {debt.valor.toFixed(2)} • Venceu há {daysOverdue} dias
                       </p>
