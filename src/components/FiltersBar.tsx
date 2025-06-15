@@ -35,7 +35,7 @@ const FiltersBar = ({
   const hasActiveFilters = searchValue || filters.some(filter => filter.value && filter.value !== 'all');
 
   return (
-    <div className={`flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-lg border border-[#DEE2E6] ${className}`}>
+    <div className={`flex flex-col md:flex-row gap-4 p-6 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-[#DEE2E6] shadow-sm hover:shadow-md transition-all duration-300 ${className}`}>
       <div className="flex-1">
         <SearchInput
           value={searchValue}
@@ -44,7 +44,7 @@ const FiltersBar = ({
         />
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3 items-center">
         {filters.map((filter, index) => (
           <FilterSelect
             key={index}
@@ -59,9 +59,9 @@ const FiltersBar = ({
           <Button
             variant="outline"
             onClick={onReset}
-            className="border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]"
+            className="border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA] hover:border-gray-300 transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow"
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
+            <RotateCcw className="h-4 w-4" />
             Limpar
           </Button>
         )}

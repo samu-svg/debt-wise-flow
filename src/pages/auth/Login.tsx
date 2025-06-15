@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -40,9 +42,12 @@ const Login = () => {
   };
 
   return (
-    <Card className="w-full login-container" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center login-title" style={{ color: '#374151', fontWeight: '600' }}>
+    <Card className="w-full login-container animate-fade-in" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}>
+      <CardHeader className="space-y-1 text-center">
+        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-[#08872B] to-[#059669] rounded-full flex items-center justify-center mb-4 animate-scale-in">
+          <span className="text-white text-xl font-bold">D</span>
+        </div>
+        <CardTitle className="text-2xl login-title" style={{ color: '#374151', fontWeight: '600' }}>
           Entrar
         </CardTitle>
         <CardDescription className="text-center" style={{ color: '#6B7280' }}>
@@ -50,7 +55,7 @@ const Login = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="email" className="form-label" style={{ color: '#374151', fontWeight: '500' }}>
               Email
@@ -61,7 +66,7 @@ const Login = () => {
               placeholder="seu@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="login-input"
+              className="login-input transition-all duration-200 hover:border-gray-300"
               style={{
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #E5E7EB',
@@ -84,34 +89,45 @@ const Login = () => {
             <Label htmlFor="password" className="form-label" style={{ color: '#374151', fontWeight: '500' }}>
               Senha
             </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="login-input"
-              style={{
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E5E7EB',
-                color: '#374151'
-              }}
-              onFocus={(e) => {
-                const target = e.target as HTMLInputElement;
-                target.style.borderColor = '#10B981';
-                target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-              }}
-              onBlur={(e) => {
-                const target = e.target as HTMLInputElement;
-                target.style.borderColor = '#E5E7EB';
-                target.style.boxShadow = 'none';
-              }}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="login-input pr-10 transition-all duration-200 hover:border-gray-300"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  color: '#374151'
+                }}
+                onFocus={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  target.style.borderColor = '#10B981';
+                  target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                }}
+                onBlur={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  target.style.borderColor = '#E5E7EB';
+                  target.style.boxShadow = 'none';
+                }}
+                required
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 transition-all duration-200"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
           <Button 
             type="submit" 
-            className="w-full btn-login" 
+            className="w-full btn-login transition-all duration-200 hover:scale-105 active:scale-95" 
             disabled={loading}
             style={{
               backgroundColor: '#10B981',
@@ -123,29 +139,39 @@ const Login = () => {
               if (!loading) {
                 const target = e.target as HTMLButtonElement;
                 target.style.backgroundColor = '#059669';
+                target.style.transform = 'translateY(-1px)';
+                target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
               }
             }}
             onMouseLeave={(e) => {
               if (!loading) {
                 const target = e.target as HTMLButtonElement;
                 target.style.backgroundColor = '#10B981';
+                target.style.transform = 'translateY(0)';
+                target.style.boxShadow = 'none';
               }
             }}
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Entrando...
+              </div>
+            ) : (
+              'Entrar'
+            )}
           </Button>
         </form>
         
-        <div className="mt-4 text-center">
+        <div className="mt-6 text-center">
           <p className="text-sm" style={{ color: '#6B7280' }}>
             Não tem uma conta?{' '}
             <Link 
               to="/registre-se" 
-              className="register-link"
+              className="register-link font-medium transition-all duration-200 hover:underline"
               style={{ 
                 color: '#6B7280', 
-                textDecoration: 'none',
-                transition: 'color 0.2s ease'
+                textDecoration: 'none'
               }}
               onMouseEnter={(e) => {
                 const target = e.target as HTMLAnchorElement;
