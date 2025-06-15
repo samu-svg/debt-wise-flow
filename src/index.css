@@ -3,117 +3,106 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System - Paleta Minimalista SEM AMARELO */
+/* Design System - Paleta Minimalista SEM AMARELO - FORÇADO */
 
 @layer base {
   :root {
-    /* Cores principais da paleta minimalista */
-    --color-primary: #08872B;
-    --color-background: #FFFFFF;
-    --color-background-secondary: #F8F9FA;
-    --color-text-primary: #343A40;
-    --color-text-secondary: #6C757D;
-    --color-border: #DEE2E6;
+    /* Cores principais da paleta minimalista - SEM AMARELO */
+    --color-primary: #10B981 !important;
+    --color-background: #FFFFFF !important;
+    --color-background-secondary: #F9FAFB !important;
+    --color-text-primary: #374151 !important;
+    --color-text-secondary: #6B7280 !important;
+    --color-border: #E5E7EB !important;
     
-    /* Estados - SEM AMARELO */
-    --color-success: #5FED83;
-    --color-error: #DC3545;
-    --color-warning: #6C757D !important; /* FORÇADO: Cinza em vez de amarelo */
-    --color-info: #6C757D !important; /* FORÇADO: Cinza em vez de azul */
+    /* Estados - SEM AMARELO - FORÇADO */
+    --color-success: #10B981 !important;
+    --color-error: #EF4444 !important;
+    --color-warning: #6B7280 !important; /* FORÇADO: Cinza em vez de amarelo */
+    --color-info: #6B7280 !important; /* FORÇADO: Cinza em vez de azul */
 
-    --background: 248 249 250;
-    --foreground: 52 58 64;
+    --background: 249 250 251 !important;
+    --foreground: 55 65 81 !important;
 
-    --card: 255 255 255;
-    --card-foreground: 52 58 64;
+    --card: 255 255 255 !important;
+    --card-foreground: 55 65 81 !important;
 
-    --popover: 255 255 255;
-    --popover-foreground: 52 58 64;
+    --popover: 255 255 255 !important;
+    --popover-foreground: 55 65 81 !important;
 
-    --primary: 8 135 43;
-    --primary-foreground: 248 249 250;
+    --primary: 16 185 129 !important;
+    --primary-foreground: 255 255 255 !important;
 
-    --secondary: 248 249 250;
-    --secondary-foreground: 108 117 125;
+    --secondary: 249 250 251 !important;
+    --secondary-foreground: 107 114 128 !important;
 
-    --muted: 248 249 250;
-    --muted-foreground: 108 117 125;
+    --muted: 249 250 251 !important;
+    --muted-foreground: 107 114 128 !important;
 
-    --accent: 248 249 250;
-    --accent-foreground: 108 117 125;
+    --accent: 249 250 251 !important;
+    --accent-foreground: 107 114 128 !important;
 
-    --destructive: 220 53 69;
-    --destructive-foreground: 248 249 250;
+    --destructive: 239 68 68 !important;
+    --destructive-foreground: 255 255 255 !important;
 
-    --border: 222 226 230;
-    --input: 222 226 230;
-    --ring: 8 135 43;
+    --border: 229 231 235 !important;
+    --input: 229 231 235 !important;
+    --ring: 16 185 129 !important;
 
-    --radius: 0.75rem;
+    --radius: 0.75rem !important;
 
-    --sidebar-background: 255 255 255;
-    --sidebar-foreground: 108 117 125;
-    --sidebar-primary: 8 135 43;
-    --sidebar-primary-foreground: 248 249 250;
-    --sidebar-accent: 248 249 250;
-    --sidebar-accent-foreground: 108 117 125;
-    --sidebar-border: 222 226 230;
-    --sidebar-ring: 8 135 43;
+    --sidebar-background: 255 255 255 !important;
+    --sidebar-foreground: 107 114 128 !important;
+    --sidebar-primary: 16 185 129 !important;
+    --sidebar-primary-foreground: 255 255 255 !important;
+    --sidebar-accent: 249 250 251 !important;
+    --sidebar-accent-foreground: 107 114 128 !important;
+    --sidebar-border: 229 231 235 !important;
+    --sidebar-ring: 16 185 129 !important;
 
-    /* Custom variables - Design minimalista SEM AMARELO */
-    --success: 95 237 131;
+    /* Custom variables - Design minimalista SEM AMARELO - FORÇADO */
+    --success: 16 185 129 !important;
     --info: 107 114 128 !important; /* FORÇADO: Cinza */
     --warning: 107 114 128 !important; /* FORÇADO: Cinza em vez de amarelo */
-    --gradient-primary: linear-gradient(135deg, rgb(8 135 43) 0%, rgb(95 237 131) 100%);
-    --gradient-success: linear-gradient(135deg, rgb(95 237 131) 0%, rgb(8 135 43) 100%);
-    --gradient-card: linear-gradient(145deg, rgb(255 255 255) 0%, rgb(248 249 250) 100%);
-    --shadow-elevation: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   }
 
   .dark {
-    --background: 52 58 64;
-    --foreground: 248 249 250;
+    --background: 55 65 81 !important;
+    --foreground: 249 250 251 !important;
 
-    --card: 73 80 87;
-    --card-foreground: 248 249 250;
+    --card: 75 85 99 !important;
+    --card-foreground: 249 250 251 !important;
 
-    --popover: 73 80 87;
-    --popover-foreground: 248 249 250;
+    --popover: 75 85 99 !important;
+    --popover-foreground: 249 250 251 !important;
 
-    --primary: 95 237 131;
-    --primary-foreground: 52 58 64;
+    --primary: 16 185 129 !important;
+    --primary-foreground: 55 65 81 !important;
 
-    --secondary: 108 117 125;
-    --secondary-foreground: 248 249 250;
+    --secondary: 107 114 128 !important;
+    --secondary-foreground: 249 250 251 !important;
 
-    --muted: 108 117 125;
-    --muted-foreground: 173 181 189;
+    --muted: 107 114 128 !important;
+    --muted-foreground: 156 163 175 !important;
 
-    --accent: 108 117 125;
-    --accent-foreground: 248 249 250;
+    --accent: 107 114 128 !important;
+    --accent-foreground: 249 250 251 !important;
 
-    --destructive: 220 53 69;
-    --destructive-foreground: 248 249 250;
+    --destructive: 239 68 68 !important;
+    --destructive-foreground: 249 250 251 !important;
 
-    --border: 108 117 125;
-    --input: 108 117 125;
-    --ring: 95 237 131;
+    --border: 107 114 128 !important;
+    --input: 107 114 128 !important;
+    --ring: 16 185 129 !important;
 
-    --sidebar-background: 73 80 87;
-    --sidebar-foreground: 203 213 225;
-    --sidebar-primary: 95 237 131;
-    --sidebar-primary-foreground: 52 58 64;
-    --sidebar-accent: 108 117 125;
-    --sidebar-accent-foreground: 248 249 250;
-    --sidebar-border: 108 117 125;
-    --sidebar-ring: 95 237 131;
-
-    --gradient-primary: linear-gradient(135deg, rgb(95 237 131) 0%, rgb(8 135 43) 100%);
-    --gradient-success: linear-gradient(135deg, rgb(95 237 131) 0%, rgb(8 135 43) 100%);
-    --gradient-card: linear-gradient(145deg, rgb(73 80 87) 0%, rgb(108 117 125) 100%);
-    --shadow-elevation: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    --shadow-card: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --sidebar-background: 75 85 99 !important;
+    --sidebar-foreground: 203 213 225 !important;
+    --sidebar-primary: 16 185 129 !important;
+    --sidebar-primary-foreground: 55 65 81 !important;
+    --sidebar-accent: 107 114 128 !important;
+    --sidebar-accent-foreground: 249 250 251 !important;
+    --sidebar-border: 107 114 128 !important;
+    --sidebar-ring: 16 185 129 !important;
 
     /* DARK MODE - Forçar cores sem amarelo */
     --warning: 107 114 128 !important;
@@ -124,295 +113,134 @@
 @layer base {
   * {
     @apply border-border;
+    /* ELIMINAÇÃO TOTAL DE AMARELO - FORÇADO */
+    color: inherit !important;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    background-color: var(--color-background) !important;
-    color: var(--color-text-primary) !important;
+    background-color: #FFFFFF !important;
+    color: #374151 !important;
   }
 
-  /* Typography System - SEM AMARELO */
-  h1 {
-    @apply text-3xl font-bold tracking-tight;
+  /* Typography System - SEM AMARELO - FORÇADO */
+  h1, h2, h3, h4, h5, h6 {
     color: #374151 !important; /* FORÇADO: Cinza escuro */
   }
 
-  h2 {
-    @apply text-2xl font-semibold tracking-tight;
-    color: #374151 !important; /* FORÇADO: Cinza escuro */
-  }
-
-  h3 {
-    @apply text-xl font-semibold;
-    color: #374151 !important; /* FORÇADO: Cinza escuro */
-  }
-
-  h4 {
-    @apply text-lg font-medium;
+  /* ELIMINAÇÃO COMPLETA DE CORES AMARELAS - ULTRA FORÇADO */
+  *[style*="yellow"], 
+  *[style*="#FFD700"], 
+  *[style*="#FFC107"], 
+  *[style*="#FFEB3B"],
+  *[style*="#F59E0B"],
+  *[style*="#FBBF24"],
+  *[style*="#FDE047"],
+  *[class*="yellow"],
+  *[class*="warning"] {
     color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
+    border-color: #E5E7EB !important; /* FORÇADO: Cinza claro */
   }
 
-  /* Professional Components - Paleta Minimalista SEM AMARELO */
+  /* Professional Components - Paleta Minimalista SEM AMARELO - FORÇADO */
   .card-modern {
     @apply rounded-xl shadow-lg border backdrop-blur-sm;
     background: #FFFFFF !important;
     border-color: #E5E7EB !important;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
   }
 
-  .card-elevated {
-    @apply transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  }
-
-  .btn-primary {
-    @apply text-white font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
+  .btn-primary,
+  .btn-success,
+  button[type="submit"],
+  .submit-button {
     background-color: #10B981 !important; /* FORÇADO: Verde suave */
-    border-color: #10B981 !important;
     color: #FFFFFF !important;
+    border: none !important;
+    font-weight: 500 !important;
   }
 
-  .btn-primary:hover {
-    background-color: #059669 !important; /* FORÇADO: Verde mais escuro no hover */
-  }
-
-  .btn-success {
-    @apply text-white font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: #10B981 !important; /* FORÇADO: Verde */
-    color: #FFFFFF !important;
-  }
-
-  .btn-danger {
-    @apply font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
-    background-color: #EF4444 !important; /* FORÇADO: Vermelho suave */
-    color: #FFFFFF !important;
+  .btn-primary:hover:not(:disabled),
+  .btn-success:hover:not(:disabled),
+  button[type="submit"]:hover:not(:disabled),
+  .submit-button:hover:not(:disabled) {
+    background-color: #059669 !important; /* FORÇADO: Verde mais escuro */
   }
 
   .btn-secondary {
-    @apply font-medium px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105;
     background-color: #6B7280 !important; /* FORÇADO: Cinza médio */
     color: #FFFFFF !important;
     border: 1px solid #E5E7EB !important;
   }
 
-  /* ELIMINAÇÃO TOTAL DE AMARELO - WARNING STYLES */
+  .btn-danger {
+    background-color: #EF4444 !important; /* FORÇADO: Vermelho suave */
+    color: #FFFFFF !important;
+  }
+
+  /* ELIMINAÇÃO TOTAL DE AMARELO - WARNING STYLES - ULTRA FORÇADO */
   .btn-warning,
   .alert-warning,
   .warning,
   .text-warning,
   .bg-warning,
-  .border-warning {
+  .border-warning,
+  .badge-warning {
     background-color: #6B7280 !important; /* FORÇADO: Cinza médio */
     color: #FFFFFF !important;
     border-color: #6B7280 !important;
   }
 
-  .metric-card {
-    @apply rounded-xl p-6 shadow-lg border transition-all duration-200 hover:shadow-xl hover:scale-[1.02];
-    background: #FFFFFF !important;
-    border-color: #E5E7EB !important;
-  }
-
-  .status-online {
-    background-color: #10B981 !important; /* FORÇADO: Verde */
-    color: #FFFFFF !important;
-  }
-
-  .status-offline {
-    background-color: #EF4444 !important; /* FORÇADO: Vermelho */
-    color: #FFFFFF !important;
-  }
-
-  .status-info {
-    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
-    color: #374151 !important; /* FORÇADO: Cinza escuro */
-    border: 1px solid #E5E7EB !important;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  }
-
-  .status-pending {
-    background-color: #6B7280 !important; /* FORÇADO: Cinza médio */
-    color: #FFFFFF !important;
-  }
-
-  /* Loading Animations */
-  .loading-skeleton {
-    @apply animate-pulse rounded;
-    background-color: #F9FAFB !important;
-  }
-
-  .loading-spinner {
-    @apply animate-spin rounded-full border-2;
-    border-color: #F9FAFB !important;
-    border-top-color: #10B981 !important;
-  }
-
-  /* Form Improvements - SEM AMARELO */
-  .form-floating {
-    @apply relative;
-  }
-
-  .form-floating input {
-    @apply block w-full px-4 pt-6 pb-2 text-base rounded-lg focus:ring-2 focus:border-transparent transition-all duration-200;
-    background-color: #FFFFFF !important;
-    border: 1px solid #E5E7EB !important;
-    color: #374151 !important;
-  }
-
-  .form-floating input:focus {
-    ring-color: #10B981 !important; /* FORÇADO: Verde */
-    border-color: #10B981 !important;
-  }
-
-  .form-floating label {
-    @apply absolute left-4 top-4 text-sm transition-all duration-200 transform origin-top-left pointer-events-none;
-    color: #6B7280 !important;
-  }
-
-  .form-floating input:focus + label,
-  .form-floating input:not(:placeholder-shown) + label {
-    @apply -translate-y-2 scale-90;
-    color: #10B981 !important; /* FORÇADO: Verde */
-  }
-
-  /* Micro-interactions */
-  .hover-lift {
-    @apply transition-all duration-200 hover:transform hover:scale-105 hover:shadow-lg;
-  }
-
-  .fade-in {
-    @apply animate-in fade-in-0 duration-300;
-  }
-
-  .slide-in {
-    @apply animate-in slide-in-from-bottom-4 duration-300;
-  }
-
-  /* Professional Navigation - SEM AMARELO */
-  .nav-item {
-    @apply relative px-4 py-3 rounded-lg transition-all duration-200;
-    background-color: transparent !important;
-  }
-
-  .nav-item:hover {
-    background-color: #F9FAFB !important;
-  }
-
-  .nav-item.active {
-    background-color: #10B981 !important; /* FORÇADO: Verde */
-    color: #FFFFFF !important;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  }
-
-  .nav-item.active::before {
-    @apply content-[''] absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full;
-  }
-
-  /* Status Badges - Paleta Minimalista SEM AMARELO */
-  .badge-success {
-    background-color: rgb(16 185 129 / 0.1) !important; /* FORÇADO: Verde */
-    color: #10B981 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-info {
-    background-color: rgb(107 114 128 / 0.1) !important; /* FORÇADO: Cinza */
-    color: #6B7280 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-danger {
-    background-color: rgb(239 68 68 / 0.1) !important; /* FORÇADO: Vermelho */
-    color: #EF4444 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
+  /* Status Badges - SEM AMARELO - FORÇADO */
+  .badge-success,
   .badge-primary {
     background-color: rgb(16 185 129 / 0.1) !important; /* FORÇADO: Verde */
     color: #10B981 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
-  .badge-secondary {
-    background-color: #F9FAFB !important;
-    color: #6B7280 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  .badge-pending {
+  .badge-info,
+  .badge-secondary,
+  .badge-pending,
+  .badge-warning {
     background-color: rgb(107 114 128 / 0.1) !important; /* FORÇADO: Cinza */
     color: #6B7280 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-danger,
+  .badge-overdue {
+    background-color: rgb(239 68 68 / 0.1) !important; /* FORÇADO: Vermelho */
+    color: #EF4444 !important;
   }
 
   .badge-paid {
     background-color: rgb(16 185 129 / 0.1) !important; /* FORÇADO: Verde */
     color: #10B981 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
   }
 
-  .badge-overdue {
-    background-color: rgb(239 68 68 / 0.1) !important; /* FORÇADO: Vermelho */
-    color: #EF4444 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  /* ELIMINAÇÃO COMPLETA DE AMARELO EM BADGES WARNING */
-  .badge-warning {
-    background-color: rgb(107 114 128 / 0.1) !important; /* FORÇADO: Cinza */
-    color: #6B7280 !important;
-    @apply px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  /* Progress Bars - SEM AMARELO */
-  .progress-bar {
-    @apply w-full rounded-full h-3 overflow-hidden;
-    background-color: #F9FAFB !important;
-  }
-
-  .progress-fill {
-    @apply h-full rounded-full transition-all duration-500 ease-out;
-    background-color: #10B981 !important; /* FORÇADO: Verde */
-  }
-
-  /* Glass Effect */
-  .glass {
-    @apply backdrop-blur-md border;
-    background-color: rgb(255 255 255 / 0.8) !important;
-    border-color: rgb(255 255 255 / 0.2) !important;
-  }
-
-  /* Focus States - SEM AMARELO */
-  .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
-    --tw-ring-color: #10B981 !important; /* FORÇADO: Verde */
-  }
-
-  /* LOGIN E CADASTRO - DESIGN MINIMALISTA FORÇADO SEM AMARELO */
-  .login-container,
-  .register-container {
-    @apply bg-white border shadow-sm;
+  /* Form Improvements - SEM AMARELO - FORÇADO */
+  input, textarea, select, button {
     background-color: #FFFFFF !important;
     border-color: #E5E7EB !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    color: #374151 !important;
   }
 
+  input:focus, textarea:focus, select:focus {
+    border-color: #10B981 !important;
+    ring-color: #10B981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+  }
+
+  /* LOGIN E CADASTRO - DESIGN MINIMALISTA FORÇADO SEM AMARELO - ULTRA FORÇADO */
+  .login-container,
+  .register-container,
   .login-title,
-  .register-title {
-    color: #374151 !important; /* FORÇADO: Cinza escuro */
-    font-weight: 600 !important;
-  }
-
-  .form-label {
-    color: #374151 !important; /* FORÇADO: Cinza escuro */
-    font-weight: 500 !important;
-  }
-
+  .register-title,
+  .form-label,
   .login-input,
   .register-input {
     background-color: #FFFFFF !important;
-    border: 1px solid #E5E7EB !important;
+    border-color: #E5E7EB !important;
     color: #374151 !important;
   }
 
@@ -428,7 +256,6 @@
     background-color: #10B981 !important; /* FORÇADO: Verde suave */
     color: #FFFFFF !important;
     border: none !important;
-    font-weight: 500 !important;
   }
 
   .btn-login:hover:not(:disabled),
@@ -437,102 +264,73 @@
   }
 
   .register-link,
-  .login-link {
+  .login-link,
+  .forgot-password {
     color: #6B7280 !important; /* FORÇADO: Cinza médio */
     text-decoration: none !important;
-    transition: color 0.2s ease !important;
   }
 
   .register-link:hover,
-  .login-link:hover {
-    color: #10B981 !important; /* FORÇADO: Verde */
-  }
-
-  .forgot-password {
-    color: #6B7280 !important;
-    text-decoration: none !important;
-    transition: color 0.2s ease !important;
-  }
-
+  .login-link:hover,
   .forgot-password:hover {
     color: #10B981 !important; /* FORÇADO: Verde */
   }
 
-  .error-message {
-    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
-    color: #374151 !important; /* FORÇADO: Cinza escuro */
-    border-left: 3px solid #6B7280 !important;
-    padding: 0.75rem !important;
-    border-radius: 0.375rem !important;
+  /* TABS - SEM AMARELO - FORÇADO */
+  .tabs-trigger {
+    color: #6B7280 !important;
+    background-color: transparent !important;
   }
 
-  /* ELIMINAÇÃO TOTAL DE QUALQUER COR AMARELA NO SISTEMA INTEIRO */
-  * {
-    color: inherit !important;
-  }
-  
-  /* FORÇAR REMOÇÃO TOTAL DE AMARELO */
-  *[style*="yellow"], 
-  *[style*="#FFD700"], 
-  *[style*="#FFC107"], 
-  *[style*="#FFEB3B"],
-  *[style*="#F59E0B"],
-  *[style*="#FBBF24"],
-  *[style*="#FDE047"],
-  .text-yellow-50,
-  .text-yellow-100,
-  .text-yellow-200,
-  .text-yellow-300,
-  .text-yellow-400,
-  .text-yellow-500,
-  .text-yellow-600,
-  .text-yellow-700,
-  .text-yellow-800,
-  .text-yellow-900,
-  .bg-yellow-50,
-  .bg-yellow-100,
-  .bg-yellow-200,
-  .bg-yellow-300,
-  .bg-yellow-400,
-  .bg-yellow-500,
-  .bg-yellow-600,
-  .bg-yellow-700,
-  .bg-yellow-800,
-  .bg-yellow-900,
-  .border-yellow-50,
-  .border-yellow-100,
-  .border-yellow-200,
-  .border-yellow-300,
-  .border-yellow-400,
-  .border-yellow-500,
-  .border-yellow-600,
-  .border-yellow-700,
-  .border-yellow-800,
-  .border-yellow-900 {
-    color: #6B7280 !important; /* FORÇADO: Cinza médio */
-    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
-    border-color: #E5E7EB !important; /* FORÇADO: Cinza claro */
+  .tabs-trigger[data-state="active"] {
+    background-color: #F9FAFB !important;
+    color: #374151 !important;
   }
 
-  /* FORÇAR ALERTAS E NOTIFICAÇÕES SEM AMARELO */
-  .alert,
-  .notification,
-  .toast {
+  /* WHATSAPP PAGE - SEM AMARELO - FORÇADO */
+  .whatsapp-stats {
+    background-color: #FFFFFF !important;
+    border-color: #E5E7EB !important;
+    color: #374151 !important;
+  }
+
+  .whatsapp-alert {
     background-color: #F9FAFB !important;
     border-color: #E5E7EB !important;
     color: #374151 !important;
   }
 
+  /* ALERTAS E NOTIFICAÇÕES - SEM AMARELO - FORÇADO */
+  .alert,
+  .notification,
+  .toast,
   .alert-warning,
   .notification-warning,
   .toast-warning {
     background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
-    border-color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    border-color: #E5E7EB !important; /* FORÇADO: Cinza claro */
     color: #374151 !important; /* FORÇADO: Cinza escuro */
+  }
+
+  /* VERIFICAÇÃO FINAL - ANULAR QUALQUER AMARELO RESTANTE - ULTRA FORÇADO */
+  body *,
+  body *::before,
+  body *::after {
+    /* Se algum elemento ainda tiver amarelo, forçar para cinza */
+    color: inherit !important;
+  }
+
+  /* FORÇAR REMOÇÃO TOTAL DE TODAS AS CLASSES AMARELAS DO TAILWIND */
+  .text-yellow-50, .text-yellow-100, .text-yellow-200, .text-yellow-300, .text-yellow-400, .text-yellow-500, .text-yellow-600, .text-yellow-700, .text-yellow-800, .text-yellow-900,
+  .bg-yellow-50, .bg-yellow-100, .bg-yellow-200, .bg-yellow-300, .bg-yellow-400, .bg-yellow-500, .bg-yellow-600, .bg-yellow-700, .bg-yellow-800, .bg-yellow-900,
+  .border-yellow-50, .border-yellow-100, .border-yellow-200, .border-yellow-300, .border-yellow-400, .border-yellow-500, .border-yellow-600, .border-yellow-700, .border-yellow-800, .border-yellow-900 {
+    color: #6B7280 !important; /* FORÇADO: Cinza médio */
+    background-color: #F9FAFB !important; /* FORÇADO: Cinza muito claro */
+    border-color: #E5E7EB !important; /* FORÇADO: Cinza claro */
   }
 }
 
-/* Custom Scrollbar - SEM AMARELO */
+/* Custom Scrollbar - SEM AMARELO - FORÇADO */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -551,49 +349,14 @@
   background-color: #10B981 !important; /* FORÇADO: Verde */
 }
 
-/* Print Styles */
+/* Print Styles - SEM AMARELO */
 @media print {
   .no-print {
     display: none !important;
   }
   
-  /* FORÇAR CORES ADEQUADAS PARA IMPRESSÃO */
   * {
     color: #000000 !important;
     background-color: #FFFFFF !important;
   }
-}
-
-/* VERIFICAÇÃO FINAL - ANULAR QUALQUER AMARELO RESTANTE */
-body *,
-body *::before,
-body *::after {
-  /* Se algum elemento ainda tiver amarelo, forçar para cinza */
-  color: inherit !important;
-}
-
-/* FORÇAR INPUTS E FORMS SEM AMARELO */
-input, textarea, select, button {
-  background-color: #FFFFFF !important;
-  border-color: #E5E7EB !important;
-  color: #374151 !important;
-}
-
-input:focus, textarea:focus, select:focus {
-  border-color: #10B981 !important;
-  ring-color: #10B981 !important;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
-}
-
-/* BOTÕES DE FORMULÁRIO FORÇADOS */
-button[type="submit"],
-.submit-button {
-  background-color: #10B981 !important;
-  color: #FFFFFF !important;
-  border: none !important;
-}
-
-button[type="submit"]:hover,
-.submit-button:hover {
-  background-color: #059669 !important;
 }
