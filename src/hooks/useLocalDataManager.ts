@@ -4,6 +4,9 @@ import { useFileSystemBackup } from './useFileSystemBackup';
 import { useAuth } from './useAuth';
 import { hybridDataManager } from '@/services/HybridDataManager';
 import { LocalDataStructure, LocalClient, LocalDebt, CollectionMessage, UserSettings } from '@/services/LocalDataService';
+import { ClientService } from '@/services/ClientService';
+import { DebtService } from '@/services/DebtService';
+import { StatisticsService } from '@/services/StatisticsService';
 
 export const useLocalDataManager = () => {
   const { user } = useAuth();
@@ -11,6 +14,17 @@ export const useLocalDataManager = () => {
   const [database, setDatabase] = useState<LocalDataStructure | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState({
+    totalClients: 0,
+    totalDebts: 0,
+    pendingDebts: 0,
+    overdueDebts: 0,
+    paidDebts: 0,
+    totalAmount: 0,
+    overdueAmount: 0,
+    messagesTotal: 0,
+    messagesSent: 0
+  });
 
   // Inicializar sistema quando usuário fizer login
   useEffect(() => {
@@ -21,6 +35,17 @@ export const useLocalDataManager = () => {
         setDatabase(null);
         setIsLoaded(false);
         setLoading(false);
+        setStatistics({
+          totalClients: 0,
+          totalDebts: 0,
+          pendingDebts: 0,
+          overdueDebts: 0,
+          paidDebts: 0,
+          totalAmount: 0,
+          overdueAmount: 0,
+          messagesTotal: 0,
+          messagesSent: 0
+        });
         return;
       }
 
@@ -33,6 +58,10 @@ export const useLocalDataManager = () => {
         // Carregar dados do usuário
         const userData = await hybridDataManager.loadUserData(user.id);
         setDatabase(userData);
+        
+        // Calcular estatísticas
+        const stats = await StatisticsService.getStatistics(user.id);
+        setStatistics(stats);
         
         console.log('✅ Dados do usuário carregados');
       } catch (error) {
@@ -60,6 +89,17 @@ export const useLocalDataManager = () => {
             }
           };
           setDatabase(initialData);
+          setStatistics({
+            totalClients: 0,
+            totalDebts: 0,
+            pendingDebts: 0,
+            overdueDebts: 0,
+            paidDebts: 0,
+            totalAmount: 0,
+            overdueAmount: 0,
+            messagesTotal: 0,
+            messagesSent: 0
+          });
         } catch (fallbackError) {
           console.error('❌ Erro ao criar dados iniciais:', fallbackError);
         }
@@ -79,17 +119,21 @@ export const useLocalDataManager = () => {
     try {
       const userData = await hybridDataManager.loadUserData(user.id);
       setDatabase(userData);
+      
+      // Atualizar estatísticas
+      const stats = await StatisticsService.getStatistics(user.id);
+      setStatistics(stats);
     } catch (error) {
       console.error('❌ Erro ao recarregar dados:', error);
     }
   };
 
-  // Funções CRUD para Clientes
+  // Funções CRUD para Clientes usando ClientService
   const addClient = async (clientData: Omit<LocalClient, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user) return null;
 
     try {
-      const newClient = await hybridDataManager.addClient(user.id, clientData);
+      const newClient = await ClientService.addClient(user.id, clientData);
       await reloadUserData(); // Recarregar dados após mudança
       return newClient;
     } catch (error) {
@@ -102,7 +146,7 @@ export const useLocalDataManager = () => {
     if (!user) return;
 
     try {
-      await hybridDataManager.updateClient(user.id, id, updates);
+      await ClientService.updateClient(user.id, id, updates);
       await reloadUserData();
     } catch (error) {
       console.error('❌ Erro ao atualizar cliente:', error);
@@ -114,7 +158,7 @@ export const useLocalDataManager = () => {
     if (!user) return;
 
     try {
-      await hybridDataManager.deleteClient(user.id, id);
+      await ClientService.deleteClient(user.id, id);
       await reloadUserData();
     } catch (error) {
       console.error('❌ Erro ao deletar cliente:', error);
@@ -122,12 +166,12 @@ export const useLocalDataManager = () => {
     }
   };
 
-  // Funções CRUD para Dívidas
+  // Funções CRUD para Dívidas usando DebtService
   const addDebt = async (debtData: Omit<LocalDebt, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user) return null;
 
     try {
-      const newDebt = await hybridDataManager.addDebt(user.id, debtData);
+      const newDebt = await DebtService.addDebt(user.id, debtData);
       await reloadUserData();
       return newDebt;
     } catch (error) {
@@ -140,7 +184,7 @@ export const useLocalDataManager = () => {
     if (!user) return;
 
     try {
-      await hybridDataManager.updateDebt(user.id, id, updates);
+      await DebtService.updateDebt(user.id, id, updates);
       await reloadUserData();
     } catch (error) {
       console.error('❌ Erro ao atualizar dívida:', error);
@@ -152,7 +196,7 @@ export const useLocalDataManager = () => {
     if (!user) return;
 
     try {
-      await hybridDataManager.deleteDebt(user.id, id);
+      await DebtService.deleteDebt(user.id, id);
       await reloadUserData();
     } catch (error) {
       console.error('❌ Erro ao deletar dívida:', error);
@@ -238,48 +282,6 @@ export const useLocalDataManager = () => {
     }
   };
 
-  const getStatistics = () => {
-    if (!database) {
-      return {
-        totalClients: 0,
-        totalDebts: 0,
-        pendingDebts: 0,
-        overdueDebts: 0,
-        paidDebts: 0,
-        totalAmount: 0,
-        overdueAmount: 0,
-        messagesTotal: 0,
-        messagesSent: 0
-      };
-    }
-
-    const totalClients = database.clients.length;
-    const totalDebts = database.debts.length;
-    const pendingDebts = database.debts.filter(d => d.status === 'pendente').length;
-    const overdueDebts = database.debts.filter(d => d.status === 'atrasado').length;
-    const paidDebts = database.debts.filter(d => d.status === 'pago').length;
-    
-    const totalAmount = database.debts
-      .filter(d => d.status !== 'pago')
-      .reduce((sum, debt) => sum + debt.valor, 0);
-    
-    const overdueAmount = database.debts
-      .filter(d => d.status === 'atrasado')
-      .reduce((sum, debt) => sum + debt.valor, 0);
-
-    return {
-      totalClients,
-      totalDebts,
-      pendingDebts,
-      overdueDebts,
-      paidDebts,
-      totalAmount,
-      overdueAmount,
-      messagesTotal: database.collectionHistory.length,
-      messagesSent: database.collectionHistory.filter(m => m.statusEntrega === 'enviada').length
-    };
-  };
-
   const exportData = () => {
     return database ? JSON.stringify(database, null, 2) : '';
   };
@@ -316,7 +318,7 @@ export const useLocalDataManager = () => {
     database,
     isLoaded,
     loading,
-    statistics: getStatistics(),
+    statistics,
 
     // Clientes
     addClient,
