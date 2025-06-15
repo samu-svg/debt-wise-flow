@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import EnhancedLoading from '@/components/ui/enhanced-loading';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { 
   MessageSquare, 
@@ -152,79 +153,83 @@ const WhatsApp: React.FC = () => {
   ), [connection.isConnected, isConfigDirty]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 bg-white min-h-screen p-4 sm:p-6">
-      {/* Header - Mobile Optimized */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 text-gray-800">
-            <Cloud className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-            <span className="truncate">WhatsApp Cloud API</span>
-          </h1>
-          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
-            Gerenciamento da integração com WhatsApp Business
-          </p>
+    <ErrorBoundary>
+      <div className="space-y-4 sm:space-y-6 bg-white min-h-screen p-4 sm:p-6">
+        {/* Header - Mobile Optimized */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 text-gray-800">
+              <Cloud className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
+              <span className="truncate">WhatsApp Cloud API</span>
+            </h1>
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
+              Gerenciamento da integração com WhatsApp Business
+            </p>
+          </div>
+          <div className="flex justify-end">
+            {statusBadge}
+          </div>
         </div>
-        <div className="flex justify-end">
-          {statusBadge}
+
+        {/* Cards de Estatísticas - Mobile Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {statsCards.map((stat, index) => (
+            <StatsCard
+              key={`${stat.title}-${index}`}
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              color={stat.color}
+              bg={stat.bg}
+              trend={stat.trend}
+            />
+          ))}
         </div>
+
+        {/* Tabs com lazy loading - Mobile Optimized */}
+        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 h-auto">
+            <TabsTrigger 
+              value="overview" 
+              className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
+            >
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="truncate">Visão Geral</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="templates" 
+              className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
+            >
+              <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="truncate">Templates</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="logs" 
+              className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
+            >
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="truncate">Logs ({logStats.today})</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+                <WhatsAppOverview />
+              </TabsContent>
+
+              <TabsContent value="templates">
+                <MessageTemplates />
+              </TabsContent>
+
+              <TabsContent value="logs">
+                <WhatsAppLogs />
+              </TabsContent>
+            </Suspense>
+          </ErrorBoundary>
+        </Tabs>
       </div>
-
-      {/* Cards de Estatísticas - Mobile Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {statsCards.map((stat, index) => (
-          <StatsCard
-            key={`${stat.title}-${index}`}
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            color={stat.color}
-            bg={stat.bg}
-            trend={stat.trend}
-          />
-        ))}
-      </div>
-
-      {/* Tabs com lazy loading - Mobile Optimized */}
-      <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 h-auto">
-          <TabsTrigger 
-            value="overview" 
-            className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
-          >
-            <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="truncate">Visão Geral</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="templates" 
-            className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
-          >
-            <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="truncate">Templates</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="logs" 
-            className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
-          >
-            <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="truncate">Logs ({logStats.today})</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <Suspense fallback={<LoadingFallback />}>
-          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-            <WhatsAppOverview />
-          </TabsContent>
-
-          <TabsContent value="templates">
-            <MessageTemplates />
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <WhatsAppLogs />
-          </TabsContent>
-        </Suspense>
-      </Tabs>
-    </div>
+    </ErrorBoundary>
   );
 };
 
