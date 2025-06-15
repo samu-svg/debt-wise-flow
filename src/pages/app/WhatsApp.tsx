@@ -1,12 +1,9 @@
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, Suspense, lazy } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import WhatsAppCloudStatus from '@/components/WhatsAppCloudStatus';
-import WhatsAppCloudConfig from '@/components/WhatsAppCloudConfig';
-import WhatsAppLogs from '@/components/WhatsAppLogs';
-import MessageTemplates from '@/components/MessageTemplates';
+import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { 
   MessageSquare, 
@@ -14,12 +11,17 @@ import {
   Settings,
   Cloud,
   Activity,
-  TrendingUp,
   FileText,
   CheckCircle2
 } from 'lucide-react';
 
-const WhatsApp = () => {
+// Lazy loading de componentes pesados
+const WhatsAppCloudStatus = lazy(() => import('@/components/WhatsAppCloudStatus'));
+const WhatsAppCloudConfig = lazy(() => import('@/components/WhatsAppCloudConfig'));
+const WhatsAppLogs = lazy(() => import('@/components/WhatsAppLogs'));
+const MessageTemplates = lazy(() => import('@/components/MessageTemplates'));
+
+const WhatsApp: React.FC = () => {
   const { connection, logs } = useWhatsAppCloudAPI();
 
   const getStatsCards = () => [
@@ -144,23 +146,25 @@ const WhatsApp = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="status" className="space-y-6">
-          <div className="flex justify-center">
-            <WhatsAppCloudStatus />
-          </div>
-        </TabsContent>
+        <Suspense fallback={<EnhancedLoading />}>
+          <TabsContent value="status" className="space-y-6">
+            <div className="flex justify-center">
+              <WhatsAppCloudStatus />
+            </div>
+          </TabsContent>
 
-        <TabsContent value="config" className="space-y-6">
-          <WhatsAppCloudConfig />
-        </TabsContent>
+          <TabsContent value="config" className="space-y-6">
+            <WhatsAppCloudConfig />
+          </TabsContent>
 
-        <TabsContent value="templates">
-          <MessageTemplates />
-        </TabsContent>
+          <TabsContent value="templates">
+            <MessageTemplates />
+          </TabsContent>
 
-        <TabsContent value="logs">
-          <WhatsAppLogs />
-        </TabsContent>
+          <TabsContent value="logs">
+            <WhatsAppLogs />
+          </TabsContent>
+        </Suspense>
       </Tabs>
     </div>
   );

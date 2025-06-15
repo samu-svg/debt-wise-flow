@@ -1,12 +1,13 @@
+
 import { useState, useEffect, useCallback } from 'react';
-import { WhatsAppConnection, WhatsAppLog, WhatsAppConfig, WhatsAppTemplate } from '@/types/whatsapp';
+import type { WhatsAppConnection, WhatsAppLog, WhatsAppConfig, WhatsAppTemplate } from '@/types/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEYS = {
   CONNECTION: 'whatsapp_cloud_connection',
   CONFIG: 'whatsapp_cloud_config',
   LOGS: 'whatsapp_cloud_logs'
-};
+} as const;
 
 const DEFAULT_CONFIG: Partial<WhatsAppConfig> = {
   messageDelay: 2000,
@@ -18,9 +19,24 @@ const DEFAULT_CONFIG: Partial<WhatsAppConfig> = {
     start: '09:00',
     end: '18:00'
   }
-};
+} as const;
 
-export const useWhatsAppCloudAPI = () => {
+interface UseWhatsAppCloudAPIReturn {
+  connection: WhatsAppConnection;
+  config: Partial<WhatsAppConfig>;
+  logs: WhatsAppLog[];
+  templates: WhatsAppTemplate[];
+  isLoading: boolean;
+  testConnection: () => Promise<boolean>;
+  disconnect: () => void;
+  sendMessage: (phoneNumber: string, message: string, templateName?: string) => Promise<string>;
+  loadTemplates: () => Promise<void>;
+  clearLogs: () => void;
+  updateConfig: (newConfig: Partial<WhatsAppConfig>) => void;
+  addLog: (type: WhatsAppLog['type'], message: string, data?: unknown) => void;
+}
+
+export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
   const [connection, setConnection] = useState<WhatsAppConnection>({
     isConnected: false,
     status: 'disconnected',
@@ -36,44 +52,44 @@ export const useWhatsAppCloudAPI = () => {
     loadSavedData();
   }, []);
 
-  const loadSavedData = () => {
+  const loadSavedData = (): void => {
     try {
       const savedConnection = localStorage.getItem(STORAGE_KEYS.CONNECTION);
       const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
       const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
 
       if (savedConnection) {
-        setConnection(JSON.parse(savedConnection));
+        setConnection(JSON.parse(savedConnection) as WhatsAppConnection);
       }
       if (savedConfig) {
-        setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(savedConfig) });
+        setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(savedConfig) as Partial<WhatsAppConfig> });
       }
       if (savedLogs) {
-        setLogs(JSON.parse(savedLogs));
+        setLogs(JSON.parse(savedLogs) as WhatsAppLog[]);
       }
     } catch (error) {
       addLog('error', 'Erro ao carregar dados salvos', { error });
     }
   };
 
-  const saveConnection = (newConnection: WhatsAppConnection) => {
+  const saveConnection = (newConnection: WhatsAppConnection): void => {
     localStorage.setItem(STORAGE_KEYS.CONNECTION, JSON.stringify(newConnection));
     setConnection(newConnection);
   };
 
-  const saveConfig = (newConfig: Partial<WhatsAppConfig>) => {
+  const saveConfig = (newConfig: Partial<WhatsAppConfig>): void => {
     const updatedConfig = { ...config, ...newConfig };
     localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updatedConfig));
     setConfig(updatedConfig);
   };
 
-  const saveLogs = (newLogs: WhatsAppLog[]) => {
+  const saveLogs = (newLogs: WhatsAppLog[]): void => {
     const trimmedLogs = newLogs.slice(-1000);
     localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(trimmedLogs));
     setLogs(trimmedLogs);
   };
 
-  const addLog = useCallback((type: WhatsAppLog['type'], message: string, data?: any) => {
+  const addLog = useCallback((type: WhatsAppLog['type'], message: string, data?: unknown): void => {
     const newLog: WhatsAppLog = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
@@ -89,7 +105,7 @@ export const useWhatsAppCloudAPI = () => {
     });
   }, []);
 
-  const testConnection = useCallback(async () => {
+  const testConnection = useCallback(async (): Promise<boolean> => {
     if (!config.accessToken || !config.phoneNumberId) {
       addLog('error', 'Configuração incompleta - Token de acesso e ID do número são obrigatórios');
       return false;
@@ -108,12 +124,12 @@ export const useWhatsAppCloudAPI = () => {
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data?.success) {
         saveConnection({
           isConnected: true,
           status: 'connected',
           phoneNumberId: config.phoneNumberId,
-          phoneNumber: data.data?.phoneNumber, // Para compatibilidade
+          phoneNumber: data.data?.phoneNumber,
           businessAccountId: config.businessAccountId,
           accessToken: config.accessToken,
           lastSeen: new Date().toISOString(),
@@ -122,15 +138,16 @@ export const useWhatsAppCloudAPI = () => {
         addLog('connection', 'Conexão estabelecida com sucesso!', data);
         return true;
       } else {
-        throw new Error(data.error || 'Erro na conexão');
+        throw new Error(data?.error || 'Erro na conexão');
       }
-    } catch (error: any) {
-      addLog('error', `Erro na conexão: ${error.message}`, { error });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      addLog('error', `Erro na conexão: ${errorMessage}`, { error });
       saveConnection({
         ...connection,
         isConnected: false,
         status: 'error',
-        lastError: error.message
+        lastError: errorMessage
       });
       return false;
     } finally {
@@ -138,7 +155,7 @@ export const useWhatsAppCloudAPI = () => {
     }
   }, [config, connection, addLog]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback((): void => {
     saveConnection({
       isConnected: false,
       status: 'disconnected',
@@ -147,7 +164,7 @@ export const useWhatsAppCloudAPI = () => {
     addLog('connection', 'WhatsApp desconectado');
   }, [addLog]);
 
-  const sendMessage = useCallback(async (phoneNumber: string, message: string, templateName?: string) => {
+  const sendMessage = useCallback(async (phoneNumber: string, message: string, templateName?: string): Promise<string> => {
     if (!connection.isConnected) {
       throw new Error('WhatsApp não está conectado');
     }
@@ -165,22 +182,23 @@ export const useWhatsAppCloudAPI = () => {
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data?.success) {
         addLog('message', `Mensagem enviada para ${phoneNumber}`, { 
           messageId: data.messageId,
           message 
         });
-        return data.messageId;
+        return data.messageId as string;
       } else {
-        throw new Error(data.error || 'Erro ao enviar mensagem');
+        throw new Error(data?.error || 'Erro ao enviar mensagem');
       }
-    } catch (error: any) {
-      addLog('error', `Erro ao enviar mensagem: ${error.message}`, { error });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      addLog('error', `Erro ao enviar mensagem: ${errorMessage}`, { error });
       throw error;
     }
   }, [connection, config, addLog]);
 
-  const loadTemplates = useCallback(async () => {
+  const loadTemplates = useCallback(async (): Promise<void> => {
     if (!config.accessToken || !config.businessAccountId) {
       addLog('error', 'Configuração incompleta para carregar templates');
       return;
@@ -196,16 +214,17 @@ export const useWhatsAppCloudAPI = () => {
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data?.success) {
         setTemplates(data.templates || []);
         addLog('system', `${data.templates?.length || 0} templates carregados`);
       }
-    } catch (error: any) {
-      addLog('error', `Erro ao carregar templates: ${error.message}`, { error });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      addLog('error', `Erro ao carregar templates: ${errorMessage}`, { error });
     }
   }, [config, addLog]);
 
-  const clearLogs = useCallback(() => {
+  const clearLogs = useCallback((): void => {
     setLogs([]);
     localStorage.removeItem(STORAGE_KEYS.LOGS);
     addLog('system', 'Logs limpos');

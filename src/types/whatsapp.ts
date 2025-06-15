@@ -1,76 +1,92 @@
 
 export interface WhatsAppConnection {
-  isConnected: boolean;
-  phoneNumberId?: string;
-  phoneNumber?: string; // Para compatibilidade com componentes existentes
-  businessAccountId?: string;
-  accessToken?: string;
-  webhookToken?: string;
-  lastSeen?: string;
-  status: 'disconnected' | 'connecting' | 'connected' | 'error';
-  retryCount: number;
-  lastError?: string;
-  qrCode?: string; // Para compatibilidade com componentes existentes
+  readonly isConnected: boolean;
+  readonly phoneNumberId?: string;
+  readonly phoneNumber?: string; // Para compatibilidade com componentes existentes
+  readonly businessAccountId?: string;
+  readonly accessToken?: string;
+  readonly webhookToken?: string;
+  readonly lastSeen?: string;
+  readonly status: 'disconnected' | 'connecting' | 'connected' | 'error';
+  readonly retryCount: number;
+  readonly lastError?: string;
+  readonly qrCode?: string; // Para compatibilidade com componentes existentes
 }
 
 export interface WhatsAppLog {
-  id: string;
-  timestamp: string;
-  type: 'connection' | 'message' | 'error' | 'system' | 'webhook';
-  message: string;
-  data?: any;
+  readonly id: string;
+  readonly timestamp: string;
+  readonly type: 'connection' | 'message' | 'error' | 'system' | 'webhook';
+  readonly message: string;
+  readonly data?: unknown;
 }
 
 export interface WhatsAppMessage {
-  id: string;
-  clientId: string;
-  phoneNumber: string;
-  message: string;
-  type: 'sent' | 'received';
-  timestamp: string;
-  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
-  messageId?: string;
+  readonly id: string;
+  readonly clientId: string;
+  readonly phoneNumber: string;
+  readonly message: string;
+  readonly type: 'sent' | 'received';
+  readonly timestamp: string;
+  readonly status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  readonly messageId?: string;
+}
+
+export interface WhatsAppBusinessHours {
+  readonly enabled: boolean;
+  readonly start: string;
+  readonly end: string;
 }
 
 export interface WhatsAppConfig {
-  accessToken: string;
-  phoneNumberId: string;
-  businessAccountId: string;
-  webhookToken: string;
-  webhookUrl: string;
-  messageDelay: number;
+  readonly accessToken: string;
+  readonly phoneNumberId: string;
+  readonly businessAccountId: string;
+  readonly webhookToken: string;
+  readonly webhookUrl: string;
+  readonly messageDelay: number;
   // Propriedades para configurações avançadas (compatibilidade)
-  autoReconnect?: boolean;
-  retryInterval?: number;
-  maxRetries?: number;
-  businessHours: {
-    enabled: boolean;
-    start: string;
-    end: string;
-  };
+  readonly autoReconnect?: boolean;
+  readonly retryInterval?: number;
+  readonly maxRetries?: number;
+  readonly businessHours: WhatsAppBusinessHours;
+}
+
+export interface WhatsAppTemplateComponent {
+  readonly type: 'header' | 'body' | 'footer' | 'buttons';
+  readonly text?: string;
+  readonly parameters?: readonly string[];
 }
 
 export interface WhatsAppTemplate {
-  id: string;
-  name: string;
-  language: string;
-  status: 'approved' | 'pending' | 'rejected';
-  category: 'marketing' | 'utility' | 'authentication';
-  components: Array<{
-    type: 'header' | 'body' | 'footer' | 'buttons';
-    text?: string;
-    parameters?: string[];
-  }>;
+  readonly id: string;
+  readonly name: string;
+  readonly language: string;
+  readonly status: 'approved' | 'pending' | 'rejected';
+  readonly category: 'marketing' | 'utility' | 'authentication';
+  readonly components: readonly WhatsAppTemplateComponent[];
+}
+
+export interface MessageTemplateParameter {
+  readonly type: string;
+  readonly text: string;
+}
+
+export interface MessageTemplateComponent {
+  readonly type: string;
+  readonly parameters?: readonly MessageTemplateParameter[];
 }
 
 export interface MessageTemplate {
-  name: string;
-  language: string;
-  components: Array<{
-    type: string;
-    parameters?: Array<{
-      type: string;
-      text: string;
-    }>;
-  }>;
+  readonly name: string;
+  readonly language: string;
+  readonly components: readonly MessageTemplateComponent[];
 }
+
+// Tipos utilitários para melhor type safety
+export type WhatsAppConnectionStatus = WhatsAppConnection['status'];
+export type WhatsAppLogType = WhatsAppLog['type'];
+export type WhatsAppMessageType = WhatsAppMessage['type'];
+export type WhatsAppMessageStatus = WhatsAppMessage['status'];
+export type WhatsAppTemplateStatus = WhatsAppTemplate['status'];
+export type WhatsAppTemplateCategory = WhatsAppTemplate['category'];
