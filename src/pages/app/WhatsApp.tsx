@@ -193,7 +193,7 @@ const WhatsApp: React.FC = () => {
                 <span className="truncate">WhatsApp Cloud API</span>
               </h1>
               <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
-                Gerenciamento completo da integração com WhatsApp Business - 
+                Gerenciamento completo da integração com WhatsApp Business com dados locais - 
                 Configurações, monitoramento e automação em um só lugar
               </p>
             </div>
@@ -237,7 +237,7 @@ const WhatsApp: React.FC = () => {
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm"
                   >
                     <Bot className="w-4 h-4" />
-                    <span className="hidden sm:inline">Automação</span>
+                    <span className="hidden sm:inline">Automação Local</span>
                     <span className="sm:hidden">Auto</span>
                   </TabsTrigger>
                   

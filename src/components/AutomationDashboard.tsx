@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useCollectionAutomation } from '@/hooks/useCollectionAutomation';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useLocalAutomation } from '@/hooks/useLocalAutomation';
+import { useLocalDataManager } from '@/hooks/useLocalDataManager';
 import { toast } from '@/hooks/use-toast';
 import {
   Zap,
@@ -27,26 +27,20 @@ const AutomationDashboard = () => {
     config, 
     stats, 
     communications, 
-    isProcessing, 
+    isProcessing,
+    overdueDebts,
     updateConfig, 
     processAutomaticCollections 
-  } = useCollectionAutomation();
+  } = useLocalAutomation();
   
-  const { dividas, clientes, loading } = useSupabaseData();
-
-  // Calcular dívidas vencidas
-  const overdueDebts = dividas.filter(debt => {
-    if (debt.status === 'pago') return false;
-    const dueDate = new Date(debt.data_vencimento || '');
-    return dueDate < new Date();
-  });
+  const { database, loading } = useLocalDataManager();
 
   const handleToggleAutomation = (enabled: boolean) => {
     updateConfig({ ...config, enabled });
     toast({
       title: enabled ? "Automação ativada!" : "Automação desativada!",
       description: enabled 
-        ? "A cobrança automática foi ativada e começará a processar dívidas vencidas."
+        ? "A cobrança automática foi ativada e começará a processar dívidas vencidas dos dados locais."
         : "A automação foi pausada. Nenhuma mensagem será enviada automaticamente."
     });
   };
@@ -56,7 +50,7 @@ const AutomationDashboard = () => {
       await processAutomaticCollections();
       toast({
         title: "Processamento manual concluído!",
-        description: "Verificação de cobranças executada com sucesso."
+        description: "Verificação de cobranças executada com sucesso nos dados locais."
       });
     } catch (error) {
       toast({
@@ -89,10 +83,10 @@ const AutomationDashboard = () => {
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Zap className="w-6 h-6 text-blue-600" />
                 </div>
-                Automação de Cobrança
+                Automação de Cobrança (Dados Locais)
               </CardTitle>
               <CardDescription className="text-base mt-2">
-                Sistema inteligente de cobrança automática com escalonamento por dias de atraso
+                Sistema inteligente de cobrança automática integrado com seus dados locais
               </CardDescription>
             </div>
             
@@ -139,7 +133,7 @@ const AutomationDashboard = () => {
                   Automação Ativa
                 </Label>
                 <p className="text-sm text-gray-600 mt-1">
-                  Ativar/pausar o sistema de cobrança automática
+                  Processar cobranças automaticamente dos dados locais
                 </p>
               </div>
             </div>
@@ -176,7 +170,7 @@ const AutomationDashboard = () => {
 
       {/* Métricas principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-red-500 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -303,15 +297,15 @@ const AutomationDashboard = () => {
       </Card>
 
       {/* Lista de dívidas vencidas para processar */}
-      {overdueDebts.length > 0 && (
+      {overdueDebts.length > 0 && database && (
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="w-5 h-5" />
-              Dívidas Vencidas para Processar
+              Dívidas Vencidas dos Dados Locais
             </CardTitle>
             <CardDescription>
-              {overdueDebts.length} dívida(s) vencida(s) identificada(s) para cobrança automática
+              {overdueDebts.length} dívida(s) vencida(s) identificada(s) nos seus dados locais
             </CardDescription>
           </CardHeader>
           
@@ -319,12 +313,11 @@ const AutomationDashboard = () => {
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {overdueDebts.slice(0, 10).map((debt) => {
                 const daysOverdue = Math.floor(
-                  (new Date().getTime() - new Date(debt.data_vencimento || '').getTime()) 
+                  (new Date().getTime() - new Date(debt.dataVencimento).getTime()) 
                   / (1000 * 60 * 60 * 24)
                 );
                 
-                // Find the client name through the cliente_id relationship
-                const client = clientes.find(c => c.id === debt.cliente_id);
+                const client = database.clients.find(c => c.id === debt.clientId);
                 const clientName = client ? client.nome : 'Cliente não encontrado';
                 
                 return (
