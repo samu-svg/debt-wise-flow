@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,11 +15,12 @@ import {
   TestTube,
   CheckCircle,
   AlertCircle,
-  Save
+  Save,
+  Loader2
 } from 'lucide-react';
 
-const WhatsAppCloudConfig = () => {
-  const { config, connection, updateConfig, testConnection, isLoading } = useWhatsAppCloudAPI();
+const WhatsAppCloudConfig = memo(() => {
+  const { config, connection, updateConfig, testConnection, isLoading, isConfigDirty } = useWhatsAppCloudAPI();
   const [formData, setFormData] = useState({
     accessToken: config.accessToken || '',
     phoneNumberId: config.phoneNumberId || '',
@@ -27,8 +28,20 @@ const WhatsAppCloudConfig = () => {
     webhookToken: config.webhookToken || 'whatsapp_webhook_token'
   });
 
+  // Sincronizar formData com config quando config mudar
+  useEffect(() => {
+    setFormData({
+      accessToken: config.accessToken || '',
+      phoneNumberId: config.phoneNumberId || '',
+      businessAccountId: config.businessAccountId || '',
+      webhookToken: config.webhookToken || 'whatsapp_webhook_token'
+    });
+  }, [config]);
+
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Auto-save com debounce através do hook
+    updateConfig({ [field]: value });
   };
 
   const handleSave = () => {
@@ -58,12 +71,18 @@ const WhatsAppCloudConfig = () => {
 
   return (
     <div className="space-y-6">
-      {/* Status Card */}
+      {/* Status Card Otimizado */}
       <Card className="border-l-4 border-l-blue-500">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
             Status da Conexão
+            {isConfigDirty && (
+              <Badge variant="outline" className="text-orange-600 border-orange-300">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Salvando...
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -81,7 +100,9 @@ const WhatsAppCloudConfig = () => {
                 <AlertCircle className="w-5 h-5 text-red-600" />
                 <Badge variant="secondary">Desconectado</Badge>
                 {connection.lastError && (
-                  <span className="text-sm text-red-600">{connection.lastError}</span>
+                  <span className="text-sm text-red-600 truncate max-w-xs">
+                    {connection.lastError}
+                  </span>
                 )}
               </>
             )}
@@ -89,7 +110,7 @@ const WhatsAppCloudConfig = () => {
         </CardContent>
       </Card>
 
-      {/* Configuration Card */}
+      {/* Configuration Card Otimizado */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -145,9 +166,14 @@ const WhatsAppCloudConfig = () => {
             <Button 
               onClick={handleSave}
               className="flex items-center gap-2"
+              disabled={isConfigDirty}
             >
-              <Save className="w-4 h-4" />
-              Salvar
+              {isConfigDirty ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {isConfigDirty ? 'Salvando...' : 'Salvar'}
             </Button>
             
             <Button 
@@ -156,7 +182,11 @@ const WhatsAppCloudConfig = () => {
               variant="outline"
               className="flex items-center gap-2"
             >
-              <TestTube className="w-4 h-4" />
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <TestTube className="w-4 h-4" />
+              )}
               {isLoading ? 'Testando...' : 'Testar Conexão'}
             </Button>
           </div>
@@ -164,6 +194,8 @@ const WhatsAppCloudConfig = () => {
       </Card>
     </div>
   );
-};
+});
+
+WhatsAppCloudConfig.displayName = 'WhatsAppCloudConfig';
 
 export default WhatsAppCloudConfig;

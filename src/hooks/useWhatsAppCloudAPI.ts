@@ -1,47 +1,28 @@
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { WhatsAppConnection, WhatsAppLog, WhatsAppConfig, WhatsAppTemplate } from '@/types/whatsapp';
+import { useState, useCallback, useMemo } from 'react';
+import type { WhatsAppConnection, WhatsAppTemplate } from '@/types/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
+import { useWhatsAppMetrics } from './useWhatsAppMetrics';
+import { useWhatsAppConfig } from './useWhatsAppConfig';
+import { useWhatsAppLogs } from './useWhatsAppLogs';
 
-const STORAGE_KEYS = {
-  CONNECTION: 'whatsapp_cloud_connection',
-  CONFIG: 'whatsapp_cloud_config',
-  LOGS: 'whatsapp_cloud_logs'
-} as const;
-
-const DEFAULT_CONFIG: Partial<WhatsAppConfig> = {
-  messageDelay: 2000,
-  autoReconnect: true,
-  retryInterval: 15000,
-  maxRetries: 5,
-  businessHours: {
-    enabled: false,
-    start: '09:00',
-    end: '18:00'
-  }
-} as const;
-
-interface WhatsAppMetrics {
-  messagestoday: number;
-  activeConversations: number;
-  totalMessages: number;
-  errorRate: number;
-}
+const STORAGE_KEY_CONNECTION = 'whatsapp_cloud_connection';
 
 interface UseWhatsAppCloudAPIReturn {
   connection: WhatsAppConnection;
-  config: Partial<WhatsAppConfig>;
-  logs: WhatsAppLog[];
+  config: Partial<import('@/types/whatsapp').WhatsAppConfig>;
+  logs: import('@/types/whatsapp').WhatsAppLog[];
   templates: WhatsAppTemplate[];
-  metrics: WhatsAppMetrics;
+  metrics: ReturnType<typeof useWhatsAppMetrics>;
+  logStats: ReturnType<typeof useWhatsAppLogs>['logStats'];
   isLoading: boolean;
+  isConfigDirty: boolean;
   testConnection: () => Promise<boolean>;
   disconnect: () => void;
   sendMessage: (phoneNumber: string, message: string, templateName?: string) => Promise<string>;
   loadTemplates: () => Promise<void>;
   clearLogs: () => void;
-  updateConfig: (newConfig: Partial<WhatsAppConfig>) => void;
-  addLog: (type: WhatsAppLog['type'], message: string, data?: unknown) => void;
+  updateConfig: (newConfig: Partial<import('@/types/whatsapp').WhatsAppConfig>) => void;
 }
 
 export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
@@ -51,103 +32,38 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     retryCount: 0
   });
   
-  const [config, setConfig] = useState<Partial<WhatsAppConfig>>(DEFAULT_CONFIG);
-  const [logs, setLogs] = useState<WhatsAppLog[]>([]);
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Calcular métricas reais baseadas nos logs
-  const metrics = useMemo((): WhatsAppMetrics => {
-    const today = new Date().toDateString();
-    const todayLogs = logs.filter(log => new Date(log.timestamp).toDateString() === today);
-    const messageLogs = logs.filter(log => log.type === 'message');
-    const errorLogs = logs.filter(log => log.type === 'error');
-    
-    return {
-      messagestoday: todayLogs.filter(log => log.type === 'message').length,
-      activeConversations: new Set(
-        messageLogs
-          .filter(log => log.data && typeof log.data === 'object' && 'phoneNumber' in log.data)
-          .map(log => (log.data as any).phoneNumber)
-      ).size,
-      totalMessages: messageLogs.length,
-      errorRate: messageLogs.length > 0 ? (errorLogs.length / messageLogs.length) * 100 : 0
-    };
-  }, [logs]);
+  // Usar hooks especializados
+  const { config, updateConfig, isConfigDirty } = useWhatsAppConfig();
+  const { logs, logStats, addLog, clearLogs } = useWhatsAppLogs();
+  const metrics = useWhatsAppMetrics(logs);
 
-  useEffect(() => {
-    loadSavedData();
-  }, []);
-
-  const loadSavedData = (): void => {
+  // Carregar conexão salva
+  const loadSavedConnection = useCallback(() => {
     try {
-      const savedConnection = localStorage.getItem(STORAGE_KEYS.CONNECTION);
-      const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
-      const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
-
+      const savedConnection = localStorage.getItem(STORAGE_KEY_CONNECTION);
       if (savedConnection) {
         const parsedConnection = JSON.parse(savedConnection) as WhatsAppConnection;
         setConnection(parsedConnection);
       }
-      if (savedConfig) {
-        const parsedConfig = JSON.parse(savedConfig) as Partial<WhatsAppConfig>;
-        setConfig({ ...DEFAULT_CONFIG, ...parsedConfig });
-      }
-      if (savedLogs) {
-        const parsedLogs = JSON.parse(savedLogs) as WhatsAppLog[];
-        setLogs(parsedLogs);
-      }
     } catch (error) {
-      console.error('Erro ao carregar dados salvos:', error);
-      addLog('error', 'Erro ao carregar dados salvos', { error });
+      console.error('Erro ao carregar conexão:', error);
+      addLog('error', 'Erro ao carregar dados da conexão', { error });
     }
-  };
+  }, [addLog]);
 
+  // Memoizar função de salvamento de conexão
   const saveConnection = useCallback((newConnection: WhatsAppConnection): void => {
     try {
-      localStorage.setItem(STORAGE_KEYS.CONNECTION, JSON.stringify(newConnection));
+      localStorage.setItem(STORAGE_KEY_CONNECTION, JSON.stringify(newConnection));
       setConnection(newConnection);
     } catch (error) {
       console.error('Erro ao salvar conexão:', error);
+      addLog('error', 'Erro ao salvar dados da conexão', { error });
     }
-  }, []);
-
-  const saveConfig = useCallback((newConfig: Partial<WhatsAppConfig>): void => {
-    try {
-      const updatedConfig = { ...config, ...newConfig };
-      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updatedConfig));
-      setConfig(updatedConfig);
-    } catch (error) {
-      console.error('Erro ao salvar configuração:', error);
-    }
-  }, [config]);
-
-  const saveLogs = useCallback((newLogs: WhatsAppLog[]): void => {
-    try {
-      // Limitar logs a 500 para evitar problemas de performance
-      const trimmedLogs = newLogs.slice(-500);
-      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(trimmedLogs));
-      setLogs(trimmedLogs);
-    } catch (error) {
-      console.error('Erro ao salvar logs:', error);
-    }
-  }, []);
-
-  const addLog = useCallback((type: WhatsAppLog['type'], message: string, data?: unknown): void => {
-    const newLog: WhatsAppLog = {
-      id: `${Date.now()}-${Math.random()}`,
-      timestamp: new Date().toISOString(),
-      type,
-      message,
-      data
-    };
-
-    setLogs(currentLogs => {
-      const updatedLogs = [...currentLogs, newLog];
-      saveLogs(updatedLogs);
-      return updatedLogs;
-    });
-  }, [saveLogs]);
+  }, [addLog]);
 
   const testConnection = useCallback(async (): Promise<boolean> => {
     if (!config.accessToken || !config.phoneNumberId) {
@@ -294,15 +210,10 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     }
   }, [config, addLog]);
 
-  const clearLogs = useCallback((): void => {
-    setLogs([]);
-    try {
-      localStorage.removeItem(STORAGE_KEYS.LOGS);
-      addLog('system', 'Logs limpos');
-    } catch (error) {
-      console.error('Erro ao limpar logs:', error);
-    }
-  }, [addLog]);
+  // Carregar dados salvos na inicialização
+  useState(() => {
+    loadSavedConnection();
+  });
 
   return {
     connection,
@@ -310,13 +221,14 @@ export const useWhatsAppCloudAPI = (): UseWhatsAppCloudAPIReturn => {
     logs,
     templates,
     metrics,
+    logStats,
     isLoading,
+    isConfigDirty,
     testConnection,
     disconnect,
     sendMessage,
     loadTemplates,
     clearLogs,
-    updateConfig: saveConfig,
-    addLog
+    updateConfig
   };
 };

@@ -1,5 +1,5 @@
 
-import { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, memo, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -8,22 +8,82 @@ import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { 
   MessageSquare, 
   Users, 
-  Settings,
   Cloud,
   FileText,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 
-// Lazy loading de componentes pesados
-const WhatsAppCloudStatus = lazy(() => import('@/components/WhatsAppCloudStatus'));
-const WhatsAppCloudConfig = lazy(() => import('@/components/WhatsAppCloudConfig'));
-const WhatsAppLogs = lazy(() => import('@/components/WhatsAppLogs'));
-const MessageTemplates = lazy(() => import('@/components/MessageTemplates'));
+// Lazy loading otimizado com preload
+const WhatsAppCloudStatus = lazy(() => 
+  import('@/components/WhatsAppCloudStatus').then(module => ({
+    default: module.default
+  }))
+);
+
+const WhatsAppCloudConfig = lazy(() => 
+  import('@/components/WhatsAppCloudConfig').then(module => ({
+    default: module.default
+  }))
+);
+
+const WhatsAppLogs = lazy(() => 
+  import('@/components/WhatsAppLogs').then(module => ({
+    default: module.default
+  }))
+);
+
+const MessageTemplates = lazy(() => 
+  import('@/components/MessageTemplates').then(module => ({
+    default: module.default
+  }))
+);
+
+// Componente memoizado para cards de estatísticas
+const StatsCard = memo(({ 
+  title, 
+  value, 
+  icon: Icon, 
+  color, 
+  bg 
+}: {
+  title: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bg: string;
+}) => (
+  <Card className="shadow-sm border-gray-200">
+    <CardContent className="p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-600">{title}</p>
+          <p className={`text-lg font-bold ${color}`}>{value}</p>
+        </div>
+        <div className={`p-2 rounded-full ${bg}`}>
+          <Icon className={`w-4 h-4 ${color}`} />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+));
+
+StatsCard.displayName = 'StatsCard';
+
+// Componente principal com loading suspense otimizado
+const LoadingFallback = memo(() => (
+  <div className="flex items-center justify-center p-8">
+    <EnhancedLoading />
+  </div>
+));
+
+LoadingFallback.displayName = 'LoadingFallback';
 
 const WhatsApp: React.FC = () => {
-  const { connection, logs, metrics } = useWhatsAppCloudAPI();
+  const { connection, logs, metrics, logStats, isConfigDirty } = useWhatsAppCloudAPI();
 
-  const getStatsCards = () => [
+  // Memoizar cards de estatísticas para evitar re-renders desnecessários
+  const statsCards = useMemo(() => [
     {
       title: 'Status da API',
       value: connection.isConnected ? 'Online' : 'Offline',
@@ -48,11 +108,31 @@ const WhatsApp: React.FC = () => {
     {
       title: 'Taxa de Erro',
       value: `${metrics.errorRate.toFixed(1)}%`,
-      icon: TrendingUp,
+      icon: metrics.errorRate > 10 ? AlertTriangle : TrendingUp,
       color: metrics.errorRate > 10 ? 'text-red-600' : 'text-green-600',
       bg: metrics.errorRate > 10 ? 'bg-red-50' : 'bg-green-50'
     }
-  ];
+  ], [connection.isConnected, metrics]);
+
+  // Memoizar status badge
+  const statusBadge = useMemo(() => (
+    <Badge 
+      variant={connection.isConnected ? "default" : "secondary"}
+      className={`flex items-center gap-2 ${
+        connection.isConnected ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+      }`}
+    >
+      <div className={`w-2 h-2 rounded-full ${
+        connection.isConnected ? 'bg-green-600' : 'bg-gray-400'
+      }`} />
+      {connection.isConnected ? 'API Online' : 'API Offline'}
+      {isConfigDirty && (
+        <span className="text-xs bg-orange-200 text-orange-800 px-1 rounded">
+          *
+        </span>
+      )}
+    </Badge>
+  ), [connection.isConnected, isConfigDirty]);
 
   return (
     <div className="space-y-6 bg-white min-h-screen">
@@ -66,45 +146,24 @@ const WhatsApp: React.FC = () => {
             Gerenciamento da integração com WhatsApp Business
           </p>
         </div>
-        
-        <Badge 
-          variant={connection.isConnected ? "default" : "secondary"}
-          className={`flex items-center gap-2 ${
-            connection.isConnected ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          <div className={`w-2 h-2 rounded-full ${
-            connection.isConnected ? 'bg-green-600' : 'bg-gray-400'
-          }`} />
-          {connection.isConnected ? 'API Online' : 'API Offline'}
-        </Badge>
+        {statusBadge}
       </div>
 
-      {/* Cards de Estatísticas com Métricas Reais */}
+      {/* Cards de Estatísticas Otimizados */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {getStatsCards().map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index} className="shadow-sm border-gray-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-gray-600">
-                      {stat.title}
-                    </p>
-                    <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-                  </div>
-                  <div className={`p-2 rounded-full ${stat.bg}`}>
-                    <Icon className={`w-4 h-4 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {statsCards.map((stat, index) => (
+          <StatsCard
+            key={`${stat.title}-${index}`}
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon}
+            color={stat.color}
+            bg={stat.bg}
+          />
+        ))}
       </div>
 
-      {/* Tabs Principais - Reduzidas de 4 para 3 */}
+      {/* Tabs com lazy loading otimizado */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200">
           <TabsTrigger 
@@ -126,11 +185,11 @@ const WhatsApp: React.FC = () => {
             className="flex items-center gap-2 text-gray-600"
           >
             <FileText className="w-4 h-4" />
-            Logs ({logs.length})
+            Logs ({logStats.today})
           </TabsTrigger>
         </TabsList>
 
-        <Suspense fallback={<EnhancedLoading />}>
+        <Suspense fallback={<LoadingFallback />}>
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <WhatsAppCloudStatus />
@@ -151,4 +210,4 @@ const WhatsApp: React.FC = () => {
   );
 };
 
-export default WhatsApp;
+export default memo(WhatsApp);
