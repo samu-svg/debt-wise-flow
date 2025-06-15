@@ -13,7 +13,9 @@ import {
   Zap,
   AlertTriangle,
   Info,
-  Webhook
+  Webhook,
+  Search,
+  RefreshCw
 } from 'lucide-react';
 import { WhatsAppLog } from '@/types/whatsapp';
 
@@ -23,88 +25,103 @@ const logTypeConfig = {
     color: 'text-blue-500', 
     bg: 'bg-blue-50', 
     variant: 'secondary' as const,
-    bgStyle: '#F9FAFB !important',
-    colorStyle: '#6B7280 !important'
+    label: 'Conexão'
   },
   message: { 
     icon: MessageSquare, 
     color: 'text-green-500', 
     bg: 'bg-green-50', 
     variant: 'default' as const,
-    bgStyle: '#F0FDF4 !important',
-    colorStyle: '#10B981 !important'
+    label: 'Mensagem'
   },
   error: { 
     icon: AlertTriangle, 
     color: 'text-red-500', 
     bg: 'bg-red-50', 
     variant: 'destructive' as const,
-    bgStyle: '#FEF2F2 !important',
-    colorStyle: '#EF4444 !important'
+    label: 'Erro'
   },
   system: { 
     icon: Info, 
     color: 'text-gray-500', 
     bg: 'bg-gray-50', 
     variant: 'outline' as const,
-    bgStyle: '#F9FAFB !important',
-    colorStyle: '#6B7280 !important'
+    label: 'Sistema'
   },
   webhook: { 
     icon: Webhook, 
     color: 'text-purple-500', 
     bg: 'bg-purple-50', 
     variant: 'secondary' as const,
-    bgStyle: '#F9FAFB !important',
-    colorStyle: '#6B7280 !important'
+    label: 'Webhook'
   }
 };
 
 const WhatsAppLogs = () => {
   const { logs, clearLogs } = useWhatsAppCloudAPI();
   const [filter, setFilter] = useState<WhatsAppLog['type'] | 'all'>('all');
+  const [isExporting, setIsExporting] = useState(false);
 
   const filteredLogs = filter === 'all' 
     ? logs 
     : logs.filter(log => log.type === filter);
 
-  const exportLogs = () => {
-    const logData = {
-      exportDate: new Date().toISOString(),
-      totalLogs: logs.length,
-      systemType: 'whatsapp-cloud-api',
-      logs: logs
-    };
+  const exportLogs = async () => {
+    setIsExporting(true);
+    try {
+      const logData = {
+        exportDate: new Date().toISOString(),
+        totalLogs: logs.length,
+        systemType: 'whatsapp-cloud-api',
+        logs: logs
+      };
 
-    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `whatsapp-cloud-logs-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `whatsapp-cloud-logs-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString('pt-BR');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Agora';
+    if (diffMins < 60) return `${diffMins}m atrás`;
+    if (diffHours < 24) return `${diffHours}h atrás`;
+    if (diffDays < 7) return `${diffDays}d atrás`;
+    
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
-    <Card className="w-full" style={{ 
-      backgroundColor: '#FFFFFF !important', 
-      borderColor: '#E5E7EB !important' 
-    }}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2" style={{ color: '#374151 !important' }}>
-              <MessageSquare className="w-5 h-5" style={{ color: '#10B981 !important' }} />
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <MessageSquare className="w-5 h-5 text-green-600" />
               Logs da WhatsApp Cloud API
             </CardTitle>
-            <CardDescription style={{ color: '#6B7280 !important' }}>
+            <CardDescription className="text-sm">
               {logs.length} registros • Atividades da API e eventos do sistema
             </CardDescription>
           </div>
@@ -114,47 +131,36 @@ const WhatsAppLogs = () => {
               variant="outline"
               size="sm"
               onClick={exportLogs}
-              disabled={logs.length === 0}
-              className="flex items-center gap-2"
-              style={{
-                backgroundColor: '#FFFFFF !important',
-                borderColor: '#E5E7EB !important',
-                color: '#374151 !important'
-              }}
+              disabled={logs.length === 0 || isExporting}
+              className="flex items-center gap-2 text-xs sm:text-sm"
             >
-              <Download className="w-4 h-4" />
-              Exportar
+              {isExporting ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">Exportar</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={clearLogs}
               disabled={logs.length === 0}
-              className="flex items-center gap-2"
-              style={{
-                backgroundColor: '#FFFFFF !important',
-                borderColor: '#E5E7EB !important',
-                color: '#EF4444 !important'
-              }}
+              className="flex items-center gap-2 text-xs sm:text-sm text-red-600 hover:text-red-700"
             >
               <Trash2 className="w-4 h-4" />
-              Limpar
+              <span className="hidden sm:inline">Limpar</span>
             </Button>
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* Filtros - Mobile Optimized */}
         <div className="flex gap-2 flex-wrap">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('all')}
-            className="flex items-center gap-2"
-            style={{
-              backgroundColor: filter === 'all' ? '#10B981 !important' : '#FFFFFF !important',
-              borderColor: '#E5E7EB !important',
-              color: filter === 'all' ? '#FFFFFF !important' : '#374151 !important'
-            }}
+            className="flex items-center gap-1 text-xs"
           >
             <Filter className="w-3 h-3" />
             Todos ({logs.length})
@@ -168,31 +174,28 @@ const WhatsAppLogs = () => {
                 variant={filter === type ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter(type as WhatsAppLog['type'])}
-                className="flex items-center gap-2"
-                style={{
-                  backgroundColor: filter === type ? '#10B981 !important' : '#FFFFFF !important',
-                  borderColor: '#E5E7EB !important',
-                  color: filter === type ? '#FFFFFF !important' : '#374151 !important'
-                }}
+                className="flex items-center gap-1 text-xs"
               >
                 <Icon className="w-3 h-3" />
-                {type} ({count})
+                <span className="hidden sm:inline">{config.label}</span>
+                <span className="sm:hidden">{type.charAt(0).toUpperCase()}</span>
+                ({count})
               </Button>
             );
           })}
         </div>
       </CardHeader>
 
-      <CardContent>
-        <ScrollArea className="h-96 w-full">
+      <CardContent className="p-0">
+        <ScrollArea className="h-80 sm:h-96 w-full">
           {filteredLogs.length === 0 ? (
-            <div className="text-center py-8" style={{ color: '#6B7280 !important' }}>
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" style={{ color: '#6B7280 !important' }} />
-              <p>Nenhum log encontrado</p>
-              <p className="text-sm">Os eventos da WhatsApp Cloud API aparecerão aqui</p>
+            <div className="text-center py-8 px-4">
+              <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50 text-gray-400" />
+              <p className="text-gray-600 mb-2">Nenhum log encontrado</p>
+              <p className="text-sm text-gray-500">Os eventos da WhatsApp Cloud API aparecerão aqui</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 p-4">
               {filteredLogs.slice().reverse().map((log) => {
                 const config = logTypeConfig[log.type];
                 const Icon = config.icon;
@@ -200,46 +203,34 @@ const WhatsAppLogs = () => {
                 return (
                   <div
                     key={log.id}
-                    className={`p-3 rounded-lg border hover:shadow-sm transition-shadow`}
-                    style={{
-                      backgroundColor: config.bgStyle,
-                      borderColor: '#E5E7EB !important'
-                    }}
+                    className={`p-3 rounded-lg border transition-all hover:shadow-sm ${config.bg} border-gray-200`}
                   >
                     <div className="flex items-start gap-3">
-                      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0`} style={{ color: config.colorStyle }} />
+                      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.color}`} />
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                           <Badge 
                             variant={config.variant} 
-                            className="text-xs"
-                            style={{
-                              backgroundColor: config.bgStyle,
-                              color: config.colorStyle,
-                              borderColor: '#E5E7EB !important'
-                            }}
+                            className="text-xs w-fit"
                           >
-                            {log.type}
+                            {config.label}
                           </Badge>
-                          <span className="text-xs" style={{ color: '#6B7280 !important' }}>
+                          <span className="text-xs text-gray-500">
                             {formatTimestamp(log.timestamp)}
                           </span>
                         </div>
                         
-                        <p className="text-sm break-words" style={{ color: '#374151 !important' }}>
+                        <p className="text-sm break-words text-gray-700 leading-relaxed">
                           {log.message}
                         </p>
                         
                         {log.data && (
                           <details className="mt-2">
-                            <summary className="text-xs cursor-pointer" style={{ color: '#6B7280 !important' }}>
+                            <summary className="text-xs cursor-pointer text-gray-500 hover:text-gray-700">
                               Ver detalhes
                             </summary>
-                            <pre className="mt-1 text-xs p-2 rounded overflow-x-auto" style={{
-                              backgroundColor: '#F9FAFB !important',
-                              color: '#374151 !important'
-                            }}>
+                            <pre className="mt-1 text-xs p-2 rounded bg-white/50 border overflow-x-auto text-gray-600">
                               {JSON.stringify(log.data, null, 2)}
                             </pre>
                           </details>
