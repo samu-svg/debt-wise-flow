@@ -1,10 +1,11 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalDataManager } from './useLocalDataManager';
+import { useNotifications } from './useNotifications';
 import { dataValidationService, ValidationResult } from '@/services/DataValidationService';
 
 export const useDataIntegrity = () => {
   const { database } = useLocalDataManager();
+  const { notifyError, notifyWarning, notifySuccess, service: notificationService } = useNotifications();
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [autoValidationEnabled, setAutoValidationEnabled] = useState(true);
@@ -21,23 +22,60 @@ export const useDataIntegrity = () => {
       setValidation(result);
       setLastValidation(new Date().toISOString());
       
-      // Log de resultados
+      // Notificações baseadas no resultado
       if (!result.isValid) {
+        const criticalErrors = result.errors.filter(e => e.severity === 'critical' || e.severity === 'high');
+        
+        if (criticalErrors.length > 0) {
+          notificationService.notifyIntegrityIssue(
+            'Problemas Críticos Detectados',
+            `${criticalErrors.length} problema(s) crítico(s) encontrado(s) nos dados`,
+            () => {
+              // Ação para abrir painel de integridade
+              console.log('Abrir painel de integridade');
+            }
+          );
+        } else {
+          notifyWarning(
+            'Problemas de Integridade',
+            `${result.errors.length} problema(s) encontrado(s)`,
+            'integrity'
+          );
+        }
+        
         console.warn('⚠️ Problemas de integridade encontrados:', result.errors);
       } else if (result.warnings.length > 0) {
+        notifyWarning(
+          'Avisos de Integridade',
+          `${result.warnings.length} aviso(s) encontrado(s)`,
+          'integrity'
+        );
         console.warn('⚠️ Avisos de integridade:', result.warnings);
       } else {
         console.log('✅ Dados íntegros e válidos');
+        // Só notificar sucesso em validações manuais para não spammar
+        if (!autoValidationEnabled) {
+          notifySuccess(
+            'Dados Íntegros',
+            'Todos os dados estão válidos e consistentes',
+            'integrity'
+          );
+        }
       }
       
       return result;
     } catch (error) {
       console.error('❌ Erro na validação de integridade:', error);
+      notifyError(
+        'Erro na Validação',
+        'Falha ao validar integridade dos dados',
+        'integrity'
+      );
       return null;
     } finally {
       setIsValidating(false);
     }
-  }, [database, isValidating]);
+  }, [database, isValidating, autoValidationEnabled, notifyError, notifyWarning, notifySuccess, notificationService]);
 
   // Executar validação automática quando dados mudarem
   useEffect(() => {
@@ -77,14 +115,26 @@ export const useDataIntegrity = () => {
       // Aqui você integraria com o sistema de salvamento
       console.log('✅ Dados reparados com sucesso');
       
+      // Notificar sucesso do reparo
+      notifySuccess(
+        'Reparo Concluído',
+        'Dados reparados automaticamente com sucesso',
+        'integrity'
+      );
+      
       // Revalidar após reparo
       await validateData();
       return true;
     } catch (error) {
       console.error('❌ Erro no reparo automático:', error);
+      notifyError(
+        'Erro no Reparo',
+        'Falha ao reparar dados automaticamente',
+        'integrity'
+      );
       return false;
     }
-  }, [database, validation, validateData]);
+  }, [database, validation, validateData, notifySuccess, notifyError]);
 
   // Verificar se dados precisam de atenção urgente
   const needsAttention = validation && !validation.isValid && 

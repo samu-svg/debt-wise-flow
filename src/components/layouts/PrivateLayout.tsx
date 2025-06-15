@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import BackupStatus from '@/components/BackupStatus';
 import DataIntegrityChecker from '@/components/DataIntegrityChecker';
+import NotificationCenter from '@/components/NotificationCenter';
 import { useDataIntegrity } from '@/hooks/useDataIntegrity';
 import { 
   LayoutDashboard, 
@@ -114,6 +115,13 @@ const PrivateLayout = () => {
 
       {/* Main content */}
       <div className="pl-64">
+        {/* Header com Centro de Notificações */}
+        <header className="bg-white border-b border-[#DEE2E6] px-8 py-4">
+          <div className="flex items-center justify-end">
+            <NotificationCenter />
+          </div>
+        </header>
+
         {/* Painel de Integridade (Flutuante) */}
         {showIntegrityPanel && (
           <div className="fixed top-4 right-4 w-96 z-40">
