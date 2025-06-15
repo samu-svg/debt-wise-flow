@@ -33,6 +33,11 @@ class FolderPersistenceService {
           const store = db.createObjectStore(this.storeName, { keyPath: 'userId' });
           store.createIndex('lastAccess', 'lastAccess', { unique: false });
         }
+        
+        // Criar store para handles se não existir
+        if (!db.objectStoreNames.contains('directoryHandles')) {
+          db.createObjectStore('directoryHandles', { keyPath: 'userId' });
+        }
       };
     });
   }
@@ -40,7 +45,7 @@ class FolderPersistenceService {
   async saveUserFolderConfig(userId: string, handle: FileSystemDirectoryHandle): Promise<void> {
     try {
       const db = await this.openDB();
-      const transaction = db.transaction([this.storeName], 'readwrite');
+      const transaction = db.transaction([this.storeName, 'directoryHandles'], 'readwrite');
       const store = transaction.objectStore(this.storeName);
 
       const config: UserFolderConfig = {
@@ -55,8 +60,7 @@ class FolderPersistenceService {
       await store.put(config);
 
       // Salvar handle no store separado para uso direto
-      const handleStore = transaction.objectStore('directoryHandles') || 
-        db.createObjectStore('directoryHandles', { keyPath: 'userId' });
+      const handleStore = transaction.objectStore('directoryHandles');
       
       await handleStore.put({
         userId,
@@ -116,8 +120,9 @@ class FolderPersistenceService {
     };
 
     try {
-      // Testar acesso à pasta
-      const iterator = handle.entries();
+      // Testar acesso à pasta - corrigido para usar AsyncIterator corretamente
+      const entriesIterable = handle.entries();
+      const iterator = entriesIterable[Symbol.asyncIterator]();
       await iterator.next();
       result.exists = true;
 
