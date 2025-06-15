@@ -15,7 +15,7 @@ import Register from '@/pages/auth/Register';
 
 // Components carregados imediatamente
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { EnhancedLoading } from '@/components/ui/enhanced-loading';
+import EnhancedLoading from '@/components/ui/enhanced-loading';
 
 // Lazy loading das páginas principais
 const Dashboard = lazy(() => import('@/pages/app/Dashboard'));

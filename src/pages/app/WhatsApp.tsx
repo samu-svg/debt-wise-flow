@@ -3,7 +3,7 @@ import { useState, Suspense, lazy } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { EnhancedLoading } from '@/components/ui/enhanced-loading';
+import EnhancedLoading from '@/components/ui/enhanced-loading';
 import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import { 
   MessageSquare, 
