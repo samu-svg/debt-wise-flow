@@ -1,5 +1,5 @@
 
-import { useState, Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +10,8 @@ import {
   Users, 
   Settings,
   Cloud,
-  Activity,
   FileText,
-  CheckCircle2
+  TrendingUp
 } from 'lucide-react';
 
 // Lazy loading de componentes pesados
@@ -22,7 +21,7 @@ const WhatsAppLogs = lazy(() => import('@/components/WhatsAppLogs'));
 const MessageTemplates = lazy(() => import('@/components/MessageTemplates'));
 
 const WhatsApp: React.FC = () => {
-  const { connection, logs } = useWhatsAppCloudAPI();
+  const { connection, logs, metrics } = useWhatsAppCloudAPI();
 
   const getStatsCards = () => [
     {
@@ -34,17 +33,24 @@ const WhatsApp: React.FC = () => {
     },
     {
       title: 'Mensagens Hoje',
-      value: '0',
+      value: metrics.messagestoday.toString(),
       icon: MessageSquare,
       color: 'text-blue-600',
       bg: 'bg-blue-50'
     },
     {
       title: 'Conversas Ativas',
-      value: '0',
+      value: metrics.activeConversations.toString(),
       icon: Users,
       color: 'text-indigo-600',
       bg: 'bg-indigo-50'
+    },
+    {
+      title: 'Taxa de Erro',
+      value: `${metrics.errorRate.toFixed(1)}%`,
+      icon: TrendingUp,
+      color: metrics.errorRate > 10 ? 'text-red-600' : 'text-green-600',
+      bg: metrics.errorRate > 10 ? 'bg-red-50' : 'bg-green-50'
     }
   ];
 
@@ -74,8 +80,8 @@ const WhatsApp: React.FC = () => {
         </Badge>
       </div>
 
-      {/* Cards de Estatísticas Essenciais */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Cards de Estatísticas com Métricas Reais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {getStatsCards().map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -98,37 +104,15 @@ const WhatsApp: React.FC = () => {
         })}
       </div>
 
-      {/* Status de Migração */}
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="font-medium text-green-800">Sistema Atualizado!</p>
-              <p className="text-sm text-green-700">
-                Agora usando WhatsApp Cloud API - mais estável e oficial.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs Principais */}
-      <Tabs defaultValue="status" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-white border border-gray-200">
+      {/* Tabs Principais - Reduzidas de 4 para 3 */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200">
           <TabsTrigger 
-            value="status" 
+            value="overview" 
             className="flex items-center gap-2 text-gray-600"
           >
             <Cloud className="w-4 h-4" />
-            Status
-          </TabsTrigger>
-          <TabsTrigger 
-            value="config" 
-            className="flex items-center gap-2 text-gray-600"
-          >
-            <Settings className="w-4 h-4" />
-            Configuração
+            Visão Geral
           </TabsTrigger>
           <TabsTrigger 
             value="templates" 
@@ -147,14 +131,11 @@ const WhatsApp: React.FC = () => {
         </TabsList>
 
         <Suspense fallback={<EnhancedLoading />}>
-          <TabsContent value="status" className="space-y-6">
-            <div className="flex justify-center">
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <WhatsAppCloudStatus />
+              <WhatsAppCloudConfig />
             </div>
-          </TabsContent>
-
-          <TabsContent value="config" className="space-y-6">
-            <WhatsAppCloudConfig />
           </TabsContent>
 
           <TabsContent value="templates">
