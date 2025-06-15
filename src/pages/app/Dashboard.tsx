@@ -1,15 +1,14 @@
 
-import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useLocalDataManager } from '@/hooks/useLocalDataManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Dashboard = () => {
-  const { getStatistics, loading } = useSupabaseData();
-  const statistics = getStatistics();
+  const { statistics, loading } = useLocalDataManager();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
     }).format(value);
   };
 
@@ -146,3 +145,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
