@@ -13,7 +13,9 @@ import {
   FileText,
   TrendingUp,
   AlertTriangle,
-  Activity
+  Activity,
+  Settings,
+  Zap
 } from 'lucide-react';
 
 // Lazy loading otimizado
@@ -35,6 +37,12 @@ const MessageTemplates = lazy(() =>
   }))
 );
 
+const WhatsAppConfig = lazy(() => 
+  import('@/components/WhatsAppConfig').then(module => ({
+    default: module.default
+  }))
+);
+
 // Componente memoizado para cards de estatísticas - Mobile Optimized
 const StatsCard = memo(({ 
   title, 
@@ -42,7 +50,8 @@ const StatsCard = memo(({
   icon: Icon, 
   color, 
   bg,
-  trend
+  trend,
+  borderColor
 }: {
   title: string;
   value: string;
@@ -50,27 +59,28 @@ const StatsCard = memo(({
   color: string;
   bg: string;
   trend?: 'up' | 'down' | 'stable';
+  borderColor?: string;
 }) => (
-  <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow">
-    <CardContent className="p-3 sm:p-4">
+  <Card className={`shadow-sm hover:shadow-md transition-all duration-300 ${borderColor || 'border-gray-200'} hover:scale-105`}>
+    <CardContent className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-600 truncate">{title}</p>
+          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate mb-1">{title}</p>
           <div className="flex items-center gap-2">
-            <p className={`text-lg sm:text-xl font-bold ${color} truncate`}>{value}</p>
+            <p className={`text-xl sm:text-2xl font-bold ${color} truncate`}>{value}</p>
             {trend && (
-              <div className={`text-xs px-1.5 py-0.5 rounded ${
+              <div className={`text-xs px-2 py-1 rounded-full font-medium ${
                 trend === 'up' ? 'bg-green-100 text-green-700' :
                 trend === 'down' ? 'bg-red-100 text-red-700' :
                 'bg-gray-100 text-gray-700'
               }`}>
-                {trend === 'up' ? '↗' : trend === 'down' ? '↘' : '→'}
+                {trend === 'up' ? '↗️' : trend === 'down' ? '↘️' : '➡️'}
               </div>
             )}
           </div>
         </div>
-        <div className={`p-2 rounded-full ${bg} flex-shrink-0`}>
-          <Icon className={`w-4 h-4 ${color}`} />
+        <div className={`p-3 rounded-xl ${bg} flex-shrink-0 shadow-sm`}>
+          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color}`} />
         </div>
       </div>
     </CardContent>
@@ -81,8 +91,11 @@ StatsCard.displayName = 'StatsCard';
 
 // Loading fallback otimizado
 const LoadingFallback = memo(() => (
-  <div className="flex items-center justify-center p-4 sm:p-8">
-    <EnhancedLoading />
+  <div className="flex items-center justify-center p-8 sm:p-12">
+    <div className="text-center">
+      <EnhancedLoading />
+      <p className="text-gray-500 mt-4 text-sm">Carregando módulo...</p>
+    </div>
   </div>
 ));
 
@@ -99,6 +112,7 @@ const WhatsApp: React.FC = () => {
       icon: Cloud,
       color: connection.isConnected ? 'text-green-600' : 'text-red-600',
       bg: connection.isConnected ? 'bg-green-50' : 'bg-red-50',
+      borderColor: connection.isConnected ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500',
       trend: connection.isConnected ? 'up' as const : 'down' as const
     },
     {
@@ -107,6 +121,7 @@ const WhatsApp: React.FC = () => {
       icon: MessageSquare,
       color: 'text-blue-600',
       bg: 'bg-blue-50',
+      borderColor: 'border-l-4 border-l-blue-500',
       trend: metrics.messagestoday > 0 ? 'up' as const : 'stable' as const
     },
     {
@@ -115,6 +130,7 @@ const WhatsApp: React.FC = () => {
       icon: Users,
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
+      borderColor: 'border-l-4 border-l-indigo-500',
       trend: metrics.activeConversations > 0 ? 'up' as const : 'stable' as const
     },
     {
@@ -123,111 +139,146 @@ const WhatsApp: React.FC = () => {
       icon: metrics.errorRate > 10 ? AlertTriangle : TrendingUp,
       color: metrics.errorRate > 10 ? 'text-red-600' : 'text-green-600',
       bg: metrics.errorRate > 10 ? 'bg-red-50' : 'bg-green-50',
+      borderColor: metrics.errorRate > 10 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500',
       trend: metrics.errorRate > 10 ? 'down' as const : 'up' as const
     }
   ], [connection.isConnected, metrics]);
 
   // Status badge otimizado
   const statusBadge = useMemo(() => (
-    <Badge 
-      variant={connection.isConnected ? "default" : "secondary"}
-      className={`flex items-center gap-2 text-xs sm:text-sm ${
-        connection.isConnected ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-      }`}
-    >
-      <div className={`w-2 h-2 rounded-full ${
-        connection.isConnected ? 'bg-green-600' : 'bg-gray-400'
-      }`} />
-      <span className="hidden sm:inline">
-        {connection.isConnected ? 'API Online' : 'API Offline'}
-      </span>
-      <span className="sm:hidden">
-        {connection.isConnected ? 'Online' : 'Offline'}
-      </span>
-      {isConfigDirty && (
-        <span className="text-xs bg-orange-200 text-orange-800 px-1 rounded">
-          *
+    <div className="flex items-center gap-3">
+      <Badge 
+        variant={connection.isConnected ? "default" : "secondary"}
+        className={`flex items-center gap-2 text-sm px-4 py-2 ${
+          connection.isConnected ? 'bg-green-100 text-green-800 border-green-300' : 'bg-gray-100 text-gray-600 border-gray-300'
+        }`}
+      >
+        <div className={`w-2 h-2 rounded-full ${
+          connection.isConnected ? 'bg-green-600 animate-pulse' : 'bg-gray-400'
+        }`} />
+        <span>
+          {connection.isConnected ? 'API Online' : 'API Offline'}
         </span>
-      )}
-    </Badge>
+        {isConfigDirty && (
+          <span className="text-xs bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded-full">
+            *
+          </span>
+        )}
+      </Badge>
+      
+      <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+        <Zap className="w-3 h-3" />
+        <span>Última atualização: {new Date().toLocaleTimeString('pt-BR')}</span>
+      </div>
+    </div>
   ), [connection.isConnected, isConfigDirty]);
 
   return (
     <ErrorBoundary>
-      <div className="space-y-4 sm:space-y-6 bg-white min-h-screen p-4 sm:p-6">
-        {/* Header - Mobile Optimized */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 text-gray-800">
-              <Cloud className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-              <span className="truncate">WhatsApp Cloud API</span>
-            </h1>
-            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
-              Gerenciamento da integração com WhatsApp Business
-            </p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
+          {/* Header - Mobile Optimized */}
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold flex items-center gap-3 text-gray-900 mb-2">
+                <div className="p-2 bg-green-100 rounded-xl">
+                  <Cloud className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" />
+                </div>
+                <span className="truncate">WhatsApp Cloud API</span>
+              </h1>
+              <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
+                Gerenciamento completo da integração com WhatsApp Business - 
+                Configurações, monitoramento e automação em um só lugar
+              </p>
+            </div>
+            <div className="flex justify-end">
+              {statusBadge}
+            </div>
           </div>
-          <div className="flex justify-end">
-            {statusBadge}
+
+          {/* Cards de Estatísticas - Mobile Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {statsCards.map((stat, index) => (
+              <StatsCard
+                key={`${stat.title}-${index}`}
+                title={stat.title}
+                value={stat.value}
+                icon={stat.icon}
+                color={stat.color}
+                bg={stat.bg}
+                borderColor={stat.borderColor}
+                trend={stat.trend}
+              />
+            ))}
           </div>
+
+          {/* Tabs com lazy loading - Mobile Optimized */}
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <Tabs defaultValue="overview" className="space-y-6">
+              <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-gray-100 h-auto rounded-xl p-1">
+                  <TabsTrigger 
+                    value="overview" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+                  >
+                    <Activity className="w-4 h-4" />
+                    <span className="hidden sm:inline">Visão Geral</span>
+                    <span className="sm:hidden">Geral</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="templates" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span className="hidden sm:inline">Templates</span>
+                    <span className="sm:hidden">Msgs</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="config" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span className="hidden sm:inline">Configurações</span>
+                    <span className="sm:hidden">Config</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="logs" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span className="hidden sm:inline">Logs</span>
+                    <span className="sm:hidden">Log</span>
+                    <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0.5">
+                      {logStats.today}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                <ErrorBoundary>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <TabsContent value="overview" className="space-y-6 mt-0">
+                      <WhatsAppOverview />
+                    </TabsContent>
+
+                    <TabsContent value="templates" className="mt-0">
+                      <MessageTemplates />
+                    </TabsContent>
+
+                    <TabsContent value="config" className="mt-0">
+                      <WhatsAppConfig />
+                    </TabsContent>
+
+                    <TabsContent value="logs" className="mt-0">
+                      <WhatsAppLogs />
+                    </TabsContent>
+                  </Suspense>
+                </ErrorBoundary>
+              </div>
+            </Tabs>
+          </Card>
         </div>
-
-        {/* Cards de Estatísticas - Mobile Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {statsCards.map((stat, index) => (
-            <StatsCard
-              key={`${stat.title}-${index}`}
-              title={stat.title}
-              value={stat.value}
-              icon={stat.icon}
-              color={stat.color}
-              bg={stat.bg}
-              trend={stat.trend}
-            />
-          ))}
-        </div>
-
-        {/* Tabs com lazy loading - Mobile Optimized */}
-        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 h-auto">
-            <TabsTrigger 
-              value="overview" 
-              className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="truncate">Visão Geral</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="templates" 
-              className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="truncate">Templates</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="logs" 
-              className="flex items-center gap-1 sm:gap-2 text-gray-600 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="truncate">Logs ({logStats.today})</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingFallback />}>
-              <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-                <WhatsAppOverview />
-              </TabsContent>
-
-              <TabsContent value="templates">
-                <MessageTemplates />
-              </TabsContent>
-
-              <TabsContent value="logs">
-                <WhatsAppLogs />
-              </TabsContent>
-            </Suspense>
-          </ErrorBoundary>
-        </Tabs>
       </div>
     </ErrorBoundary>
   );
