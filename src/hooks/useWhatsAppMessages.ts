@@ -59,23 +59,24 @@ export const useWhatsAppMessages = (): UseWhatsAppMessagesReturn => {
       }
 
       if (data) {
+        const dataTyped = data as any;
         const newMessage: WhatsAppMessage = {
-          id: data.id,
-          phoneNumber: data.phone_number,
-          messageText: data.message_text,
-          templateName: data.template_name,
-          whatsappMessageId: data.whatsapp_message_id,
-          status: data.status as WhatsAppMessage['status'],
-          errorMessage: data.error_message,
-          errorCode: data.error_code,
-          retryCount: data.retry_count,
-          sentAt: data.sent_at,
-          deliveredAt: data.delivered_at,
-          createdAt: data.created_at
+          id: dataTyped.id,
+          phoneNumber: dataTyped.phone_number,
+          messageText: dataTyped.message_text,
+          templateName: dataTyped.template_name,
+          whatsappMessageId: dataTyped.whatsapp_message_id,
+          status: dataTyped.status as WhatsAppMessage['status'],
+          errorMessage: dataTyped.error_message,
+          errorCode: dataTyped.error_code,
+          retryCount: dataTyped.retry_count,
+          sentAt: dataTyped.sent_at,
+          deliveredAt: dataTyped.delivered_at,
+          createdAt: dataTyped.created_at
         };
 
         setMessages(prev => [newMessage, ...prev]);
-        return data.id;
+        return dataTyped.id;
       }
       return null;
     } catch (error) {

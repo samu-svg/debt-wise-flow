@@ -83,12 +83,13 @@ export const useWhatsAppAllowlist = (): UseWhatsAppAllowlistReturn => {
       }
 
       if (data) {
+        const dataTyped = data as any;
         const newEntry: AllowlistEntry = {
-          id: data.id,
-          phoneNumber: data.phone_number,
-          name: data.name,
-          isActive: data.is_active,
-          addedAt: data.added_at
+          id: dataTyped.id,
+          phoneNumber: dataTyped.phone_number,
+          name: dataTyped.name,
+          isActive: dataTyped.is_active,
+          addedAt: dataTyped.added_at
         };
 
         setAllowlist(prev => [newEntry, ...prev]);
