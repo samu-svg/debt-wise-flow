@@ -33,7 +33,7 @@ export const useAutomationData = () => {
         collectionHistory: mensagens.map(msg => ({
           id: msg.id,
           clientId: msg.cliente_id,
-          debtId: msg.divida_id || null, // Using the correct property name from Supabase schema
+          debtId: msg.divida_id || null, // Using divida_id property from Mensagem interface
           data: msg.enviado_em,
           tipoMensagem: msg.tipo_mensagem,
           statusEntrega: msg.status_entrega,
