@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 
 const WhatsAppQRCode = () => {
-  const connectionHook = useWhatsAppConnection();
   const { 
     connection, 
     connect, 
@@ -25,7 +24,7 @@ const WhatsAppQRCode = () => {
     retry, 
     generateNewQR,
     isLoading 
-  } = connectionHook;
+  } = useWhatsAppConnection();
 
   const getStatusInfo = () => {
     switch (connection.status) {
@@ -72,7 +71,7 @@ const WhatsAppQRCode = () => {
       <CardHeader className="text-center bg-white">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Smartphone className="w-6 h-6 text-green-600" />
-          <CardTitle className="text-gray-900">WhatsApp Cloud API</CardTitle>
+          <CardTitle className="text-gray-900">WhatsApp via Supabase</CardTitle>
         </div>
         <div className="flex items-center justify-center gap-2">
           <StatusIcon className={`w-4 h-4 ${statusInfo.color}`} />
@@ -86,12 +85,44 @@ const WhatsAppQRCode = () => {
       </CardHeader>
       
       <CardContent className="space-y-6 bg-white">
-        {/* Aguardando Conexão */}
-        {connection.status === 'connecting' && (
+        {/* QR Code Display */}
+        {connection.status === 'connecting' && connection.qrCode && (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="p-4 bg-white rounded-xl shadow-sm border-2 border-gray-200">
+              <img 
+                src={connection.qrCode} 
+                alt="QR Code WhatsApp" 
+                className="w-64 h-64 block"
+              />
+            </div>
+            
+            <div className="text-center space-y-3">
+              <div className="flex items-center gap-2 justify-center text-blue-600">
+                <Scan className="w-5 h-5" />
+                <span className="font-medium">Escaneie com seu WhatsApp</span>
+              </div>
+              
+              <div className="text-sm text-gray-600 space-y-1 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p><strong>1.</strong> Abra o WhatsApp no seu celular</p>
+                <p><strong>2.</strong> Vá em Menu (⋮) → Aparelhos conectados</p>
+                <p><strong>3.</strong> Toque em "Conectar um aparelho"</p>
+                <p><strong>4.</strong> Escaneie este QR Code</p>
+              </div>
+              
+              <div className="flex items-center gap-2 justify-center text-xs text-green-600 bg-green-50 p-2 rounded border border-green-200">
+                <CheckCircle className="w-3 h-3" />
+                <span>Conexão via Supabase Edge Function</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Aguardando Servidor */}
+        {connection.status === 'connecting' && !connection.qrCode && (
           <div className="flex flex-col items-center space-y-4 py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="text-gray-600">Testando conexão com WhatsApp Cloud API...</p>
-            <p className="text-sm text-gray-500">Verificando credenciais e conectividade</p>
+            <p className="text-gray-600">Conectando ao servidor WhatsApp...</p>
+            <p className="text-sm text-gray-500">Aguarde enquanto estabelecemos a conexão via Supabase</p>
           </div>
         )}
 
@@ -100,16 +131,15 @@ const WhatsAppQRCode = () => {
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <div className="flex items-center gap-2 text-green-800 mb-2">
               <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">WhatsApp Cloud API Conectado!</span>
+              <span className="font-medium">WhatsApp Conectado!</span>
             </div>
             <div className="space-y-1 text-sm text-green-700">
               <p><strong>Número:</strong> {connection.phoneNumber}</p>
-              <p><strong>Phone Number ID:</strong> {connection.phoneNumberId}</p>
               {connection.lastSeen && (
-                <p><strong>Última verificação:</strong> {new Date(connection.lastSeen).toLocaleString('pt-BR')}</p>
+                <p><strong>Última atividade:</strong> {new Date(connection.lastSeen).toLocaleString('pt-BR')}</p>
               )}
               <p className="text-xs text-green-600 mt-2 bg-white p-2 rounded border border-green-200">
-                ✓ API ativa - pronto para envio de mensagens
+                ✓ Conexão ativa via Supabase - pronto para envio de mensagens
               </p>
             </div>
           </div>
@@ -133,6 +163,28 @@ const WhatsAppQRCode = () => {
           </div>
         )}
 
+        {/* Limitação Técnica */}
+        {connection.status === 'error' && connection.lastError?.includes('Node.js') && (
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-center gap-2 text-yellow-800 mb-2">
+              <Server className="w-5 h-5" />
+              <span className="font-medium">Limitação Técnica</span>
+            </div>
+            <div className="text-sm text-yellow-700 space-y-2">
+              <p>Para conectar WhatsApp real, você precisa de:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Servidor Node.js separado com whatsapp-web.js</li>
+                <li>Puppeteer configurado no servidor</li>
+                <li>Hosting como Railway, Heroku, ou VPS</li>
+              </ul>
+              <div className="flex items-center gap-2 mt-2 p-2 bg-white rounded border border-yellow-300">
+                <Code className="w-4 h-4" />
+                <span className="text-xs">Supabase Edge Functions não suportam Puppeteer</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-col gap-3">
           {connection.status === 'disconnected' && (
@@ -142,20 +194,20 @@ const WhatsAppQRCode = () => {
               className="flex items-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white"
               size="lg"
             >
-              <Server className="w-5 h-5" />
-              {isLoading ? 'Conectando...' : 'Testar Conexão API'}
+              <QrCode className="w-5 h-5" />
+              {isLoading ? 'Conectando...' : 'Conectar WhatsApp'}
             </Button>
           )}
 
           {connection.status === 'connecting' && (
             <div className="flex gap-2">
               <Button 
-                onClick={retry} 
+                onClick={generateNewQR} 
                 variant="outline"
                 className="flex items-center gap-2 flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 <RefreshCw className="w-4 h-4" />
-                Tentar Novamente
+                Gerar Novo QR
               </Button>
               <Button 
                 onClick={disconnect} 
@@ -175,7 +227,7 @@ const WhatsAppQRCode = () => {
               className="flex items-center gap-2 w-full border-red-300 text-red-700 hover:bg-red-50"
             >
               <X className="w-4 h-4" />
-              Desconectar API
+              Desconectar WhatsApp
             </Button>
           )}
 
@@ -195,7 +247,7 @@ const WhatsAppQRCode = () => {
                 className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 <X className="w-4 h-4" />
-                Resetar
+                Cancelar
               </Button>
             </div>
           )}
@@ -206,8 +258,8 @@ const WhatsAppQRCode = () => {
           <div className="flex items-start gap-2">
             <Server className="w-4 h-4 text-blue-600 mt-0.5" />
             <div className="text-xs text-blue-700">
-              <p className="font-medium mb-1">WhatsApp Cloud API:</p>
-              <p>Esta implementação usa a API oficial do WhatsApp Business para envio de mensagens. Configure suas credenciais na aba "Configuração".</p>
+              <p className="font-medium mb-1">Sobre a Conexão:</p>
+              <p>Esta implementação usa Supabase Edge Functions como WebSocket server. Para WhatsApp totalmente funcional, é necessário um servidor Node.js dedicado com whatsapp-web.js e Puppeteer.</p>
             </div>
           </div>
         </div>

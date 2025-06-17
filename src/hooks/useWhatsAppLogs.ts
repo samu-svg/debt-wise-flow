@@ -1,73 +1,61 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import type { WhatsAppLog } from '@/types/whatsapp';
 
-interface DatabaseLog {
-  id: string;
-  user_id: string;
-  level: string;
-  type: string;
-  message: string;
-  data: any;
-  timestamp: string;
-  session_id?: string;
-  function_name?: string;
-}
-
-const MAX_LOCAL_LOGS = 100; // Reduzido para melhor performance
-const SYNC_INTERVAL = 30000; // 30 segundos
+const STORAGE_KEY = 'whatsapp_cloud_logs';
+const MAX_LOGS = 500; // Reduzido de 1000 para melhor performance
+const MAX_LOG_AGE_DAYS = 30;
 
 export const useWhatsAppLogs = () => {
-  const { user } = useAuth();
   const [logs, setLogs] = useState<WhatsAppLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
 
-  // Carregar logs do Supabase
-  const loadLogsFromDatabase = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
+  // Carregar logs salvos
+  useEffect(() => {
     try {
-      const { data, error } = await supabase
-        .from('whatsapp_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('timestamp', { ascending: false })
-        .limit(500);
-
-      if (error) throw error;
-
-      const formattedLogs: WhatsAppLog[] = (data || []).map((log: DatabaseLog) => ({
-        id: log.id,
-        timestamp: log.timestamp,
-        type: log.type as WhatsAppLog['type'],
-        message: log.message,
-        data: log.data
-      }));
-
-      setLogs(formattedLogs);
-      setLastSync(new Date());
+      const savedLogs = localStorage.getItem(STORAGE_KEY);
+      if (savedLogs) {
+        const parsedLogs = JSON.parse(savedLogs) as WhatsAppLog[];
+        // Aplicar rotação de logs ao carregar
+        const rotatedLogs = rotateLogs(parsedLogs);
+        setLogs(rotatedLogs);
+        
+        // Se houve rotação, salvar os logs limpos
+        if (rotatedLogs.length !== parsedLogs.length) {
+          saveLogs(rotatedLogs);
+        }
+      }
     } catch (error) {
-      console.error('Error loading logs from database:', error);
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar logs:', error);
     }
-  }, [user]);
+  }, []);
 
-  // Adicionar log local e enviar para o banco
-  const addLog = useCallback(async (
-    type: WhatsAppLog['type'], 
-    message: string, 
-    data?: unknown,
-    level: 'info' | 'error' | 'warning' | 'debug' = 'info'
-  ): Promise<void> => {
-    if (!user) return;
+  // Função para rotacionar logs (remover antigos e manter limite)
+  const rotateLogs = useCallback((currentLogs: WhatsAppLog[]): WhatsAppLog[] => {
+    const now = new Date();
+    const cutoffDate = new Date(now.getTime() - (MAX_LOG_AGE_DAYS * 24 * 60 * 60 * 1000));
 
+    // Filtrar logs por idade e manter apenas os mais recentes
+    const filteredByAge = currentLogs.filter(log => 
+      new Date(log.timestamp) > cutoffDate
+    );
+
+    // Manter apenas os últimos MAX_LOGS
+    return filteredByAge.slice(-MAX_LOGS);
+  }, []);
+
+  // Função otimizada para salvar logs
+  const saveLogs = useCallback((newLogs: WhatsAppLog[]) => {
+    try {
+      const rotatedLogs = rotateLogs(newLogs);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rotatedLogs));
+      return rotatedLogs;
+    } catch (error) {
+      console.error('Erro ao salvar logs:', error);
+      return newLogs;
+    }
+  }, [rotateLogs]);
+
+  const addLog = useCallback((type: WhatsAppLog['type'], message: string, data?: unknown): void => {
     const newLog: WhatsAppLog = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date().toISOString(),
@@ -76,64 +64,21 @@ export const useWhatsAppLogs = () => {
       data
     };
 
-    // Adicionar ao estado local imediatamente
     setLogs(currentLogs => {
-      const updatedLogs = [newLog, ...currentLogs];
-      return updatedLogs.slice(0, MAX_LOCAL_LOGS);
+      const updatedLogs = [...currentLogs, newLog];
+      const finalLogs = saveLogs(updatedLogs);
+      return finalLogs;
     });
+  }, [saveLogs]);
 
-    // Enviar para o banco de dados
+  const clearLogs = useCallback((): void => {
+    setLogs([]);
     try {
-      const { error } = await supabase
-        .from('whatsapp_logs')
-        .insert({
-          user_id: user.id,
-          level,
-          type,
-          message,
-          data: data ? JSON.stringify(data) : null,
-          function_name: 'frontend'
-        });
-
-      if (error) {
-        console.error('Failed to save log to database:', error);
-      }
+      localStorage.removeItem(STORAGE_KEY);
     } catch (error) {
-      console.error('Error saving log:', error);
+      console.error('Erro ao limpar logs:', error);
     }
-  }, [user]);
-
-  const clearLogs = useCallback(async (): Promise<void> => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('whatsapp_logs')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      setLogs([]);
-      await addLog('system', 'Logs limpos pelo usuário');
-    } catch (error) {
-      console.error('Error clearing logs:', error);
-      await addLog('error', 'Erro ao limpar logs', { error });
-    }
-  }, [user, addLog]);
-
-  // Sincronização automática
-  useEffect(() => {
-    if (!user) return;
-
-    loadLogsFromDatabase();
-    
-    const interval = setInterval(() => {
-      loadLogsFromDatabase();
-    }, SYNC_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [user, loadLogsFromDatabase]);
+  }, []);
 
   // Estatísticas memoizadas dos logs
   const logStats = useMemo(() => {
@@ -154,10 +99,7 @@ export const useWhatsAppLogs = () => {
   return {
     logs,
     logStats,
-    loading,
-    lastSync,
     addLog,
-    clearLogs,
-    reloadLogs: loadLogsFromDatabase
+    clearLogs
   };
 };
