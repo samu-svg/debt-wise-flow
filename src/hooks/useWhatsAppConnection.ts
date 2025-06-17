@@ -10,6 +10,10 @@ interface UseWhatsAppConnectionReturn {
   updateConnection: (newConnection: WhatsAppConnection) => void;
   resetConnection: () => void;
   testConnection: () => Promise<boolean>;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+  retry: () => Promise<void>;
+  generateNewQR: () => void;
   isLoading: boolean;
 }
 
@@ -120,11 +124,46 @@ export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
     }
   }, [user, credentials, updateHealthStatus]);
 
+  const connect = useCallback(async (): Promise<void> => {
+    if (!credentials?.accessToken || !credentials?.phoneNumberId) {
+      setConnection(prev => ({
+        ...prev,
+        status: 'error',
+        lastError: 'Credenciais não configuradas'
+      }));
+      return;
+    }
+
+    setConnection(prev => ({
+      ...prev,
+      status: 'connecting'
+    }));
+
+    await testConnection();
+  }, [credentials, testConnection]);
+
+  const disconnect = useCallback((): void => {
+    resetConnection();
+  }, [resetConnection]);
+
+  const retry = useCallback(async (): Promise<void> => {
+    await connect();
+  }, [connect]);
+
+  const generateNewQR = useCallback((): void => {
+    // Para WhatsApp Cloud API, não há QR Code real, então apenas simula reconexão
+    connect();
+  }, [connect]);
+
   return useMemo(() => ({
     connection,
     updateConnection,
     resetConnection,
     testConnection,
+    connect,
+    disconnect,
+    retry,
+    generateNewQR,
     isLoading
-  }), [connection, updateConnection, resetConnection, testConnection, isLoading]);
+  }), [connection, updateConnection, resetConnection, testConnection, connect, disconnect, retry, generateNewQR, isLoading]);
 };
