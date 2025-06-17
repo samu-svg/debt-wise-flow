@@ -6,6 +6,7 @@ import EnhancedLoading from '@/components/ui/enhanced-loading';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useWhatsAppCloudAPI } from '@/hooks/useWhatsAppCloudAPI';
 import WhatsAppAllowlistManager from '@/components/WhatsAppAllowlistManager';
+import WhatsAppMessagesManager from '@/components/WhatsAppMessagesManager';
 import { 
   MessageSquare, 
   Users, 
@@ -19,7 +20,8 @@ import {
   Bot,
   Bug,
   Heart,
-  Shield
+  Shield,
+  Send
 } from 'lucide-react';
 
 // Lazy loading otimizado
@@ -296,7 +298,7 @@ const WhatsApp: React.FC = () => {
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <Tabs defaultValue="overview" className="space-y-6">
               <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
-                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-8 bg-gray-100 h-auto rounded-xl p-1">
+                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9 bg-gray-100 h-auto rounded-xl p-1">
                   <TabsTrigger 
                     value="overview" 
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
@@ -340,6 +342,18 @@ const WhatsApp: React.FC = () => {
                     <MessageSquare className="w-4 h-4" />
                     <span className="hidden sm:inline">Templates</span>
                     <span className="sm:hidden">Msgs</span>
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="messages" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span className="hidden sm:inline">Mensagens</span>
+                    <span className="sm:hidden">📤</span>
+                    <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0.5">
+                      {messages.length}
+                    </Badge>
                   </TabsTrigger>
                   
                   <TabsTrigger 
@@ -398,6 +412,10 @@ const WhatsApp: React.FC = () => {
 
                     <TabsContent value="templates" className="mt-0">
                       <MessageTemplates />
+                    </TabsContent>
+
+                    <TabsContent value="messages" className="mt-0">
+                      <WhatsAppMessagesManager />
                     </TabsContent>
 
                     <TabsContent value="config" className="mt-0">
