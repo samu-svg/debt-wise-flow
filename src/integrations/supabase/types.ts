@@ -201,6 +201,7 @@ export type Database = {
           template_usado: string
           tipo_mensagem: string
           user_id: string
+          webhook_received_at: string | null
           whatsapp_message_id: string | null
           whatsapp_phone: string | null
         }
@@ -219,6 +220,7 @@ export type Database = {
           template_usado: string
           tipo_mensagem: string
           user_id: string
+          webhook_received_at?: string | null
           whatsapp_message_id?: string | null
           whatsapp_phone?: string | null
         }
@@ -237,6 +239,7 @@ export type Database = {
           template_usado?: string
           tipo_mensagem?: string
           user_id?: string
+          webhook_received_at?: string | null
           whatsapp_message_id?: string | null
           whatsapp_phone?: string | null
         }
@@ -350,12 +353,93 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_credentials: {
+        Row: {
+          access_token_encrypted: string | null
+          business_account_id: string | null
+          created_at: string
+          health_status: string | null
+          id: string
+          is_active: boolean | null
+          last_health_check: string | null
+          phone_number_id: string | null
+          updated_at: string
+          user_id: string
+          webhook_token: string | null
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          business_account_id?: string | null
+          created_at?: string
+          health_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_health_check?: string | null
+          phone_number_id?: string | null
+          updated_at?: string
+          user_id: string
+          webhook_token?: string | null
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          business_account_id?: string | null
+          created_at?: string
+          health_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_health_check?: string | null
+          phone_number_id?: string | null
+          updated_at?: string
+          user_id?: string
+          webhook_token?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_logs: {
+        Row: {
+          data: Json | null
+          function_name: string | null
+          id: string
+          level: string
+          message: string
+          session_id: string | null
+          timestamp: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json | null
+          function_name?: string | null
+          id?: string
+          level?: string
+          message: string
+          session_id?: string | null
+          timestamp?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          data?: Json | null
+          function_name?: string | null
+          id?: string
+          level?: string
+          message?: string
+          session_id?: string | null
+          timestamp?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_whatsapp_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       debt_status: "pendente" | "pago" | "atrasado"

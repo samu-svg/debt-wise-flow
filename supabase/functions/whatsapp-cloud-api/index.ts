@@ -116,6 +116,13 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action, config, phoneNumber, message, templateName } = body;
 
+    console.log(`🚀 Ação recebida: ${action}`, {
+      hasConfig: !!config,
+      phoneNumber: phoneNumber ? phoneNumber.substring(0, 5) + '...' : undefined,
+      messageLength: message?.length,
+      templateName
+    });
+
     if (!action) {
       return createErrorResponse('Ação não especificada');
     }
@@ -124,6 +131,7 @@ serve(async (req) => {
     if (['test_connection', 'send_message', 'get_templates'].includes(action)) {
       const validation = validateConfig(config);
       if (!validation.valid) {
+        console.error('❌ Configuração inválida:', validation.errors);
         return createErrorResponse('Configuração inválida', { errors: validation.errors });
       }
     }
@@ -145,7 +153,7 @@ serve(async (req) => {
         return createErrorResponse(`Ação não reconhecida: ${action}`);
     }
   } catch (error) {
-    console.error('Erro na API:', error);
+    console.error('💥 Erro crítico na API:', error);
     await logWebhookEvent({ error: error instanceof Error ? error.message : 'Erro desconhecido' }, 'error');
     return createErrorResponse(
       'Erro interno do servidor',
@@ -156,6 +164,7 @@ serve(async (req) => {
 
 async function validateConfiguration(config: any): Promise<Response> {
   try {
+    console.log('🔍 Validando configuração...');
     const validation = validateConfig(config);
     
     if (!validation.valid) {
@@ -166,6 +175,7 @@ async function validateConfiguration(config: any): Promise<Response> {
     const testResult = await testConnection(config);
     const testData = await testResult.json();
     
+    console.log('✅ Configuração validada com sucesso');
     return createSuccessResponse({
       configValid: true,
       connectionTest: testData.success,
@@ -175,18 +185,25 @@ async function validateConfiguration(config: any): Promise<Response> {
     
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro na validação';
+    console.error('❌ Erro na validação:', message);
     return createErrorResponse(message, error);
   }
 }
 
 async function testConnection(config: any): Promise<Response> {
   try {
+    console.log('🔗 Testando conexão com WhatsApp API...');
+    const startTime = Date.now();
+    
     const response = await fetch(`${WHATSAPP_API_URL}/${config.phoneNumberId}`, {
       headers: {
         'Authorization': `Bearer ${config.accessToken}`,
         'Content-Type': 'application/json'
       }
     });
+
+    const responseTime = Date.now() - startTime;
+    console.log(`⏱️ Tempo de resposta: ${responseTime}ms`);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -196,11 +213,12 @@ async function testConnection(config: any): Promise<Response> {
         errorMessage = errorData.error.message;
       }
       
-      // Log specific error details
+      console.error('❌ Falha na conexão:', errorMessage);
       await logWebhookEvent({ 
         action: 'test_connection_failed',
         status: response.status,
-        error: errorData 
+        error: errorData,
+        responseTime
       }, 'api_error');
       
       return createErrorResponse(`Erro na API do WhatsApp: ${errorMessage}`, errorData);
@@ -208,21 +226,30 @@ async function testConnection(config: any): Promise<Response> {
 
     const data = await response.json();
     
+    console.log('✅ Conexão estabelecida com sucesso:', {
+      phoneNumber: data.display_phone_number,
+      verifiedName: data.verified_name,
+      responseTime: `${responseTime}ms`
+    });
+    
     await logWebhookEvent({ 
       action: 'test_connection_success',
       phoneNumber: data.display_phone_number,
-      status: data.verified_name 
+      status: data.verified_name,
+      responseTime
     }, 'connection');
     
     return createSuccessResponse({
       phoneNumber: data.display_phone_number,
       verifiedName: data.verified_name,
       status: data.quality_rating || 'unknown',
-      businessAccountId: config.businessAccountId
+      businessAccountId: config.businessAccountId,
+      responseTime
     });
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro de conexão';
+    console.error('💥 Falha crítica na conexão:', message);
     await logWebhookEvent({ action: 'test_connection_error', error: message }, 'error');
     return createErrorResponse(`Falha na conexão: ${message}`, error);
   }
@@ -230,14 +257,23 @@ async function testConnection(config: any): Promise<Response> {
 
 async function sendMessage(config: any, phoneNumber: string, message: string, templateName?: string): Promise<Response> {
   try {
+    console.log('📤 Iniciando envio de mensagem...', {
+      phoneNumber: phoneNumber ? phoneNumber.substring(0, 5) + '...' : 'undefined',
+      messageLength: message?.length,
+      templateName
+    });
+
     if (!message && !templateName) {
       return createErrorResponse('Mensagem ou nome do template é obrigatório');
     }
 
     const phoneValidation = validatePhoneNumber(phoneNumber);
     if (!phoneValidation.valid) {
+      console.error('❌ Número inválido:', phoneValidation.error);
       return createErrorResponse(`Número inválido: ${phoneValidation.error}`);
     }
+
+    console.log('📞 Número validado:', phoneValidation.formatted);
 
     let messageData: any;
 
@@ -251,6 +287,7 @@ async function sendMessage(config: any, phoneNumber: string, message: string, te
           language: { code: "pt_BR" }
         }
       };
+      console.log('📋 Preparando template:', templateName);
     } else {
       // Validar tamanho da mensagem
       if (message.length > 4096) {
@@ -263,8 +300,10 @@ async function sendMessage(config: any, phoneNumber: string, message: string, te
         type: "text",
         text: { body: message }
       };
+      console.log('💬 Preparando mensagem de texto');
     }
 
+    const startTime = Date.now();
     const response = await fetch(`${WHATSAPP_API_URL}/${config.phoneNumberId}/messages`, {
       method: 'POST',
       headers: {
@@ -274,14 +313,19 @@ async function sendMessage(config: any, phoneNumber: string, message: string, te
       body: JSON.stringify(messageData)
     });
 
+    const responseTime = Date.now() - startTime;
+    console.log(`⏱️ Tempo de envio: ${responseTime}ms`);
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
       
+      console.error('❌ Falha no envio:', errorMessage);
       await logWebhookEvent({ 
         action: 'send_message_failed',
         phoneNumber: phoneValidation.formatted,
-        error: errorData 
+        error: errorData,
+        responseTime
       }, 'message_error');
       
       return createErrorResponse(`Erro ao enviar mensagem: ${errorMessage}`, errorData);
@@ -289,25 +333,37 @@ async function sendMessage(config: any, phoneNumber: string, message: string, te
 
     const data = await response.json();
     if (!data.messages?.[0]?.id) {
+      console.error('❌ Resposta inválida da API:', data);
       return createErrorResponse('Resposta inválida da API do WhatsApp', data);
     }
 
+    const messageId = data.messages[0].id;
+    console.log('✅ Mensagem enviada com sucesso:', {
+      messageId,
+      phoneNumber: phoneValidation.formatted,
+      type: templateName ? 'template' : 'text',
+      responseTime: `${responseTime}ms`
+    });
+
     await logWebhookEvent({ 
       action: 'message_sent',
-      messageId: data.messages[0].id,
+      messageId,
       phoneNumber: phoneValidation.formatted,
-      type: templateName ? 'template' : 'text'
+      type: templateName ? 'template' : 'text',
+      responseTime
     }, 'message');
 
     return createSuccessResponse(undefined, {
-      messageId: data.messages[0].id,
+      messageId,
       status: 'sent',
       phoneNumber: phoneValidation.formatted,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      responseTime
     });
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao enviar mensagem';
+    console.error('💥 Erro crítico no envio:', message);
     await logWebhookEvent({ action: 'send_message_error', error: message }, 'error');
     return createErrorResponse(message, error);
   }
@@ -315,6 +371,8 @@ async function sendMessage(config: any, phoneNumber: string, message: string, te
 
 async function getTemplates(config: any): Promise<Response> {
   try {
+    console.log('📋 Carregando templates...');
+    
     const response = await fetch(`${WHATSAPP_API_URL}/${config.businessAccountId}/message_templates?limit=100`, {
       headers: {
         'Authorization': `Bearer ${config.accessToken}`,
@@ -326,6 +384,7 @@ async function getTemplates(config: any): Promise<Response> {
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
       
+      console.error('❌ Falha ao carregar templates:', errorMessage);
       await logWebhookEvent({ 
         action: 'get_templates_failed',
         error: errorData 
@@ -349,6 +408,11 @@ async function getTemplates(config: any): Promise<Response> {
         components: template.components || []
       }));
     
+    console.log('✅ Templates carregados:', {
+      total: templates.length,
+      approved: processedTemplates.length
+    });
+    
     await logWebhookEvent({ 
       action: 'templates_loaded',
       count: processedTemplates.length,
@@ -363,6 +427,7 @@ async function getTemplates(config: any): Promise<Response> {
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao buscar templates';
+    console.error('💥 Erro crítico ao carregar templates:', message);
     await logWebhookEvent({ action: 'get_templates_error', error: message }, 'error');
     return createErrorResponse(message, error);
   }
@@ -378,6 +443,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       const token = url.searchParams.get('hub.verify_token');
       const challenge = url.searchParams.get('hub.challenge');
 
+      console.log('🔐 Verificação de webhook recebida');
       await logWebhookEvent({ 
         action: 'webhook_verification',
         mode,
@@ -390,9 +456,11 @@ async function handleWebhook(req: Request): Promise<Response> {
       }
 
       if (mode === 'subscribe' && token === 'whatsapp_webhook_token') {
+        console.log('✅ Webhook verificado com sucesso');
         await logWebhookEvent({ action: 'webhook_verified' }, 'webhook');
         return new Response(challenge, { headers: corsHeaders });
       } else {
+        console.error('❌ Token de verificação inválido');
         await logWebhookEvent({ action: 'webhook_verification_failed', token }, 'webhook');
         return createErrorResponse('Token de verificação inválido');
       }
@@ -400,6 +468,11 @@ async function handleWebhook(req: Request): Promise<Response> {
 
     if (req.method === 'POST') {
       const body = await req.json().catch(() => ({}));
+      
+      console.log('📨 Webhook recebido:', {
+        hasEntry: !!body.entry,
+        entryCount: body.entry?.length || 0
+      });
       
       await logWebhookEvent({ 
         action: 'webhook_received',
@@ -426,7 +499,7 @@ async function handleWebhook(req: Request): Promise<Response> {
     return createErrorResponse(`Método ${req.method} não permitido para webhook`);
 
   } catch (error) {
-    console.error('Erro no webhook:', error);
+    console.error('💥 Erro crítico no webhook:', error);
     await logWebhookEvent({ action: 'webhook_error', error: error instanceof Error ? error.message : 'Unknown error' }, 'webhook');
     const message = error instanceof Error ? error.message : 'Erro no webhook';
     return createErrorResponse(message, error);
@@ -437,6 +510,12 @@ async function processMessageWebhook(value: any): Promise<void> {
   try {
     if (value.messages && Array.isArray(value.messages)) {
       for (const message of value.messages) {
+        console.log('📩 Mensagem recebida:', {
+          messageId: message.id,
+          from: message.from,
+          type: message.type
+        });
+        
         await logWebhookEvent({
           action: 'message_received',
           messageId: message.id,
@@ -449,6 +528,11 @@ async function processMessageWebhook(value: any): Promise<void> {
     
     if (value.statuses && Array.isArray(value.statuses)) {
       for (const status of value.statuses) {
+        console.log('📋 Status de mensagem atualizado:', {
+          messageId: status.id,
+          status: status.status
+        });
+        
         await logWebhookEvent({
           action: 'message_status_update',
           messageId: status.id,
@@ -458,7 +542,7 @@ async function processMessageWebhook(value: any): Promise<void> {
       }
     }
   } catch (error) {
-    console.error('Erro ao processar webhook de mensagem:', error);
+    console.error('💥 Erro ao processar webhook de mensagem:', error);
     await logWebhookEvent({ action: 'webhook_processing_error', error: error instanceof Error ? error.message : 'Unknown error' }, 'webhook');
   }
 }

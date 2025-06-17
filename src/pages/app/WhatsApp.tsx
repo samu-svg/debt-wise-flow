@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy, memo, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,7 +15,9 @@ import {
   Activity,
   Settings,
   Zap,
-  Bot
+  Bot,
+  Bug,
+  Heart
 } from 'lucide-react';
 
 // Lazy loading otimizado
@@ -46,6 +47,18 @@ const WhatsAppConfig = lazy(() =>
 
 const AutomationDashboard = lazy(() => 
   import('@/components/AutomationDashboard').then(module => ({
+    default: module.default
+  }))
+);
+
+const WhatsAppDebugPanel = lazy(() => 
+  import('@/components/WhatsAppDebugPanel').then(module => ({
+    default: module.default
+  }))
+);
+
+const WhatsAppHealthDashboard = lazy(() => 
+  import('@/components/WhatsAppHealthDashboard').then(module => ({
     default: module.default
   }))
 );
@@ -222,7 +235,7 @@ const WhatsApp: React.FC = () => {
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <Tabs defaultValue="overview" className="space-y-6">
               <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
-                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 bg-gray-100 h-auto rounded-xl p-1">
+                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 bg-gray-100 h-auto rounded-xl p-1">
                   <TabsTrigger 
                     value="overview" 
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
@@ -233,11 +246,29 @@ const WhatsApp: React.FC = () => {
                   </TabsTrigger>
                   
                   <TabsTrigger 
+                    value="health" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm"
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span className="hidden sm:inline">Saúde</span>
+                    <span className="sm:hidden">❤️</span>
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="debug" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
+                  >
+                    <Bug className="w-4 h-4" />
+                    <span className="hidden sm:inline">Debug</span>
+                    <span className="sm:hidden">🐛</span>
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
                     value="automation" 
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm"
                   >
                     <Bot className="w-4 h-4" />
-                    <span className="hidden sm:inline">Automação Supabase</span>
+                    <span className="hidden sm:inline">Automação</span>
                     <span className="sm:hidden">Auto</span>
                   </TabsTrigger>
                   
@@ -255,8 +286,8 @@ const WhatsApp: React.FC = () => {
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm"
                   >
                     <Settings className="w-4 h-4" />
-                    <span className="hidden sm:inline">Configurações</span>
-                    <span className="sm:hidden">Config</span>
+                    <span className="hidden sm:inline">Config</span>
+                    <span className="sm:hidden">⚙️</span>
                   </TabsTrigger>
                   
                   <TabsTrigger 
@@ -265,7 +296,7 @@ const WhatsApp: React.FC = () => {
                   >
                     <FileText className="w-4 h-4" />
                     <span className="hidden sm:inline">Logs</span>
-                    <span className="sm:hidden">Log</span>
+                    <span className="sm:hidden">📋</span>
                     <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0.5">
                       {logStats.today}
                     </Badge>
@@ -278,6 +309,14 @@ const WhatsApp: React.FC = () => {
                   <Suspense fallback={<LoadingFallback />}>
                     <TabsContent value="overview" className="space-y-6 mt-0">
                       <WhatsAppOverview />
+                    </TabsContent>
+
+                    <TabsContent value="health" className="mt-0">
+                      <WhatsAppHealthDashboard />
+                    </TabsContent>
+
+                    <TabsContent value="debug" className="mt-0">
+                      <WhatsAppDebugPanel />
                     </TabsContent>
 
                     <TabsContent value="automation" className="mt-0">
