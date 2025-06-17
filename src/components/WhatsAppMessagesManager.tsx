@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useWhatsAppMessages } from '@/hooks/useWhatsAppMessages';
 import { useWhatsAppAllowlist } from '@/hooks/useWhatsAppAllowlist';
 import { 
@@ -18,7 +19,8 @@ import {
   Send,
   Calendar,
   User,
-  RefreshCw
+  RefreshCw,
+  Phone
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -139,8 +141,8 @@ const WhatsAppMessagesManager = () => {
             <MessageSquare className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Gerenciar Mensagens</h2>
-            <p className="text-gray-600">Acompanhe e gerencie todas as mensagens enviadas</p>
+            <h2 className="text-2xl font-bold text-gray-900">Mensagens Enviadas</h2>
+            <p className="text-gray-600">Acompanhe todas as mensagens enviadas pelo WhatsApp</p>
           </div>
         </div>
         
@@ -154,60 +156,37 @@ const WhatsAppMessagesManager = () => {
         </Button>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Estatísticas Resumidas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <MessageSquare className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
-              </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+              <p className="text-sm text-gray-600">Total</p>
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Enviadas</p>
-                <p className="text-2xl font-bold text-green-600">{stats.sent}</p>
-              </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">{stats.sent}</p>
+              <p className="text-sm text-gray-600">Enviadas</p>
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <XCircle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Falharam</p>
-                <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
-              </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
+              <p className="text-sm text-gray-600">Falharam</p>
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="w-5 h-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-              </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+              <p className="text-sm text-gray-600">Pendentes</p>
             </div>
           </CardContent>
         </Card>
@@ -216,7 +195,10 @@ const WhatsAppMessagesManager = () => {
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Filtros</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filtros
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -267,7 +249,7 @@ const WhatsAppMessagesManager = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de Mensagens */}
+      {/* Tabela de Mensagens */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -290,101 +272,91 @@ const WhatsAppMessagesManager = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredMessages.map((message) => {
-                const statusConfig = getStatusConfig(message.status);
-                const StatusIcon = statusConfig.icon;
-                
-                return (
-                  <div 
-                    key={message.id} 
-                    className={`p-4 rounded-lg border ${statusConfig.border} ${statusConfig.bg} hover:shadow-sm transition-shadow`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-gray-500" />
-                            <span className="font-medium text-gray-900">
-                              {getContactName(message.phoneNumber)}
-                            </span>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Contato</TableHead>
+                    <TableHead>Mensagem</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Data</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMessages.map((message) => {
+                    const statusConfig = getStatusConfig(message.status);
+                    const StatusIcon = statusConfig.icon;
+                    
+                    return (
+                      <TableRow key={message.id}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-gray-500" />
+                              <span className="font-medium">
+                                {getContactName(message.phoneNumber)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Phone className="w-3 h-3" />
+                              <span>{formatPhoneNumber(message.phoneNumber)}</span>
+                            </div>
                           </div>
-                          <span className="text-sm text-gray-500">
-                            {formatPhoneNumber(message.phoneNumber)}
-                          </span>
-                        </div>
+                        </TableCell>
                         
-                        {message.templateName && (
-                          <div className="flex items-center gap-2 mb-2">
-                            <Send className="w-4 h-4 text-gray-400" />
-                            <Badge variant="outline" className="text-xs">
-                              Template: {message.templateName}
-                            </Badge>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {message.templateName && (
+                              <Badge variant="outline" className="text-xs">
+                                {message.templateName}
+                              </Badge>
+                            )}
+                            {message.messageText && (
+                              <p className="text-sm text-gray-700 line-clamp-2 max-w-xs">
+                                {message.messageText}
+                              </p>
+                            )}
                           </div>
-                        )}
+                        </TableCell>
                         
-                        {message.messageText && (
-                          <p className="text-sm text-gray-700 mb-3 line-clamp-3">
-                            {message.messageText}
-                          </p>
-                        )}
-                        
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>
-                              {formatDistanceToNow(new Date(message.createdAt), { 
-                                addSuffix: true, 
-                                locale: ptBR 
-                              })}
-                            </span>
-                          </div>
-                          
-                          {message.retryCount > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              {message.retryCount} tentativas
-                            </Badge>
+                        <TableCell>
+                          <Badge 
+                            variant={statusConfig.variant}
+                            className={`flex items-center gap-1 w-fit ${statusConfig.color}`}
+                          >
+                            <StatusIcon className="w-3 h-3" />
+                            {statusConfig.label}
+                          </Badge>
+                          {message.errorMessage && (
+                            <p className="text-xs text-red-600 mt-1 max-w-xs truncate">
+                              {message.errorMessage}
+                            </p>
                           )}
-                          
-                          {message.whatsappMessageId && (
-                            <span className="font-mono text-xs text-gray-400">
-                              ID: {message.whatsappMessageId.slice(0, 8)}...
-                            </span>
-                          )}
-                        </div>
+                        </TableCell>
                         
-                        {message.errorMessage && (
-                          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                            <strong>Erro:</strong> {message.errorMessage}
+                        <TableCell>
+                          <div className="text-sm space-y-1">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-600">
+                                {formatDistanceToNow(new Date(message.createdAt), { 
+                                  addSuffix: true, 
+                                  locale: ptBR 
+                                })}
+                              </span>
+                            </div>
+                            {message.sentAt && (
+                              <p className="text-xs text-gray-500">
+                                Enviada: {new Date(message.sentAt).toLocaleString('pt-BR')}
+                              </p>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge 
-                          variant={statusConfig.variant}
-                          className={`flex items-center gap-1 ${statusConfig.color}`}
-                        >
-                          <StatusIcon className="w-3 h-3" />
-                          {statusConfig.label}
-                        </Badge>
-                        
-                        {message.sentAt && (
-                          <span className="text-xs text-gray-500">
-                            Enviada: {new Date(message.sentAt).toLocaleString('pt-BR')}
-                          </span>
-                        )}
-                        
-                        {message.deliveredAt && (
-                          <span className="text-xs text-gray-500">
-                            Entregue: {new Date(message.deliveredAt).toLocaleString('pt-BR')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
