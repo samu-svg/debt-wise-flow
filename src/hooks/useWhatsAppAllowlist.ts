@@ -82,15 +82,17 @@ export const useWhatsAppAllowlist = (): UseWhatsAppAllowlistReturn => {
         return false;
       }
 
-      const newEntry: AllowlistEntry = {
-        id: data.id,
-        phoneNumber: data.phone_number,
-        name: data.name,
-        isActive: data.is_active,
-        addedAt: data.added_at
-      };
+      if (data) {
+        const newEntry: AllowlistEntry = {
+          id: data.id,
+          phoneNumber: data.phone_number,
+          name: data.name,
+          isActive: data.is_active,
+          addedAt: data.added_at
+        };
 
-      setAllowlist(prev => [newEntry, ...prev]);
+        setAllowlist(prev => [newEntry, ...prev]);
+      }
       return true;
     } catch (error) {
       console.error('Erro ao adicionar número à allowlist:', error);
