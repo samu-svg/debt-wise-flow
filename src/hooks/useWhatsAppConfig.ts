@@ -1,77 +1,97 @@
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useWhatsAppCredentials } from './useWhatsAppCredentials';
 import type { WhatsAppConfig } from '@/types/whatsapp';
 
-const STORAGE_KEY = 'whatsapp_cloud_config';
-const DEBOUNCE_DELAY = 1000; // 1 segundo
-
 const DEFAULT_CONFIG: Partial<WhatsAppConfig> = {
+  webhookUrl: '',
   messageDelay: 2000,
   autoReconnect: true,
-  retryInterval: 15000,
-  maxRetries: 5,
+  retryInterval: 30000,
+  maxRetries: 3,
   businessHours: {
     enabled: false,
     start: '09:00',
     end: '18:00'
   }
-} as const;
+};
 
-export const useWhatsAppConfig = () => {
+interface UseWhatsAppConfigReturn {
+  config: Partial<WhatsAppConfig>;
+  isConfigDirty: boolean;
+  updateConfig: (newConfig: Partial<WhatsAppConfig>) => void;
+  saveConfig: () => Promise<boolean>;
+  resetConfig: () => void;
+}
+
+export const useWhatsAppConfig = (): UseWhatsAppConfigReturn => {
+  const { credentials, saveCredentials, loading } = useWhatsAppCredentials();
   const [config, setConfig] = useState<Partial<WhatsAppConfig>>(DEFAULT_CONFIG);
   const [isConfigDirty, setIsConfigDirty] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Carregar configuração salva
+  // Carregar configuração das credenciais
   useEffect(() => {
-    try {
-      const savedConfig = localStorage.getItem(STORAGE_KEY);
-      if (savedConfig) {
-        const parsedConfig = JSON.parse(savedConfig) as Partial<WhatsAppConfig>;
-        setConfig({ ...DEFAULT_CONFIG, ...parsedConfig });
-      }
-    } catch (error) {
-      console.error('Erro ao carregar configuração:', error);
+    if (credentials && !loading) {
+      setConfig({
+        ...DEFAULT_CONFIG,
+        accessToken: credentials.accessToken,
+        phoneNumberId: credentials.phoneNumberId,
+        businessAccountId: credentials.businessAccountId,
+        webhookToken: credentials.webhookToken
+      });
+      setIsConfigDirty(false);
     }
-  }, []);
-
-  // Função de salvamento com debounce
-  const saveConfigDebounced = useCallback((newConfig: Partial<WhatsAppConfig>) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    setIsConfigDirty(true);
-
-    saveTimeoutRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
-        setIsConfigDirty(false);
-        console.log('Configuração salva automaticamente');
-      } catch (error) {
-        console.error('Erro ao salvar configuração:', error);
-      }
-    }, DEBOUNCE_DELAY);
-  }, []);
+  }, [credentials, loading]);
 
   const updateConfig = useCallback((newConfig: Partial<WhatsAppConfig>) => {
-    const updatedConfig = { ...config, ...newConfig };
-    setConfig(updatedConfig);
-    saveConfigDebounced(updatedConfig);
-  }, [config, saveConfigDebounced]);
-
-  // Limpeza do timeout
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
+    setConfig(prev => ({ ...prev, ...newConfig }));
+    setIsConfigDirty(true);
   }, []);
 
-  return {
+  const saveConfig = useCallback(async (): Promise<boolean> => {
+    if (!config.accessToken || !config.phoneNumberId || !config.businessAccountId) {
+      return false;
+    }
+
+    const success = await saveCredentials({
+      accessToken: config.accessToken,
+      phoneNumberId: config.phoneNumberId,
+      businessAccountId: config.businessAccountId,
+      webhookToken: config.webhookToken || 'whatsapp_webhook_token',
+      isActive: false, // Will be set to true after successful connection test
+      healthStatus: 'unknown'
+    });
+
+    if (success) {
+      setIsConfigDirty(false);
+    }
+
+    return success;
+  }, [config, saveCredentials]);
+
+  const resetConfig = useCallback(() => {
+    setConfig(DEFAULT_CONFIG);
+    setIsConfigDirty(false);
+  }, []);
+
+  // Auto-save com debounce
+  useEffect(() => {
+    if (!isConfigDirty) return;
+
+    const timeoutId = setTimeout(() => {
+      if (config.accessToken && config.phoneNumberId && config.businessAccountId) {
+        saveConfig();
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [config, isConfigDirty, saveConfig]);
+
+  return useMemo(() => ({
     config,
+    isConfigDirty,
     updateConfig,
-    isConfigDirty
-  };
+    saveConfig,
+    resetConfig
+  }), [config, isConfigDirty, updateConfig, saveConfig, resetConfig]);
 };

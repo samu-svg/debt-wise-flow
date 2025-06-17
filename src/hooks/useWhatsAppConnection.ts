@@ -1,21 +1,21 @@
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useWhatsAppCredentials } from './useWhatsAppCredentials';
 import type { WhatsAppConnection } from '@/types/whatsapp';
-
-const STORAGE_KEY_CONNECTION = 'whatsapp_cloud_connection';
 
 interface UseWhatsAppConnectionReturn {
   connection: WhatsAppConnection;
   updateConnection: (newConnection: WhatsAppConnection) => void;
   resetConnection: () => void;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  retry: () => Promise<void>;
-  generateNewQR: () => Promise<void>;
+  testConnection: () => Promise<boolean>;
   isLoading: boolean;
 }
 
 export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
+  const { user } = useAuth();
+  const { credentials, updateHealthStatus } = useWhatsAppCredentials();
   const [connection, setConnection] = useState<WhatsAppConnection>({
     isConnected: false,
     status: 'disconnected',
@@ -23,32 +23,24 @@ export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Carregar conexão salva
-  const loadSavedConnection = useCallback(() => {
-    try {
-      const savedConnection = localStorage.getItem(STORAGE_KEY_CONNECTION);
-      if (savedConnection) {
-        const parsedConnection = JSON.parse(savedConnection) as WhatsAppConnection;
-        setConnection(parsedConnection);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar conexão:', error);
+  // Atualizar conexão baseado nas credenciais
+  useEffect(() => {
+    if (credentials) {
+      setConnection(prev => ({
+        ...prev,
+        isConnected: credentials.isActive,
+        phoneNumberId: credentials.phoneNumberId,
+        businessAccountId: credentials.businessAccountId,
+        accessToken: credentials.accessToken,
+        status: credentials.isActive ? 'connected' : 'disconnected',
+        lastSeen: credentials.lastHealthCheck
+      }));
     }
-  }, []);
-
-  // Salvar conexão
-  const saveConnection = useCallback((newConnection: WhatsAppConnection): void => {
-    try {
-      localStorage.setItem(STORAGE_KEY_CONNECTION, JSON.stringify(newConnection));
-      setConnection(newConnection);
-    } catch (error) {
-      console.error('Erro ao salvar conexão:', error);
-    }
-  }, []);
+  }, [credentials]);
 
   const updateConnection = useCallback((newConnection: WhatsAppConnection): void => {
-    saveConnection(newConnection);
-  }, [saveConnection]);
+    setConnection(newConnection);
+  }, []);
 
   const resetConnection = useCallback((): void => {
     const disconnectedConnection: WhatsAppConnection = {
@@ -56,67 +48,83 @@ export const useWhatsAppConnection = (): UseWhatsAppConnectionReturn => {
       status: 'disconnected',
       retryCount: 0
     };
-    saveConnection(disconnectedConnection);
-  }, [saveConnection]);
+    setConnection(disconnectedConnection);
+    updateHealthStatus('unknown');
+  }, [updateHealthStatus]);
 
-  const connect = useCallback(async (): Promise<void> => {
+  const testConnection = useCallback(async (): Promise<boolean> => {
+    if (!user || !credentials) return false;
+
     setIsLoading(true);
     try {
-      const connectingConnection: WhatsAppConnection = {
-        isConnected: false,
-        status: 'connecting',
-        retryCount: 0
+      const config = {
+        accessToken: credentials.accessToken,
+        phoneNumberId: credentials.phoneNumberId,
+        businessAccountId: credentials.businessAccountId
       };
-      saveConnection(connectingConnection);
-      // Lógica de conexão seria implementada aqui
-      console.log('Tentando conectar...');
+
+      const { data, error } = await supabase.functions.invoke('whatsapp-cloud-api', {
+        body: {
+          action: 'test_connection',
+          config,
+          userId: user.id
+        }
+      });
+
+      if (error) {
+        throw new Error(`Erro na função: ${error.message}`);
+      }
+
+      const success = data?.success || false;
+      
+      if (success) {
+        setConnection(prev => ({
+          ...prev,
+          isConnected: true,
+          status: 'connected',
+          phoneNumber: data.phoneNumber,
+          lastSeen: new Date().toISOString(),
+          retryCount: 0,
+          lastError: undefined
+        }));
+        
+        await updateHealthStatus('healthy');
+      } else {
+        setConnection(prev => ({
+          ...prev,
+          isConnected: false,
+          status: 'error',
+          retryCount: prev.retryCount + 1,
+          lastError: data?.error || 'Erro desconhecido'
+        }));
+        
+        await updateHealthStatus('unhealthy');
+      }
+
+      return success;
     } catch (error) {
-      console.error('Erro ao conectar:', error);
-      const errorConnection: WhatsAppConnection = {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
+      setConnection(prev => ({
+        ...prev,
         isConnected: false,
         status: 'error',
-        retryCount: connection.retryCount + 1,
-        lastError: error instanceof Error ? error.message : 'Erro desconhecido'
-      };
-      saveConnection(errorConnection);
+        retryCount: prev.retryCount + 1,
+        lastError: errorMessage
+      }));
+      
+      await updateHealthStatus('unhealthy');
+      return false;
     } finally {
       setIsLoading(false);
     }
-  }, [connection.retryCount, saveConnection]);
-
-  const disconnect = useCallback((): void => {
-    resetConnection();
-  }, [resetConnection]);
-
-  const retry = useCallback(async (): Promise<void> => {
-    await connect();
-  }, [connect]);
-
-  const generateNewQR = useCallback(async (): Promise<void> => {
-    setIsLoading(true);
-    try {
-      // Lógica para gerar novo QR seria implementada aqui
-      console.log('Gerando novo QR...');
-    } catch (error) {
-      console.error('Erro ao gerar QR:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Carregar dados salvos na inicialização
-  useState(() => {
-    loadSavedConnection();
-  });
+  }, [user, credentials, updateHealthStatus]);
 
   return useMemo(() => ({
     connection,
     updateConnection,
     resetConnection,
-    connect,
-    disconnect,
-    retry,
-    generateNewQR,
+    testConnection,
     isLoading
-  }), [connection, updateConnection, resetConnection, connect, disconnect, retry, generateNewQR, isLoading]);
+  }), [connection, updateConnection, resetConnection, testConnection, isLoading]);
 };
