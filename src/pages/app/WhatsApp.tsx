@@ -17,7 +17,8 @@ import {
   Zap,
   Bot,
   Bug,
-  Heart
+  Heart,
+  Shield
 } from 'lucide-react';
 
 // Lazy loading otimizado
@@ -122,45 +123,53 @@ const LoadingFallback = memo(() => (
 LoadingFallback.displayName = 'LoadingFallback';
 
 const WhatsApp: React.FC = () => {
-  const { connection, metrics, logStats, isConfigDirty } = useWhatsAppCloudAPI();
+  const { 
+    connection, 
+    metrics, 
+    logStats, 
+    isConfigDirty, 
+    messages, 
+    allowlist,
+    credentials
+  } = useWhatsAppCloudAPI();
 
   // Memoizar cards de estatísticas com trends
   const statsCards = useMemo(() => [
     {
       title: 'Status da API',
-      value: connection.isConnected ? 'Online' : 'Offline',
+      value: credentials.healthStatus === 'healthy' ? 'Saudável' : credentials.healthStatus === 'unhealthy' ? 'Com Problemas' : 'Desconhecido',
       icon: Cloud,
-      color: connection.isConnected ? 'text-green-600' : 'text-red-600',
-      bg: connection.isConnected ? 'bg-green-50' : 'bg-red-50',
-      borderColor: connection.isConnected ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500',
-      trend: connection.isConnected ? 'up' as const : 'down' as const
+      color: credentials.healthStatus === 'healthy' ? 'text-green-600' : credentials.healthStatus === 'unhealthy' ? 'text-red-600' : 'text-gray-600',
+      bg: credentials.healthStatus === 'healthy' ? 'bg-green-50' : credentials.healthStatus === 'unhealthy' ? 'bg-red-50' : 'bg-gray-50',
+      borderColor: credentials.healthStatus === 'healthy' ? 'border-l-4 border-l-green-500' : credentials.healthStatus === 'unhealthy' ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-gray-500',
+      trend: credentials.healthStatus === 'healthy' ? 'up' as const : credentials.healthStatus === 'unhealthy' ? 'down' as const : 'stable' as const
     },
     {
-      title: 'Mensagens Hoje',
-      value: metrics.messagestoday.toString(),
+      title: 'Mensagens Enviadas',
+      value: messages.filter(m => m.status === 'sent').length.toString(),
       icon: MessageSquare,
       color: 'text-blue-600',
       bg: 'bg-blue-50',
       borderColor: 'border-l-4 border-l-blue-500',
-      trend: metrics.messagestoday > 0 ? 'up' as const : 'stable' as const
+      trend: messages.filter(m => m.status === 'sent').length > 0 ? 'up' as const : 'stable' as const
     },
     {
-      title: 'Conversas Ativas',
-      value: metrics.activeConversations.toString(),
+      title: 'Números Aprovados',
+      value: `${allowlist.filter(n => n.isActive).length}/5`,
       icon: Users,
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
       borderColor: 'border-l-4 border-l-indigo-500',
-      trend: metrics.activeConversations > 0 ? 'up' as const : 'stable' as const
+      trend: allowlist.filter(n => n.isActive).length > 0 ? 'up' as const : 'stable' as const
     },
     {
-      title: 'Taxa de Erro',
-      value: `${metrics.errorRate.toFixed(1)}%`,
-      icon: metrics.errorRate > 10 ? AlertTriangle : TrendingUp,
-      color: metrics.errorRate > 10 ? 'text-red-600' : 'text-green-600',
-      bg: metrics.errorRate > 10 ? 'bg-red-50' : 'bg-green-50',
-      borderColor: metrics.errorRate > 10 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500',
-      trend: metrics.errorRate > 10 ? 'down' as const : 'up' as const
+      title: 'Taxa de Falha',
+      value: `${messages.length > 0 ? ((messages.filter(m => m.status === 'failed').length / messages.length) * 100).toFixed(1) : 0}%`,
+      icon: messages.filter(m => m.status === 'failed').length > 0 ? AlertTriangle : TrendingUp,
+      color: messages.filter(m => m.status === 'failed').length > 0 ? 'text-red-600' : 'text-green-600',
+      bg: messages.filter(m => m.status === 'failed').length > 0 ? 'bg-red-50' : 'bg-green-50',
+      borderColor: messages.filter(m => m.status === 'failed').length > 0 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500',
+      trend: messages.filter(m => m.status === 'failed').length > 0 ? 'down' as const : 'up' as const
     }
   ], [connection.isConnected, metrics]);
 
@@ -207,8 +216,8 @@ const WhatsApp: React.FC = () => {
                 <span className="truncate">WhatsApp Cloud API</span>
               </h1>
               <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
-                Gerenciamento completo da integração com WhatsApp Business com Supabase - 
-                Configurações, monitoramento e automação em tempo real
+                Gerenciamento completo da integração com WhatsApp Business - 
+                Credenciais seguras, mensagens persistidas e lista de aprovados
               </p>
             </div>
             <div className="flex justify-end">
@@ -216,26 +225,53 @@ const WhatsApp: React.FC = () => {
             </div>
           </div>
 
-          {/* Cards de Estatísticas - Mobile Grid */}
+          {/* Cards de Estatísticas Atualizados */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {statsCards.map((stat, index) => (
-              <StatsCard
-                key={`${stat.title}-${index}`}
-                title={stat.title}
-                value={stat.value}
-                icon={stat.icon}
-                color={stat.color}
-                bg={stat.bg}
-                borderColor={stat.borderColor}
-                trend={stat.trend}
-              />
-            ))}
+            <StatsCard
+              title="Status da API"
+              value={credentials.healthStatus === 'healthy' ? 'Saudável' : credentials.healthStatus === 'unhealthy' ? 'Com Problemas' : 'Desconhecido'}
+              icon={Cloud}
+              color={credentials.healthStatus === 'healthy' ? 'text-green-600' : credentials.healthStatus === 'unhealthy' ? 'text-red-600' : 'text-gray-600'}
+              bg={credentials.healthStatus === 'healthy' ? 'bg-green-50' : credentials.healthStatus === 'unhealthy' ? 'bg-red-50' : 'bg-gray-50'}
+              borderColor={credentials.healthStatus === 'healthy' ? 'border-l-4 border-l-green-500' : credentials.healthStatus === 'unhealthy' ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-gray-500'}
+              trend={credentials.healthStatus === 'healthy' ? 'up' as const : credentials.healthStatus === 'unhealthy' ? 'down' as const : 'stable' as const}
+            />
+            
+            <StatsCard
+              title="Mensagens Enviadas"
+              value={messages.filter(m => m.status === 'sent').length.toString()}
+              icon={MessageSquare}
+              color="text-blue-600"
+              bg="bg-blue-50"
+              borderColor="border-l-4 border-l-blue-500"
+              trend={messages.filter(m => m.status === 'sent').length > 0 ? 'up' as const : 'stable' as const}
+            />
+            
+            <StatsCard
+              title="Números Aprovados"
+              value={`${allowlist.filter(n => n.isActive).length}/5`}
+              icon={Users}
+              color="text-indigo-600"
+              bg="bg-indigo-50"
+              borderColor="border-l-4 border-l-indigo-500"
+              trend={allowlist.filter(n => n.isActive).length > 0 ? 'up' as const : 'stable' as const}
+            />
+            
+            <StatsCard
+              title="Taxa de Falha"
+              value={`${messages.length > 0 ? ((messages.filter(m => m.status === 'failed').length / messages.length) * 100).toFixed(1) : 0}%`}
+              icon={messages.filter(m => m.status === 'failed').length > 0 ? AlertTriangle : TrendingUp}
+              color={messages.filter(m => m.status === 'failed').length > 0 ? 'text-red-600' : 'text-green-600'}
+              bg={messages.filter(m => m.status === 'failed').length > 0 ? 'bg-red-50' : 'bg-green-50'}
+              borderColor={messages.filter(m => m.status === 'failed').length > 0 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500'}
+              trend={messages.filter(m => m.status === 'failed').length > 0 ? 'down' as const : 'up' as const}
+            />
           </div>
 
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <Tabs defaultValue="overview" className="space-y-6">
               <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
-                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 bg-gray-100 h-auto rounded-xl p-1">
+                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-8 bg-gray-100 h-auto rounded-xl p-1">
                   <TabsTrigger 
                     value="overview" 
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
@@ -301,6 +337,18 @@ const WhatsApp: React.FC = () => {
                       {logStats.today}
                     </Badge>
                   </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="allowlist" 
+                    className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span className="hidden sm:inline">Lista</span>
+                    <span className="sm:hidden">📋</span>
+                    <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0.5">
+                      {allowlist.filter(n => n.isActive).length}
+                    </Badge>
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -333,6 +381,10 @@ const WhatsApp: React.FC = () => {
 
                     <TabsContent value="logs" className="mt-0">
                       <WhatsAppLogs />
+                    </TabsContent>
+
+                    <TabsContent value="allowlist" className="mt-0">
+                      <WhatsAppAllowlistManager />
                     </TabsContent>
                   </Suspense>
                 </ErrorBoundary>

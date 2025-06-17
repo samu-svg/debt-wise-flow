@@ -1,548 +1,425 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
-
-interface ErrorResponse {
-  success: false;
-  error: string;
-  details?: unknown;
+interface WhatsAppConfig {
+  accessToken: string;
+  phoneNumberId: string;
+  businessAccountId: string;
 }
 
-interface SuccessResponse<T = unknown> {
-  success: true;
-  data?: T;
-  [key: string]: unknown;
-}
-
-type ApiResponse<T = unknown> = ErrorResponse | SuccessResponse<T>;
-
-function createErrorResponse(message: string, details?: unknown): Response {
-  const response: ErrorResponse = { success: false, error: message };
-  if (details) response.details = details;
-  
-  return Response.json(response, { 
-    status: 400, 
-    headers: corsHeaders 
-  });
-}
-
-function createSuccessResponse<T>(data?: T, extra?: Record<string, unknown>): Response {
-  const response: SuccessResponse<T> = { success: true };
-  if (data !== undefined) response.data = data;
-  if (extra) Object.assign(response, extra);
-  
-  return Response.json(response, { headers: corsHeaders });
-}
-
-function validateConfig(config: any): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-  
-  if (!config?.accessToken) {
-    errors.push('Access Token é obrigatório');
-  } else if (!config.accessToken.startsWith('EAA')) {
-    errors.push('Access Token deve começar com "EAA"');
-  }
-  
-  if (!config?.phoneNumberId) {
-    errors.push('Phone Number ID é obrigatório');
-  } else if (!/^\d{15,20}$/.test(config.phoneNumberId)) {
-    errors.push('Phone Number ID deve ter entre 15-20 dígitos');
-  }
-  
-  if (!config?.businessAccountId) {
-    errors.push('Business Account ID é obrigatório');
-  } else if (!/^\d{15,20}$/.test(config.businessAccountId)) {
-    errors.push('Business Account ID deve ter entre 15-20 dígitos');
-  }
-  
-  return { valid: errors.length === 0, errors };
-}
-
-function validatePhoneNumber(phoneNumber: string): { valid: boolean; formatted: string; error?: string } {
-  if (!phoneNumber) {
-    return { valid: false, formatted: '', error: 'Número de telefone é obrigatório' };
-  }
-  
-  const cleanPhone = phoneNumber.replace(/\D/g, '');
-  
-  if (cleanPhone.length < 10) {
-    return { valid: false, formatted: '', error: 'Número muito curto' };
-  }
-  
-  if (cleanPhone.length > 15) {
-    return { valid: false, formatted: '', error: 'Número muito longo' };
-  }
-  
-  let formattedPhone = cleanPhone;
-  if (!formattedPhone.startsWith('55')) {
-    formattedPhone = `55${formattedPhone}`;
-  }
-  
-  // Validar formato brasileiro
-  if (formattedPhone.startsWith('55') && formattedPhone.length !== 13) {
-    return { valid: false, formatted: '', error: 'Número brasileiro deve ter 11 dígitos após o código do país' };
-  }
-  
-  return { valid: true, formatted: formattedPhone };
-}
-
-async function logWebhookEvent(event: any, source: string = 'webhook'): Promise<void> {
-  try {
-    console.log(`[${source.toUpperCase()}] ${new Date().toISOString()}:`, JSON.stringify(event, null, 2));
-  } catch (error) {
-    console.error('Erro ao logar evento:', error);
-  }
+interface SendMessageRequest {
+  action: string;
+  phoneNumber?: string;
+  message?: string;
+  templateName?: string;
+  messageId?: string;
+  config?: WhatsAppConfig;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const url = new URL(req.url);
-    
-    // Handle webhook verification and events
-    if (url.pathname.includes('/webhook')) {
-      return await handleWebhook(req);
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Get user from request
+    const authHeader = req.headers.get('Authorization');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader?.replace('Bearer ', '') ?? ''
+    );
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const body = await req.json().catch(() => ({}));
-    const { action, config, phoneNumber, message, templateName } = body;
+    const requestData: SendMessageRequest = await req.json();
+    const { action, phoneNumber, message, templateName, messageId } = requestData;
 
-    console.log(`🚀 Ação recebida: ${action}`, {
-      hasConfig: !!config,
-      phoneNumber: phoneNumber ? phoneNumber.substring(0, 5) + '...' : undefined,
-      messageLength: message?.length,
-      templateName
-    });
+    console.log(`🚀 Ação recebida: ${action} {
+  hasConfig: ${!!requestData.config},
+  phoneNumber: "${phoneNumber?.substring(0, 5)}...",
+  messageLength: ${message?.length},
+  templateName: ${templateName}
+}`);
 
-    if (!action) {
-      return createErrorResponse('Ação não especificada');
+    // Buscar credenciais do usuário no banco
+    const { data: credentials, error: credError } = await supabase
+      .from('whatsapp_credentials')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single();
+
+    if (credError || !credentials) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Credenciais não encontradas. Configure suas credenciais primeiro.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Validar configuração para ações que precisam
-    if (['test_connection', 'send_message', 'get_templates'].includes(action)) {
-      const validation = validateConfig(config);
-      if (!validation.valid) {
-        console.error('❌ Configuração inválida:', validation.errors);
-        return createErrorResponse('Configuração inválida', { errors: validation.errors });
-      }
+    const config: WhatsAppConfig = {
+      accessToken: credentials.access_token_encrypted,
+      phoneNumberId: credentials.phone_number_id,
+      businessAccountId: credentials.business_account_id
+    };
+
+    if (action === 'test_connection') {
+      return await handleTestConnection(config, supabase, user.id);
     }
 
-    switch (action) {
-      case 'test_connection':
-        return await testConnection(config);
-      
-      case 'send_message':
-        return await sendMessage(config, phoneNumber, message, templateName);
-      
-      case 'get_templates':
-        return await getTemplates(config);
-      
-      case 'validate_config':
-        return await validateConfiguration(config);
-      
-      default:
-        return createErrorResponse(`Ação não reconhecida: ${action}`);
+    if (action === 'send_message') {
+      return await handleSendMessage(config, phoneNumber!, message!, templateName, messageId, supabase, user.id);
     }
+
+    return new Response(
+      JSON.stringify({ success: false, error: 'Ação não reconhecida' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    console.error('💥 Erro crítico na API:', error);
-    await logWebhookEvent({ error: error instanceof Error ? error.message : 'Erro desconhecido' }, 'error');
-    return createErrorResponse(
-      'Erro interno do servidor',
-      error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error('❌ Erro geral:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Erro interno do servidor' 
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
-async function validateConfiguration(config: any): Promise<Response> {
-  try {
-    console.log('🔍 Validando configuração...');
-    const validation = validateConfig(config);
-    
-    if (!validation.valid) {
-      return createErrorResponse('Configuração inválida', { errors: validation.errors });
-    }
-    
-    // Test basic connectivity
-    const testResult = await testConnection(config);
-    const testData = await testResult.json();
-    
-    console.log('✅ Configuração validada com sucesso');
-    return createSuccessResponse({
-      configValid: true,
-      connectionTest: testData.success,
-      validationErrors: [],
-      recommendations: []
-    });
-    
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro na validação';
-    console.error('❌ Erro na validação:', message);
-    return createErrorResponse(message, error);
-  }
-}
+async function handleTestConnection(config: WhatsAppConfig, supabase: any, userId: string) {
+  console.log('🔗 Testando conexão com WhatsApp API...');
+  const startTime = Date.now();
 
-async function testConnection(config: any): Promise<Response> {
   try {
-    console.log('🔗 Testando conexão com WhatsApp API...');
-    const startTime = Date.now();
-    
-    const response = await fetch(`${WHATSAPP_API_URL}/${config.phoneNumberId}`, {
-      headers: {
-        'Authorization': `Bearer ${config.accessToken}`,
-        'Content-Type': 'application/json'
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${config.phoneNumberId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json',
+        },
       }
-    });
+    );
 
     const responseTime = Date.now() - startTime;
     console.log(`⏱️ Tempo de resposta: ${responseTime}ms`);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json();
+      console.error('❌ Erro na API:', errorData);
       
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      if (errorData.error?.message) {
-        errorMessage = errorData.error.message;
-      }
-      
-      console.error('❌ Falha na conexão:', errorMessage);
-      await logWebhookEvent({ 
-        action: 'test_connection_failed',
-        status: response.status,
-        error: errorData,
-        responseTime
-      }, 'api_error');
-      
-      return createErrorResponse(`Erro na API do WhatsApp: ${errorMessage}`, errorData);
+      // Atualizar status no banco
+      await supabase
+        .from('whatsapp_credentials')
+        .update({ 
+          health_status: 'unhealthy',
+          last_health_check: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorData.error?.message || 'Erro na conexão',
+          responseTime
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const data = await response.json();
     
-    console.log('✅ Conexão estabelecida com sucesso:', {
-      phoneNumber: data.display_phone_number,
-      verifiedName: data.verified_name,
-      responseTime: `${responseTime}ms`
-    });
-    
-    await logWebhookEvent({ 
-      action: 'test_connection_success',
-      phoneNumber: data.display_phone_number,
-      status: data.verified_name,
-      responseTime
-    }, 'connection');
-    
-    return createSuccessResponse({
-      phoneNumber: data.display_phone_number,
-      verifiedName: data.verified_name,
-      status: data.quality_rating || 'unknown',
-      businessAccountId: config.businessAccountId,
-      responseTime
+    // Atualizar status no banco
+    await supabase
+      .from('whatsapp_credentials')
+      .update({ 
+        health_status: 'healthy',
+        last_health_check: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    // Log de sucesso
+    await supabase.from('whatsapp_logs').insert({
+      user_id: userId,
+      type: 'connection',
+      level: 'info',
+      message: 'Teste de conexão realizado com sucesso',
+      function_name: 'whatsapp-cloud-api',
+      data: {
+        action: 'test_connection_success',
+        phoneNumber: data.display_phone_number,
+        status: data.verified_name,
+        responseTime
+      }
     });
 
+    console.log(`✅ Conexão estabelecida com sucesso: {
+  phoneNumber: "${data.display_phone_number}",
+  verifiedName: "${data.verified_name}",
+  responseTime: "${responseTime}ms"
+}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: {
+          phoneNumber: data.display_phone_number,
+          verifiedName: data.verified_name,
+          status: 'connected'
+        },
+        responseTime
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro de conexão';
-    console.error('💥 Falha crítica na conexão:', message);
-    await logWebhookEvent({ action: 'test_connection_error', error: message }, 'error');
-    return createErrorResponse(`Falha na conexão: ${message}`, error);
+    console.error('❌ Erro na conexão:', error);
+    
+    // Atualizar status no banco
+    await supabase
+      .from('whatsapp_credentials')
+      .update({ 
+        health_status: 'unhealthy',
+        last_health_check: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro na conexão'
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 }
 
-async function sendMessage(config: any, phoneNumber: string, message: string, templateName?: string): Promise<Response> {
-  try {
-    console.log('📤 Iniciando envio de mensagem...', {
-      phoneNumber: phoneNumber ? phoneNumber.substring(0, 5) + '...' : 'undefined',
-      messageLength: message?.length,
-      templateName
-    });
+async function handleSendMessage(
+  config: WhatsAppConfig, 
+  phoneNumber: string, 
+  message: string, 
+  templateName: string | undefined, 
+  messageId: string | undefined,
+  supabase: any,
+  userId: string
+) {
+  console.log(`📤 Iniciando envio de mensagem... {
+  phoneNumber: "${phoneNumber.substring(0, 5)}...",
+  messageLength: ${message.length},
+  templateName: ${templateName}
+}`);
 
-    if (!message && !templateName) {
-      return createErrorResponse('Mensagem ou nome do template é obrigatório');
-    }
+  // Verificar se o número está na allowlist
+  if (messageId) {
+    const phoneClean = phoneNumber.replace(/\D/g, '');
+    const { data: allowlistEntry } = await supabase
+      .from('whatsapp_allowlist')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('phone_number', phoneClean)
+      .eq('is_active', true)
+      .single();
 
-    const phoneValidation = validatePhoneNumber(phoneNumber);
-    if (!phoneValidation.valid) {
-      console.error('❌ Número inválido:', phoneValidation.error);
-      return createErrorResponse(`Número inválido: ${phoneValidation.error}`);
-    }
-
-    console.log('📞 Número validado:', phoneValidation.formatted);
-
-    let messageData: any;
-
-    if (templateName) {
-      messageData = {
-        messaging_product: "whatsapp",
-        to: phoneValidation.formatted,
-        type: "template",
-        template: {
-          name: templateName,
-          language: { code: "pt_BR" }
-        }
-      };
-      console.log('📋 Preparando template:', templateName);
-    } else {
-      // Validar tamanho da mensagem
-      if (message.length > 4096) {
-        return createErrorResponse('Mensagem muito longa (máximo 4096 caracteres)');
-      }
+    if (!allowlistEntry) {
+      const errorMsg = `Número ${phoneNumber} não está na lista de números aprovados`;
+      console.error(`❌ ${errorMsg}`);
       
-      messageData = {
-        messaging_product: "whatsapp",
-        to: phoneValidation.formatted,
-        type: "text",
-        text: { body: message }
-      };
-      console.log('💬 Preparando mensagem de texto');
-    }
+      // Log do erro
+      await supabase.from('whatsapp_logs').insert({
+        user_id: userId,
+        type: 'error',
+        level: 'error',
+        message: errorMsg,
+        function_name: 'whatsapp-cloud-api',
+        data: {
+          action: 'send_message_failed',
+          phoneNumber: phoneClean,
+          error: 'Number not in allowlist',
+          messageId
+        }
+      });
 
-    const startTime = Date.now();
-    const response = await fetch(`${WHATSAPP_API_URL}/${config.phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(messageData)
-    });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorMsg,
+          errorCode: 'NOT_IN_ALLOWLIST'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Validar e formatar número
+  const cleanPhone = phoneNumber.replace(/\D/g, '');
+  let formattedPhone = cleanPhone;
+  
+  if (!formattedPhone.startsWith('55')) {
+    formattedPhone = `55${formattedPhone}`;
+  }
+
+  console.log(`📞 Número validado: ${formattedPhone}`);
+
+  const startTime = Date.now();
+
+  try {
+    // Preparar payload para WhatsApp
+    console.log('💬 Preparando mensagem de texto');
+    
+    const messagePayload = {
+      messaging_product: "whatsapp",
+      to: formattedPhone,
+      type: "text",
+      text: {
+        body: message
+      }
+    };
+
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${config.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messagePayload),
+      }
+    );
 
     const responseTime = Date.now() - startTime;
     console.log(`⏱️ Tempo de envio: ${responseTime}ms`);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-      
-      console.error('❌ Falha no envio:', errorMessage);
-      await logWebhookEvent({ 
-        action: 'send_message_failed',
-        phoneNumber: phoneValidation.formatted,
-        error: errorData,
-        responseTime
-      }, 'message_error');
-      
-      return createErrorResponse(`Erro ao enviar mensagem: ${errorMessage}`, errorData);
-    }
-
-    const data = await response.json();
-    if (!data.messages?.[0]?.id) {
-      console.error('❌ Resposta inválida da API:', data);
-      return createErrorResponse('Resposta inválida da API do WhatsApp', data);
-    }
-
-    const messageId = data.messages[0].id;
-    console.log('✅ Mensagem enviada com sucesso:', {
-      messageId,
-      phoneNumber: phoneValidation.formatted,
-      type: templateName ? 'template' : 'text',
-      responseTime: `${responseTime}ms`
-    });
-
-    await logWebhookEvent({ 
-      action: 'message_sent',
-      messageId,
-      phoneNumber: phoneValidation.formatted,
-      type: templateName ? 'template' : 'text',
-      responseTime
-    }, 'message');
-
-    return createSuccessResponse(undefined, {
-      messageId,
-      status: 'sent',
-      phoneNumber: phoneValidation.formatted,
-      timestamp: new Date().toISOString(),
-      responseTime
-    });
-
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro ao enviar mensagem';
-    console.error('💥 Erro crítico no envio:', message);
-    await logWebhookEvent({ action: 'send_message_error', error: message }, 'error');
-    return createErrorResponse(message, error);
-  }
-}
-
-async function getTemplates(config: any): Promise<Response> {
-  try {
-    console.log('📋 Carregando templates...');
-    
-    const response = await fetch(`${WHATSAPP_API_URL}/${config.businessAccountId}/message_templates?limit=100`, {
-      headers: {
-        'Authorization': `Bearer ${config.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const responseData = await response.json();
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+      console.error(`❌ Falha no envio: ${responseData.error?.message || 'Erro desconhecido'}`);
       
-      console.error('❌ Falha ao carregar templates:', errorMessage);
-      await logWebhookEvent({ 
-        action: 'get_templates_failed',
-        error: errorData 
-      }, 'template_error');
-      
-      return createErrorResponse(`Erro ao buscar templates: ${errorMessage}`, errorData);
-    }
-
-    const data = await response.json();
-    const templates = data.data || [];
-    
-    // Filter and enhance templates
-    const processedTemplates = templates
-      .filter((template: any) => template.status === 'APPROVED')
-      .map((template: any) => ({
-        id: template.id,
-        name: template.name,
-        language: template.language,
-        status: template.status.toLowerCase(),
-        category: template.category?.toLowerCase() || 'utility',
-        components: template.components || []
-      }));
-    
-    console.log('✅ Templates carregados:', {
-      total: templates.length,
-      approved: processedTemplates.length
-    });
-    
-    await logWebhookEvent({ 
-      action: 'templates_loaded',
-      count: processedTemplates.length,
-      total: templates.length
-    }, 'template');
-
-    return createSuccessResponse(undefined, {
-      templates: processedTemplates,
-      total: templates.length,
-      approved: processedTemplates.length
-    });
-
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro ao buscar templates';
-    console.error('💥 Erro crítico ao carregar templates:', message);
-    await logWebhookEvent({ action: 'get_templates_error', error: message }, 'error');
-    return createErrorResponse(message, error);
-  }
-}
-
-async function handleWebhook(req: Request): Promise<Response> {
-  try {
-    const url = new URL(req.url);
-    
-    if (req.method === 'GET') {
-      // Webhook verification
-      const mode = url.searchParams.get('hub.mode');
-      const token = url.searchParams.get('hub.verify_token');
-      const challenge = url.searchParams.get('hub.challenge');
-
-      console.log('🔐 Verificação de webhook recebida');
-      await logWebhookEvent({ 
-        action: 'webhook_verification',
-        mode,
-        token: token ? 'provided' : 'missing',
-        challenge: challenge ? 'provided' : 'missing'
-      }, 'webhook');
-
-      if (!mode || !token || !challenge) {
-        return createErrorResponse('Parâmetros de verificação do webhook ausentes');
-      }
-
-      if (mode === 'subscribe' && token === 'whatsapp_webhook_token') {
-        console.log('✅ Webhook verificado com sucesso');
-        await logWebhookEvent({ action: 'webhook_verified' }, 'webhook');
-        return new Response(challenge, { headers: corsHeaders });
-      } else {
-        console.error('❌ Token de verificação inválido');
-        await logWebhookEvent({ action: 'webhook_verification_failed', token }, 'webhook');
-        return createErrorResponse('Token de verificação inválido');
-      }
-    }
-
-    if (req.method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      
-      console.log('📨 Webhook recebido:', {
-        hasEntry: !!body.entry,
-        entryCount: body.entry?.length || 0
-      });
-      
-      await logWebhookEvent({ 
-        action: 'webhook_received',
-        hasEntry: !!body.entry,
-        entryCount: body.entry?.length || 0
-      }, 'webhook');
-
-      // Process webhook data
-      if (body.entry && Array.isArray(body.entry)) {
-        for (const entry of body.entry) {
-          if (entry.changes && Array.isArray(entry.changes)) {
-            for (const change of entry.changes) {
-              if (change.field === 'messages' && change.value) {
-                await processMessageWebhook(change.value);
-              }
-            }
-          }
+      // Log do erro
+      await supabase.from('whatsapp_logs').insert({
+        user_id: userId,
+        type: 'error',
+        level: 'error',
+        message: `Falha no envio de mensagem: ${responseData.error?.message}`,
+        function_name: 'whatsapp-cloud-api',
+        data: {
+          action: 'send_message_failed',
+          phoneNumber: formattedPhone,
+          error: responseData,
+          responseTime,
+          messageId
         }
-      }
+      });
 
-      return createSuccessResponse();
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: responseData.error?.message || 'Erro no envio',
+          errorCode: responseData.error?.code,
+          responseTime
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    return createErrorResponse(`Método ${req.method} não permitido para webhook`);
+    const whatsappMessageId = responseData.messages?.[0]?.id;
+
+    // Atualizar mensagem no banco se temos o ID
+    if (messageId && whatsappMessageId) {
+      await supabase
+        .from('whatsapp_messages')
+        .update({
+          whatsapp_message_id: whatsappMessageId,
+          status: 'sent',
+          sent_at: new Date().toISOString()
+        })
+        .eq('id', messageId);
+    }
+
+    // Log de sucesso
+    await supabase.from('whatsapp_logs').insert({
+      user_id: userId,
+      type: 'message',
+      level: 'info',
+      message: 'Mensagem enviada com sucesso',
+      function_name: 'whatsapp-cloud-api',
+      data: {
+        action: 'message_sent',
+        messageId: whatsappMessageId,
+        phoneNumber: formattedPhone,
+        type: templateName ? 'template' : 'text',
+        responseTime,
+        localMessageId: messageId
+      }
+    });
+
+    console.log(`✅ Mensagem enviada com sucesso: {
+  messageId: "${whatsappMessageId}",
+  phoneNumber: "${formattedPhone}",
+  type: "${templateName ? 'template' : 'text'}",
+  responseTime: "${responseTime}ms"
+}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        messageId: whatsappMessageId,
+        phoneNumber: formattedPhone,
+        responseTime
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
-    console.error('💥 Erro crítico no webhook:', error);
-    await logWebhookEvent({ action: 'webhook_error', error: error instanceof Error ? error.message : 'Unknown error' }, 'webhook');
-    const message = error instanceof Error ? error.message : 'Erro no webhook';
-    return createErrorResponse(message, error);
-  }
-}
-
-async function processMessageWebhook(value: any): Promise<void> {
-  try {
-    if (value.messages && Array.isArray(value.messages)) {
-      for (const message of value.messages) {
-        console.log('📩 Mensagem recebida:', {
-          messageId: message.id,
-          from: message.from,
-          type: message.type
-        });
-        
-        await logWebhookEvent({
-          action: 'message_received',
-          messageId: message.id,
-          from: message.from,
-          type: message.type,
-          timestamp: message.timestamp
-        }, 'webhook');
-      }
-    }
+    const responseTime = Date.now() - startTime;
+    console.error('❌ Erro no envio:', error);
     
-    if (value.statuses && Array.isArray(value.statuses)) {
-      for (const status of value.statuses) {
-        console.log('📋 Status de mensagem atualizado:', {
-          messageId: status.id,
-          status: status.status
-        });
-        
-        await logWebhookEvent({
-          action: 'message_status_update',
-          messageId: status.id,
-          status: status.status,
-          timestamp: status.timestamp
-        }, 'webhook');
+    // Log do erro
+    await supabase.from('whatsapp_logs').insert({
+      user_id: userId,
+      type: 'error',
+      level: 'error',
+      message: `Erro no envio de mensagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+      function_name: 'whatsapp-cloud-api',
+      data: {
+        action: 'send_message_error',
+        phoneNumber: formattedPhone,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        responseTime,
+        messageId
       }
-    }
-  } catch (error) {
-    console.error('💥 Erro ao processar webhook de mensagem:', error);
-    await logWebhookEvent({ action: 'webhook_processing_error', error: error instanceof Error ? error.message : 'Unknown error' }, 'webhook');
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro no envio'
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 }
