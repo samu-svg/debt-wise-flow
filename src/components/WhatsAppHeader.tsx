@@ -9,7 +9,7 @@ interface WhatsAppHeaderProps {
   };
   isConfigDirty: boolean;
   credentials: {
-    healthStatus: string;
+    healthStatus?: string;
   };
 }
 

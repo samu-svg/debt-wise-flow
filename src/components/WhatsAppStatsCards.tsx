@@ -60,48 +60,52 @@ interface WhatsAppStatsCardsProps {
   connection: { isConnected: boolean };
   messages: Array<{ status: string }>;
   allowlist: Array<{ isActive: boolean }>;
-  credentials: { healthStatus: string };
+  credentials: { healthStatus?: string };
 }
 
 const WhatsAppStatsCards = memo(({ connection, messages, allowlist, credentials }: WhatsAppStatsCardsProps) => {
-  const statsCards = useMemo(() => [
-    {
-      title: 'Status da API',
-      value: credentials.healthStatus === 'healthy' ? 'Saudável' : credentials.healthStatus === 'unhealthy' ? 'Com Problemas' : 'Desconhecido',
-      icon: Cloud,
-      color: credentials.healthStatus === 'healthy' ? 'text-green-600' : credentials.healthStatus === 'unhealthy' ? 'text-red-600' : 'text-gray-600',
-      bg: credentials.healthStatus === 'healthy' ? 'bg-green-50' : credentials.healthStatus === 'unhealthy' ? 'bg-red-50' : 'bg-gray-50',
-      borderColor: credentials.healthStatus === 'healthy' ? 'border-l-4 border-l-green-500' : credentials.healthStatus === 'unhealthy' ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-gray-500',
-      trend: credentials.healthStatus === 'healthy' ? 'up' as const : credentials.healthStatus === 'unhealthy' ? 'down' as const : 'stable' as const
-    },
-    {
-      title: 'Mensagens Enviadas',
-      value: messages.filter(m => m.status === 'sent').length.toString(),
-      icon: MessageSquare,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      borderColor: 'border-l-4 border-l-blue-500',
-      trend: messages.filter(m => m.status === 'sent').length > 0 ? 'up' as const : 'stable' as const
-    },
-    {
-      title: 'Números Aprovados',
-      value: `${allowlist.filter(n => n.isActive).length}/5`,
-      icon: Users,
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50',
-      borderColor: 'border-l-4 border-l-indigo-500',
-      trend: allowlist.filter(n => n.isActive).length > 0 ? 'up' as const : 'stable' as const
-    },
-    {
-      title: 'Taxa de Falha',
-      value: `${messages.length > 0 ? ((messages.filter(m => m.status === 'failed').length / messages.length) * 100).toFixed(1) : 0}%`,
-      icon: messages.filter(m => m.status === 'failed').length > 0 ? AlertTriangle : TrendingUp,
-      color: messages.filter(m => m.status === 'failed').length > 0 ? 'text-red-600' : 'text-green-600',
-      bg: messages.filter(m => m.status === 'failed').length > 0 ? 'bg-red-50' : 'bg-green-50',
-      borderColor: messages.filter(m => m.status === 'failed').length > 0 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500',
-      trend: messages.filter(m => m.status === 'failed').length > 0 ? 'down' as const : 'up' as const
-    }
-  ], [connection.isConnected, messages, allowlist, credentials]);
+  const statsCards = useMemo(() => {
+    const healthStatus = credentials.healthStatus || 'unknown';
+    
+    return [
+      {
+        title: 'Status da API',
+        value: healthStatus === 'healthy' ? 'Saudável' : healthStatus === 'unhealthy' ? 'Com Problemas' : 'Desconhecido',
+        icon: Cloud,
+        color: healthStatus === 'healthy' ? 'text-green-600' : healthStatus === 'unhealthy' ? 'text-red-600' : 'text-gray-600',
+        bg: healthStatus === 'healthy' ? 'bg-green-50' : healthStatus === 'unhealthy' ? 'bg-red-50' : 'bg-gray-50',
+        borderColor: healthStatus === 'healthy' ? 'border-l-4 border-l-green-500' : healthStatus === 'unhealthy' ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-gray-500',
+        trend: healthStatus === 'healthy' ? 'up' as const : healthStatus === 'unhealthy' ? 'down' as const : 'stable' as const
+      },
+      {
+        title: 'Mensagens Enviadas',
+        value: messages.filter(m => m.status === 'sent').length.toString(),
+        icon: MessageSquare,
+        color: 'text-blue-600',
+        bg: 'bg-blue-50',
+        borderColor: 'border-l-4 border-l-blue-500',
+        trend: messages.filter(m => m.status === 'sent').length > 0 ? 'up' as const : 'stable' as const
+      },
+      {
+        title: 'Números Aprovados',
+        value: `${allowlist.filter(n => n.isActive).length}/5`,
+        icon: Users,
+        color: 'text-indigo-600',
+        bg: 'bg-indigo-50',
+        borderColor: 'border-l-4 border-l-indigo-500',
+        trend: allowlist.filter(n => n.isActive).length > 0 ? 'up' as const : 'stable' as const
+      },
+      {
+        title: 'Taxa de Falha',
+        value: `${messages.length > 0 ? ((messages.filter(m => m.status === 'failed').length / messages.length) * 100).toFixed(1) : 0}%`,
+        icon: messages.filter(m => m.status === 'failed').length > 0 ? AlertTriangle : TrendingUp,
+        color: messages.filter(m => m.status === 'failed').length > 0 ? 'text-red-600' : 'text-green-600',
+        bg: messages.filter(m => m.status === 'failed').length > 0 ? 'bg-red-50' : 'bg-green-50',
+        borderColor: messages.filter(m => m.status === 'failed').length > 0 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500',
+        trend: messages.filter(m => m.status === 'failed').length > 0 ? 'down' as const : 'up' as const
+      }
+    ];
+  }, [connection.isConnected, messages, allowlist, credentials]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
