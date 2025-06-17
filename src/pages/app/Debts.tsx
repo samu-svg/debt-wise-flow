@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useDataManager } from '@/hooks/useDataManager';
 import { useFilters } from '@/hooks/useFilters';
@@ -19,7 +20,7 @@ const Debts = () => {
     clientId: '',
     valor: '',
     dataVencimento: '',
-    status: 'pendente' as const,
+    status: 'pendente' as 'pendente' | 'pago' | 'atrasado',
     descricao: ''
   });
 

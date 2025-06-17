@@ -9,6 +9,12 @@ export interface IntegrityReport {
   totalRecords: number;
 }
 
+export interface IntegrityStats {
+  totalErrors: number;
+  totalWarnings: number;
+  lastCheck: string;
+}
+
 export const useDataIntegrity = () => {
   const { clients, debts, loading } = useDataManager();
   const [report, setReport] = useState<IntegrityReport>({
@@ -16,6 +22,12 @@ export const useDataIntegrity = () => {
     errors: [],
     warnings: [],
     totalRecords: 0
+  });
+
+  const [stats] = useState<IntegrityStats>({
+    totalErrors: 0,
+    totalWarnings: 0,
+    lastCheck: new Date().toISOString()
   });
 
   const validateData = () => {
@@ -61,9 +73,13 @@ export const useDataIntegrity = () => {
     }
   }, [clients, debts, loading]);
 
+  const needsAttention = report.errors.length > 0 || report.warnings.length > 3;
+
   return {
     report,
     validateData,
-    loading
+    loading,
+    needsAttention,
+    stats
   };
 };

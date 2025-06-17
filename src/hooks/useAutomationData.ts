@@ -33,7 +33,7 @@ export const useAutomationData = () => {
         collectionHistory: mensagens.map(msg => ({
           id: msg.id,
           clientId: msg.cliente_id,
-          debtId: msg.divida_id,
+          debtId: msg.divida_id || null, // Usando divida_id se existir
           data: msg.enviado_em,
           tipoMensagem: msg.tipo_mensagem,
           statusEntrega: msg.status_entrega,
@@ -60,13 +60,11 @@ export const useAutomationData = () => {
   }, [clientes, dividas, mensagens, loading, user]);
 
   const addCollectionMessage = async (messageData: any) => {
-    // Esta função será implementada quando necessário
     console.log('addCollectionMessage called:', messageData);
     return null;
   };
 
   const updateSettings = async (newSettings: any) => {
-    // Esta função será implementada quando necessário
     console.log('updateSettings called:', newSettings);
   };
 

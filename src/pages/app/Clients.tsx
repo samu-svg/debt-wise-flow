@@ -261,7 +261,7 @@ const Clients = () => {
         })}
       </div>
 
-      {filteredClients.length === 0 && clientes.length > 0 && (
+      {filteredClients.length === 0 && clients.length > 0 && (
         <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
             <p className="text-[#6C757D]">Nenhum cliente encontrado com os filtros aplicados.</p>
@@ -276,7 +276,7 @@ const Clients = () => {
         </Card>
       )}
 
-      {clientes.length === 0 && (
+      {clients.length === 0 && (
         <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
             <p className="text-[#6C757D]">Nenhum cliente cadastrado ainda.</p>
