@@ -1,9 +1,8 @@
-
-import { useLocalDataManager } from '@/hooks/useLocalDataManager';
+import { useDataManager } from '@/hooks/useDataManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Dashboard = () => {
-  const { statistics, loading } = useLocalDataManager();
+  const { statistics, loading } = useDataManager();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -145,4 +144,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

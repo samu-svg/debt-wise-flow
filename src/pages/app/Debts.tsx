@@ -1,30 +1,27 @@
 import { useState } from 'react';
-import { useLocalDataManager } from '@/hooks/useLocalDataManager';
+import { useDataManager } from '@/hooks/useDataManager';
 import { useFilters } from '@/hooks/useFilters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, X, Calendar, DollarSign } from 'lucide-react';
 import FiltersBar from '@/components/FiltersBar';
 
 const Debts = () => {
-  const { database, addDebt, loading } = useLocalDataManager();
-  const [isDebtDialogOpen, setIsDebtDialogOpen] = useState(false);
-  
-  const [debtForm, setDebtForm] = useState({
+  const { clients, debts, addDebt, loading } = useDataManager();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
     clientId: '',
-    descricao: '',
     valor: '',
     dataVencimento: '',
-    status: 'pendente' as const
+    status: 'pendente' as const,
+    descricao: ''
   });
-
-  const clientes = database?.clients || [];
-  const dividas = database?.debts || [];
 
   // Sistema de filtros
   const {
@@ -37,48 +34,40 @@ const Debts = () => {
     hasActiveFilters,
     resultCount
   } = useFilters({
-    data: dividas,
+    data: debts,
     searchFields: ['descricao'],
     filterFunctions: {
       status: (debt, filterValue) => {
-        return filterValue === 'all' || debt.status === filterValue;
+        if (filterValue === 'all') return true;
+        return debt.status === filterValue;
       },
       valor: (debt, filterValue) => {
-        if (filterValue === 'baixo') return debt.valor <= 100;
-        if (filterValue === 'medio') return debt.valor > 100 && debt.valor <= 500;
-        if (filterValue === 'alto') return debt.valor > 500;
+        const valor = debt.valor;
+        if (filterValue === 'low') return valor <= 100;
+        if (filterValue === 'medium') return valor > 100 && valor <= 1000;
+        if (filterValue === 'high') return valor > 1000;
         return true;
       },
       vencimento: (debt, filterValue) => {
-        if (!debt.dataVencimento) return filterValue === 'sem-vencimento';
+        if (!debt.data_vencimento) return filterValue === 'sem-data';
         
-        const dueDate = new Date(debt.dataVencimento);
-        const now = new Date();
-        const diffDays = Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const dueDate = new Date(debt.data_vencimento);
+        const today = new Date();
+        const diffDays = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
-        if (filterValue === 'vencidas') return diffDays < 0;
-        if (filterValue === 'vencendo') return diffDays >= 0 && diffDays <= 7;
-        if (filterValue === 'futuras') return diffDays > 7;
-        if (filterValue === 'sem-vencimento') return !debt.dataVencimento;
+        if (filterValue === 'vencido') return diffDays < 0;
+        if (filterValue === 'hoje') return diffDays === 0;
+        if (filterValue === 'proximo') return diffDays > 0 && diffDays <= 7;
+        if (filterValue === 'futuro') return diffDays > 7;
         return true;
-      },
-      cliente: (debt, filterValue) => {
-        return filterValue === 'all' || debt.clientId === filterValue;
       }
     }
   });
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const handleDebtSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!debtForm.clientId || !debtForm.descricao || !debtForm.valor) {
+    if (!formData.clientId || !formData.valor || !formData.descricao) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -89,62 +78,59 @@ const Debts = () => {
 
     try {
       await addDebt({
-        clientId: debtForm.clientId,
-        valor: parseFloat(debtForm.valor),
-        dataVencimento: debtForm.dataVencimento,
-        status: debtForm.status,
-        descricao: debtForm.descricao
+        clientId: formData.clientId,
+        valor: parseFloat(formData.valor),
+        dataVencimento: formData.dataVencimento || undefined,
+        status: formData.status,
+        descricao: formData.descricao
       });
-
-      setDebtForm({
+      
+      setFormData({
         clientId: '',
-        descricao: '',
         valor: '',
         dataVencimento: '',
-        status: 'pendente'
+        status: 'pendente',
+        descricao: ''
       });
-      setIsDebtDialogOpen(false);
+      setIsDialogOpen(false);
       
       toast({
         title: "Dívida adicionada!",
         description: "Dívida cadastrada com sucesso",
       });
     } catch (error) {
-      console.error('Erro ao adicionar dívida:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao cadastrar dívida",
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a dívida",
         variant: "destructive",
       });
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pago': return 'text-[#08872B] bg-[#08872B]/10';
-      case 'atrasado': return 'text-[#DC3545] bg-[#DC3545]/10';
-      default: return 'text-[#6C757D] bg-[#6C757D]/10';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pago': return 'Paga';
-      case 'atrasado': return 'Vencida';
-      default: return 'Pendente';
+      case 'pendente':
+        return <Badge variant="secondary">Pendente</Badge>;
+      case 'pago':
+        return <Badge variant="default" className="bg-green-500">Pago</Badge>;
+      case 'atrasado':
+        return <Badge variant="destructive">Atrasado</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const getClientName = (clientId: string) => {
-    const client = clientes.find(c => c.id === clientId);
-    return client ? client.nome : 'Cliente não encontrado';
+    const client = clients.find(c => c.id === clientId);
+    return client?.nome || 'Cliente não encontrado';
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-[#6C757D]">Carregando dados...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#08872B] mx-auto"></div>
+          <p className="mt-2 text-[#6C757D]">Carregando dívidas...</p>
         </div>
       </div>
     );
@@ -157,12 +143,12 @@ const Debts = () => {
           <h1 className="text-3xl font-bold text-[#343A40]">Dívidas</h1>
           <p className="text-[#6C757D]">
             {hasActiveFilters 
-              ? `${resultCount} de ${dividas.length} dívidas encontradas`
-              : `${dividas.length} dívidas cadastradas`
+              ? `${resultCount} de ${debts.length} dívidas encontradas`
+              : `${debts.length} dívidas cadastradas`
             }
           </p>
         </div>
-        <Dialog open={isDebtDialogOpen} onOpenChange={setIsDebtDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#08872B] hover:bg-[#059669] text-white">
               <Plus className="w-4 h-4 mr-2" />
@@ -173,61 +159,77 @@ const Debts = () => {
             <DialogHeader>
               <DialogTitle className="text-[#343A40]">Cadastrar Nova Dívida</DialogTitle>
               <DialogDescription className="text-[#6C757D]">
-                Preencha os dados da dívida
+                Preencha os dados da dívida para cadastro
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleDebtSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="clientId" className="text-[#343A40] font-medium">Cliente *</Label>
-                <Select value={debtForm.clientId} onValueChange={(value) => setDebtForm({ ...debtForm, clientId: value })}>
-                  <SelectTrigger className="bg-white border-[#DEE2E6] text-[#343A40]">
+                <Select value={formData.clientId} onValueChange={(value) => setFormData({ ...formData, clientId: value })}>
+                  <SelectTrigger className="bg-white border-[#DEE2E6]">
                     <SelectValue placeholder="Selecione o cliente" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-[#DEE2E6]">
-                    {clientes.map((client) => (
-                      <SelectItem key={client.id} value={client.id} className="text-[#343A40]">
-                        {client.nome}
-                      </SelectItem>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>{client.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="descricao" className="text-[#343A40] font-medium">Descrição *</Label>
                 <Input
                   id="descricao"
-                  value={debtForm.descricao}
-                  onChange={(e) => setDebtForm({ ...debtForm, descricao: e.target.value })}
+                  value={formData.descricao}
+                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                   placeholder="Descrição da dívida"
                   className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="valor" className="text-[#343A40] font-medium">Valor *</Label>
                 <Input
                   id="valor"
                   type="number"
                   step="0.01"
-                  value={debtForm.valor}
-                  onChange={(e) => setDebtForm({ ...debtForm, valor: e.target.value })}
-                  placeholder="0.00"
+                  value={formData.valor}
+                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                  placeholder="0,00"
                   className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="dataVencimento" className="text-[#343A40] font-medium">Data de Vencimento</Label>
                 <Input
                   id="dataVencimento"
                   type="date"
-                  value={debtForm.dataVencimento}
-                  onChange={(e) => setDebtForm({ ...debtForm, dataVencimento: e.target.value })}
+                  value={formData.dataVencimento}
+                  onChange={(e) => setFormData({ ...formData, dataVencimento: e.target.value })}
                   className="bg-white border-[#DEE2E6] text-[#343A40] focus:border-[#08872B]"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status" className="text-[#343A40] font-medium">Status</Label>
+                <Select value={formData.status} onValueChange={(value: 'pendente' | 'pago' | 'atrasado') => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger className="bg-white border-[#DEE2E6]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="pago">Pago</SelectItem>
+                    <SelectItem value="atrasado">Atrasado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsDebtDialogOpen(false)} className="border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="border-[#DEE2E6] text-[#6C757D] hover:bg-[#F8F9FA]">
                   Cancelar
                 </Button>
                 <Button type="submit" className="bg-[#08872B] hover:bg-[#059669] text-white">Cadastrar</Button>
@@ -259,9 +261,9 @@ const Debts = () => {
             onChange: (value) => updateFilter('valor', value),
             options: [
               { value: 'all', label: 'Todos os Valores' },
-              { value: 'baixo', label: 'Até R$ 100' },
-              { value: 'medio', label: 'R$ 100 - R$ 500' },
-              { value: 'alto', label: 'Acima de R$ 500' }
+              { value: 'low', label: 'Até R$ 100' },
+              { value: 'medium', label: 'R$ 100 - R$ 1.000' },
+              { value: 'high', label: 'Acima de R$ 1.000' }
             ],
             placeholder: 'Filtrar por valor'
           },
@@ -270,58 +272,48 @@ const Debts = () => {
             onChange: (value) => updateFilter('vencimento', value),
             options: [
               { value: 'all', label: 'Todos os Vencimentos' },
-              { value: 'vencidas', label: 'Vencidas' },
-              { value: 'vencendo', label: 'Vencendo (7 dias)' },
-              { value: 'futuras', label: 'Futuras' },
-              { value: 'sem-vencimento', label: 'Sem Vencimento' }
+              { value: 'vencido', label: 'Vencidas' },
+              { value: 'hoje', label: 'Vencem Hoje' },
+              { value: 'proximo', label: 'Próximos 7 dias' },
+              { value: 'futuro', label: 'Futuras' }
             ],
             placeholder: 'Filtrar por vencimento'
-          },
-          {
-            value: filters.cliente || 'all',
-            onChange: (value) => updateFilter('cliente', value),
-            options: [
-              { value: 'all', label: 'Todos os Clientes' },
-              ...clientes.map(client => ({
-                value: client.id,
-                label: client.nome
-              }))
-            ],
-            placeholder: 'Filtrar por cliente'
           }
         ]}
         onReset={resetFilters}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredDebts.map((debt) => (
           <Card key={debt.id} className="bg-white border-[#DEE2E6]">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg text-[#343A40]">{debt.descricao}</CardTitle>
-                  <CardDescription className="text-[#6C757D]">{getClientName(debt.clientId)}</CardDescription>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(debt.status)}`}>
-                  {getStatusText(debt.status)}
-                </span>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg text-[#343A40] truncate">{debt.descricao}</CardTitle>
+              {getStatusBadge(debt.status)}
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#343A40]">Valor:</span>
-                  <span className="font-medium text-[#343A40]">{formatCurrency(debt.valor)}</span>
+                <p className="text-[#343A40]"><strong>Cliente:</strong> {getClientName(debt.cliente_id)}</p>
+                
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-[#08872B]" />
+                  <span className="text-lg font-bold text-[#08872B]">
+                    R$ {debt.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
-                {debt.dataVencimento && (
-                  <div className="flex justify-between">
-                    <span className="text-[#343A40]">Vencimento:</span>
-                    <span className="font-medium text-[#343A40]">{new Date(debt.dataVencimento).toLocaleDateString('pt-BR')}</span>
+                
+                {debt.data_vencimento && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#6C757D]" />
+                    <span className="text-[#343A40]">
+                      Vence em: {new Date(debt.data_vencimento).toLocaleDateString('pt-BR')}
+                    </span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span className="text-[#343A40]">Criado em:</span>
-                  <span className="font-medium text-[#343A40]">{new Date(debt.createdAt).toLocaleDateString('pt-BR')}</span>
+                
+                <div className="mt-4 pt-2 border-t border-[#DEE2E6]">
+                  <p className="text-xs text-[#6C757D]">
+                    Cadastrado em: {new Date(debt.created_at).toLocaleDateString('pt-BR')}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -329,7 +321,7 @@ const Debts = () => {
         ))}
       </div>
 
-      {filteredDebts.length === 0 && dividas.length > 0 && (
+      {filteredDebts.length === 0 && debts.length > 0 && (
         <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
             <p className="text-[#6C757D]">Nenhuma dívida encontrada com os filtros aplicados.</p>
@@ -344,7 +336,7 @@ const Debts = () => {
         </Card>
       )}
 
-      {dividas.length === 0 && (
+      {debts.length === 0 && (
         <Card className="bg-white border-[#DEE2E6]">
           <CardContent className="text-center py-12">
             <p className="text-[#6C757D]">Nenhuma dívida cadastrada ainda.</p>

@@ -1,15 +1,17 @@
+
 import { useState } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDataManager } from '@/hooks/useDataManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 
 const Reports = () => {
-  const { clients, exportData, importData } = useLocalStorage();
-  const [importing, setImporting] = useState(false);
+  const { clients, debts, messages, exportData, loading } = useDataManager();
+  const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
+    setExporting(true);
     try {
       const data = exportData();
       const blob = new Blob([data], { type: 'application/json' });
@@ -17,7 +19,7 @@ const Reports = () => {
       
       const a = document.createElement('a');
       a.href = url;
-      a.download = `debt-manager-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `backup-supabase-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -25,7 +27,7 @@ const Reports = () => {
       
       toast({
         title: "Backup criado!",
-        description: "Seus dados foram exportados com sucesso",
+        description: "Seus dados foram exportados do Supabase com sucesso",
       });
     } catch (error) {
       toast({
@@ -33,82 +35,42 @@ const Reports = () => {
         description: "Não foi possível criar o backup",
         variant: "destructive",
       });
-    }
-  };
-
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setImporting(true);
-    try {
-      const text = await file.text();
-      const success = importData(text);
-      
-      if (success) {
-        toast({
-          title: "Dados importados!",
-          description: "Backup restaurado com sucesso",
-        });
-      } else {
-        toast({
-          title: "Erro na importação",
-          description: "Arquivo inválido ou corrompido",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erro na importação",
-        description: "Não foi possível ler o arquivo",
-        variant: "destructive",
-      });
     } finally {
-      setImporting(false);
-      event.target.value = '';
+      setExporting(false);
     }
   };
 
   const generateReport = () => {
-    const allDebts = clients.flatMap(client => 
-      client.debts.map(debt => ({ ...debt, clientName: client.name }))
-    );
-
-    const activeDebts = allDebts.filter(d => d.status === 'active');
-    const overdueDebts = allDebts.filter(d => d.status === 'overdue');
-    const paidDebts = allDebts.filter(d => d.status === 'paid');
-
-    const totalOriginal = allDebts.reduce((sum, debt) => sum + debt.originalAmount, 0);
-    const totalCurrent = allDebts.reduce((sum, debt) => sum + debt.currentAmount, 0);
-    const totalPaid = allDebts.reduce((sum, debt) => 
-      sum + debt.payments.reduce((pSum, payment) => pSum + payment.amount, 0), 0
-    );
+    const totalOriginal = debts.reduce((sum, debt) => sum + debt.valor, 0);
+    const totalCurrent = debts.filter(d => d.status !== 'pago').reduce((sum, debt) => sum + debt.valor, 0);
+    const totalPaid = debts.filter(d => d.status === 'pago').reduce((sum, debt) => sum + debt.valor, 0);
 
     const reportData = {
       gerado_em: new Date().toLocaleString('pt-BR'),
       resumo: {
         total_clientes: clients.length,
-        total_dividas: allDebts.length,
-        dividas_ativas: activeDebts.length,
-        dividas_vencidas: overdueDebts.length,
-        dividas_pagas: paidDebts.length,
+        total_dividas: debts.length,
+        dividas_ativas: debts.filter(d => d.status === 'pendente').length,
+        dividas_vencidas: debts.filter(d => d.status === 'atrasado').length,
+        dividas_pagas: debts.filter(d => d.status === 'pago').length,
         valor_original_total: totalOriginal,
         valor_atual_total: totalCurrent,
-        total_recebido: totalPaid
+        total_recebido: totalPaid,
+        mensagens_enviadas: messages.length
       },
       clientes: clients.map(client => ({
-        nome: client.name,
+        nome: client.nome,
         email: client.email,
-        telefone: client.phone,
-        dividas: client.debts.map(debt => ({
-          descricao: debt.description,
-          valor_original: debt.originalAmount,
-          valor_atual: debt.currentAmount,
+        whatsapp: client.whatsapp,
+        dividas: debts.filter(d => d.cliente_id === client.id).map(debt => ({
+          descricao: debt.descricao,
+          valor: debt.valor,
           status: debt.status,
-          vencimento: debt.dueDate,
-          pagamentos: debt.payments.length
+          vencimento: debt.data_vencimento,
+          criado_em: debt.created_at
         }))
-      }))
+      })),
+      fonte: 'Supabase Database'
     };
 
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
@@ -116,7 +78,7 @@ const Reports = () => {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `relatorio-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `relatorio-supabase-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -124,7 +86,7 @@ const Reports = () => {
 
     toast({
       title: "Relatório gerado!",
-      description: "Relatório completo exportado com sucesso",
+      description: "Relatório completo do Supabase exportado com sucesso",
     });
   };
 
@@ -135,50 +97,45 @@ const Reports = () => {
     }).format(value);
   };
 
-  const allDebts = clients.flatMap(client => 
-    client.debts.map(debt => ({ ...debt, clientName: client.name }))
-  );
+  const totalOriginal = debts.reduce((sum, debt) => sum + debt.valor, 0);
+  const totalCurrent = debts.filter(d => d.status !== 'pago').reduce((sum, debt) => sum + debt.valor, 0);
+  const totalPaid = debts.filter(d => d.status === 'pago').reduce((sum, debt) => sum + debt.valor, 0);
 
-  const totalOriginal = allDebts.reduce((sum, debt) => sum + debt.originalAmount, 0);
-  const totalCurrent = allDebts.reduce((sum, debt) => sum + debt.currentAmount, 0);
-  const totalPaid = allDebts.reduce((sum, debt) => 
-    sum + debt.payments.reduce((pSum, payment) => pSum + payment.amount, 0), 0
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#08872B] mx-auto"></div>
+          <p className="mt-2 text-[#6C757D]">Carregando relatórios...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-[#374151]">Relatórios e Backup</h1>
+      <h1 className="text-3xl font-bold text-[#374151]">Relatórios e Backup Supabase</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-white border-[#E5E7EB]">
           <CardHeader>
             <CardTitle className="text-[#374151]">Backup dos Dados</CardTitle>
             <CardDescription className="text-[#6B7280]">
-              Faça backup e restaure seus dados localmente
+              Faça backup dos dados armazenados no Supabase
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={handleExport} className="w-full bg-[#10B981] hover:bg-[#059669] text-white">
-              <FileText className="w-4 h-4 mr-2" />
-              Fazer Backup
+            <Button 
+              onClick={handleExport} 
+              disabled={exporting}
+              className="w-full bg-[#10B981] hover:bg-[#059669] text-white"
+            >
+              <Download className={`w-4 h-4 mr-2 ${exporting ? 'animate-bounce' : ''}`} />
+              {exporting ? 'Exportando...' : 'Fazer Backup do Supabase'}
             </Button>
             
-            <div className="relative">
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={importing}
-              />
-              <Button variant="outline" className="w-full border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]" disabled={importing}>
-                <Plus className="w-4 h-4 mr-2" />
-                {importing ? 'Importando...' : 'Restaurar Backup'}
-              </Button>
-            </div>
-            
             <p className="text-xs text-[#6B7280] text-center">
-              Seus dados são armazenados localmente no navegador
+              Dados sincronizados automaticamente com a nuvem
             </p>
           </CardContent>
         </Card>
@@ -187,7 +144,7 @@ const Reports = () => {
           <CardHeader>
             <CardTitle className="text-[#374151]">Relatório Completo</CardTitle>
             <CardDescription className="text-[#6B7280]">
-              Gere um relatório detalhado de todos os dados
+              Gere um relatório detalhado dos dados do Supabase
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -201,19 +158,19 @@ const Reports = () => {
 
       <Card className="bg-white border-[#E5E7EB]">
         <CardHeader>
-          <CardTitle className="text-[#374151]">Resumo Atual</CardTitle>
+          <CardTitle className="text-[#374151]">Resumo Atual (Supabase)</CardTitle>
           <CardDescription className="text-[#6B7280]">
-            Visão geral dos dados no sistema
+            Visão geral dos dados sincronizados
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
               <p className="text-2xl font-bold text-[#10B981]">{clients.length}</p>
               <p className="text-sm text-[#6B7280]">Clientes</p>
             </div>
             <div className="text-center p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
-              <p className="text-2xl font-bold text-[#10B981]">{allDebts.length}</p>
+              <p className="text-2xl font-bold text-[#10B981]">{debts.length}</p>
               <p className="text-sm text-[#6B7280]">Dívidas Total</p>
             </div>
             <div className="text-center p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
@@ -221,6 +178,10 @@ const Reports = () => {
                 {formatCurrency(totalCurrent)}
               </p>
               <p className="text-sm text-[#6B7280]">Valor em Aberto</p>
+            </div>
+            <div className="text-center p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+              <p className="text-2xl font-bold text-[#10B981]">{messages.length}</p>
+              <p className="text-sm text-[#6B7280]">Mensagens</p>
             </div>
           </div>
           
@@ -235,12 +196,12 @@ const Reports = () => {
                 <span className="font-medium text-[#10B981]">{formatCurrency(totalPaid)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#374151]">Dívidas Ativas:</span>
-                <span className="font-medium text-[#374151]">{allDebts.filter(d => d.status === 'active').length}</span>
+                <span className="text-[#374151]">Dívidas Pendentes:</span>
+                <span className="font-medium text-[#374151]">{debts.filter(d => d.status === 'pendente').length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#374151]">Dívidas Vencidas:</span>
-                <span className="font-medium text-[#EF4444]">{allDebts.filter(d => d.status === 'overdue').length}</span>
+                <span className="text-[#374151]">Dívidas Atrasadas:</span>
+                <span className="font-medium text-[#EF4444]">{debts.filter(d => d.status === 'atrasado').length}</span>
               </div>
             </div>
           </div>

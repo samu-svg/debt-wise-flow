@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocalDataManager } from '@/hooks/useLocalDataManager';
+import { useDataManager } from '@/hooks/useDataManager';
 import { useFilters } from '@/hooks/useFilters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,16 +11,13 @@ import { Plus, X, FileText } from 'lucide-react';
 import FiltersBar from '@/components/FiltersBar';
 
 const Clients = () => {
-  const { database, addClient, deleteClient, loading } = useLocalDataManager();
+  const { clients, debts, addClient, deleteClient, loading } = useDataManager();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     whatsapp: ''
   });
-
-  const clientes = database?.clients || [];
-  const dividas = database?.debts || [];
 
   // Sistema de filtros
   const {
@@ -33,18 +30,18 @@ const Clients = () => {
     hasActiveFilters,
     resultCount
   } = useFilters({
-    data: clientes,
+    data: clients,
     searchFields: ['nome', 'whatsapp', 'email'],
     filterFunctions: {
       hasDebts: (client, filterValue) => {
-        const clientDebts = dividas.filter(d => d.clientId === client.id);
+        const clientDebts = debts.filter(d => d.cliente_id === client.id);
         const activeDebts = clientDebts.filter(d => d.status === 'pendente' || d.status === 'atrasado');
         if (filterValue === 'with-debts') return activeDebts.length > 0;
         if (filterValue === 'without-debts') return activeDebts.length === 0;
         return true;
       },
       createdAt: (client, filterValue) => {
-        const clientDate = new Date(client.createdAt);
+        const clientDate = new Date(client.created_at);
         const now = new Date();
         const diffDays = Math.floor((now.getTime() - clientDate.getTime()) / (1000 * 60 * 60 * 24));
         
@@ -105,7 +102,7 @@ const Clients = () => {
   };
 
   const getClientDebts = (clientId: string) => {
-    return dividas.filter(debt => debt.clientId === clientId);
+    return debts.filter(debt => debt.cliente_id === clientId);
   };
 
   if (loading) {
@@ -126,8 +123,8 @@ const Clients = () => {
           <h1 className="text-3xl font-bold text-[#343A40]">Clientes</h1>
           <p className="text-[#6C757D]">
             {hasActiveFilters 
-              ? `${resultCount} de ${clientes.length} clientes encontrados`
-              : `${clientes.length} clientes cadastrados`
+              ? `${resultCount} de ${clients.length} clientes encontrados`
+              : `${clients.length} clientes cadastrados`
             }
           </p>
         </div>
@@ -254,7 +251,7 @@ const Clients = () => {
                       {activeDebts.length} ativas • R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-[#6C757D]">
-                      Cadastrado em: {new Date(client.createdAt).toLocaleDateString('pt-BR')}
+                      Cadastrado em: {new Date(client.created_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                 </div>
