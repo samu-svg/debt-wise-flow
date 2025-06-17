@@ -41,7 +41,7 @@ export const useWhatsAppMessages = (): UseWhatsAppMessagesReturn => {
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from('whatsapp_messages')
+        .from('whatsapp_messages' as any)
         .insert({
           user_id: user.id,
           phone_number: message.phoneNumber!,
@@ -100,7 +100,7 @@ export const useWhatsAppMessages = (): UseWhatsAppMessagesReturn => {
       if (status === 'delivered') updateData.delivered_at = new Date().toISOString();
 
       const { error } = await supabase
-        .from('whatsapp_messages')
+        .from('whatsapp_messages' as any)
         .update(updateData)
         .eq('id', id);
 
@@ -135,7 +135,7 @@ export const useWhatsAppMessages = (): UseWhatsAppMessagesReturn => {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('whatsapp_messages')
+        .from('whatsapp_messages' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -146,7 +146,7 @@ export const useWhatsAppMessages = (): UseWhatsAppMessagesReturn => {
         return;
       }
 
-      const formattedMessages: WhatsAppMessage[] = data.map(msg => ({
+      const formattedMessages: WhatsAppMessage[] = (data || []).map((msg: any) => ({
         id: msg.id,
         phoneNumber: msg.phone_number,
         messageText: msg.message_text,

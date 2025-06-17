@@ -30,8 +30,9 @@ export const useWhatsAppAllowlist = (): UseWhatsAppAllowlistReturn => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Usar query SQL direta para acessar a nova tabela
       const { data, error } = await supabase
-        .from('whatsapp_allowlist')
+        .from('whatsapp_allowlist' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('added_at', { ascending: false });
@@ -41,7 +42,7 @@ export const useWhatsAppAllowlist = (): UseWhatsAppAllowlistReturn => {
         return;
       }
 
-      const formattedList: AllowlistEntry[] = data.map(item => ({
+      const formattedList: AllowlistEntry[] = (data || []).map((item: any) => ({
         id: item.id,
         phoneNumber: item.phone_number,
         name: item.name,
@@ -66,7 +67,7 @@ export const useWhatsAppAllowlist = (): UseWhatsAppAllowlistReturn => {
       const cleanPhone = phoneNumber.replace(/\D/g, '');
       
       const { data, error } = await supabase
-        .from('whatsapp_allowlist')
+        .from('whatsapp_allowlist' as any)
         .insert({
           user_id: user.id,
           phone_number: cleanPhone,
@@ -100,7 +101,7 @@ export const useWhatsAppAllowlist = (): UseWhatsAppAllowlistReturn => {
   const removeNumber = useCallback(async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from('whatsapp_allowlist')
+        .from('whatsapp_allowlist' as any)
         .delete()
         .eq('id', id);
 
@@ -120,7 +121,7 @@ export const useWhatsAppAllowlist = (): UseWhatsAppAllowlistReturn => {
   const toggleNumber = useCallback(async (id: string, isActive: boolean): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from('whatsapp_allowlist')
+        .from('whatsapp_allowlist' as any)
         .update({ is_active: isActive })
         .eq('id', id);
 
