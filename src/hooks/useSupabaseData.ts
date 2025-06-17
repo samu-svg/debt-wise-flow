@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +29,7 @@ export interface Divida {
 export interface Mensagem {
   id: string;
   cliente_id: string;
+  divida_id?: string; // Added missing divida_id property
   user_id: string;
   tipo_mensagem: string;
   template_usado: string;
