@@ -12,6 +12,7 @@ export interface IntegrityReport {
 export interface IntegrityStats {
   totalErrors: number;
   totalWarnings: number;
+  totalIssues: number; // Added missing property
   lastCheck: string;
 }
 
@@ -24,9 +25,10 @@ export const useDataIntegrity = () => {
     totalRecords: 0
   });
 
-  const [stats] = useState<IntegrityStats>({
+  const [stats, setStats] = useState<IntegrityStats>({
     totalErrors: 0,
     totalWarnings: 0,
+    totalIssues: 0, // Added missing property
     lastCheck: new Date().toISOString()
   });
 
@@ -59,12 +61,22 @@ export const useDataIntegrity = () => {
       }
     });
 
-    setReport({
+    const newReport = {
       isValid: errors.length === 0,
       errors,
       warnings,
       totalRecords: clients.length + debts.length
-    });
+    };
+
+    const newStats = {
+      totalErrors: errors.length,
+      totalWarnings: warnings.length,
+      totalIssues: errors.length + warnings.length,
+      lastCheck: new Date().toISOString()
+    };
+
+    setReport(newReport);
+    setStats(newStats);
   };
 
   useEffect(() => {
