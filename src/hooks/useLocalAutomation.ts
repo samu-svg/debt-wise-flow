@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { useLocalDataManager } from './useLocalDataManager';
+import { useAutomationData } from './useAutomationData';
 import { useWhatsAppCloudAPI } from './useWhatsAppCloudAPI';
 import { useMessageTemplates } from './useMessageTemplates';
 import { CommunicationLog, AutomationConfig, AutomationStats } from '@/types/automation';
@@ -30,7 +29,7 @@ const DEFAULT_CONFIG: AutomationConfig = {
 };
 
 export const useLocalAutomation = () => {
-  const { database, updateSettings, addCollectionMessage } = useLocalDataManager();
+  const { database, addCollectionMessage, updateSettings } = useAutomationData();
   const { connection, sendMessage } = useWhatsAppCloudAPI();
   const { templates, calculateDebtValues, previewTemplate } = useMessageTemplates();
 
@@ -46,11 +45,10 @@ export const useLocalAutomation = () => {
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Carregar configurações e dados do sistema local
+  // Carregar dados do Supabase
   useEffect(() => {
     if (database) {
-      // Carregar comunicações do histórico local
-      const localComms = database.collectionHistory.map(msg => ({
+      const localComms = database.collectionHistory.map((msg: any) => ({
         id: msg.id,
         clientId: msg.clientId,
         debtId: msg.debtId,
@@ -65,8 +63,6 @@ export const useLocalAutomation = () => {
       }));
       
       setCommunications(localComms);
-      
-      // Calcular estatísticas baseadas nos dados locais
       calculateStats(localComms);
     }
   }, [database]);
@@ -87,12 +83,12 @@ export const useLocalAutomation = () => {
     });
   };
 
-  // Verificar dívidas vencidas dos dados locais
+  // Verificar dívidas vencidas dos dados do Supabase
   const getOverdueDebts = useCallback(() => {
     if (!database) return [];
     
     const today = new Date();
-    return database.debts.filter(debt => {
+    return database.debts.filter((debt: any) => {
       if (debt.status === 'pago') return false;
       const dueDate = new Date(debt.dataVencimento);
       return dueDate < today;
@@ -143,10 +139,10 @@ export const useLocalAutomation = () => {
 
     try {
       const overdueDebts = getOverdueDebts();
-      console.log(`🔍 Processando ${overdueDebts.length} dívidas vencidas dos dados locais...`);
+      console.log(`🔍 Processando ${overdueDebts.length} dívidas vencidas do Supabase...`);
 
-      for (const debt of overdueDebts.slice(0, 10)) { // Limitar a 10 por vez
-        const client = database.clients.find(c => c.id === debt.clientId);
+      for (const debt of overdueDebts.slice(0, 10)) {
+        const client = database.clients.find((c: any) => c.id === debt.clientId);
         if (!client) continue;
 
         const daysOverdue = calculateDaysOverdue(debt.dataVencimento);
@@ -158,17 +154,14 @@ export const useLocalAutomation = () => {
           continue;
         }
 
-        // Buscar template de cobrança
         const template = templates.find(t => t.type === 'cobranca' && t.isActive);
         if (!template) {
           console.log('Template de cobrança não encontrado');
           continue;
         }
 
-        // Calcular valores da dívida
         const debtCalc = calculateDebtValues(debt.valor, debt.dataVencimento);
         
-        // Preparar variáveis do template
         const templateVars = {
           nome: client.nome,
           valor: debt.valor.toFixed(2),
@@ -180,14 +173,12 @@ export const useLocalAutomation = () => {
           chavePix: 'sua-chave-pix@empresa.com'
         };
 
-        // Gerar mensagem
         const message = previewTemplate(template, templateVars);
 
         try {
           if (client.whatsapp) {
             await sendMessage(client.whatsapp, message);
             
-            // Registrar no histórico local
             await addCollectionMessage({
               clientId: client.id,
               debtId: debt.id,
@@ -201,7 +192,6 @@ export const useLocalAutomation = () => {
             console.log(`✅ Cobrança enviada para ${client.nome}: ${messageType}`);
             messagesSent++;
             
-            // Delay entre mensagens
             if (messagesSent < 10) {
               await new Promise(resolve => setTimeout(resolve, config.messageDelay));
             }
@@ -209,7 +199,6 @@ export const useLocalAutomation = () => {
         } catch (error) {
           console.error(`❌ Erro ao enviar mensagem para ${client.nome}:`, error);
           
-          // Registrar erro no histórico
           await addCollectionMessage({
             clientId: client.id,
             debtId: debt.id,
@@ -258,7 +247,6 @@ export const useLocalAutomation = () => {
     const updatedConfig = { ...config, ...newConfig };
     setConfig(updatedConfig);
     
-    // Salvar nas configurações locais
     if (updateSettings) {
       await updateSettings({
         automacaoAtiva: updatedConfig.enabled,

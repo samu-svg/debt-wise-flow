@@ -1,3 +1,4 @@
+
 import React, { Suspense, lazy, memo, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -174,7 +175,7 @@ const WhatsApp: React.FC = () => {
       
       <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
         <Zap className="w-3 h-3" />
-        <span>Última atualização: {new Date().toLocaleTimeString('pt-BR')}</span>
+        <span>Supabase Integration - {new Date().toLocaleTimeString('pt-BR')}</span>
       </div>
     </div>
   ), [connection.isConnected, isConfigDirty]);
@@ -193,8 +194,8 @@ const WhatsApp: React.FC = () => {
                 <span className="truncate">WhatsApp Cloud API</span>
               </h1>
               <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
-                Gerenciamento completo da integração com WhatsApp Business com dados locais - 
-                Configurações, monitoramento e automação em um só lugar
+                Gerenciamento completo da integração com WhatsApp Business com Supabase - 
+                Configurações, monitoramento e automação em tempo real
               </p>
             </div>
             <div className="flex justify-end">
@@ -218,7 +219,6 @@ const WhatsApp: React.FC = () => {
             ))}
           </div>
 
-          {/* Tabs com lazy loading - Mobile Optimized */}
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <Tabs defaultValue="overview" className="space-y-6">
               <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
@@ -237,7 +237,7 @@ const WhatsApp: React.FC = () => {
                     className="flex items-center gap-2 text-gray-600 p-3 text-sm font-medium rounded-lg transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm"
                   >
                     <Bot className="w-4 h-4" />
-                    <span className="hidden sm:inline">Automação Local</span>
+                    <span className="hidden sm:inline">Automação Supabase</span>
                     <span className="sm:hidden">Auto</span>
                   </TabsTrigger>
                   

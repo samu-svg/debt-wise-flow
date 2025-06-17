@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      clientes: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string | null
+          user_id: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       clientes_cobranca: {
         Row: {
           created_at: string | null
@@ -45,42 +81,164 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_automacao: {
+        Row: {
+          check_times: string[] | null
+          created_at: string | null
+          enabled: boolean | null
+          escalation_after_due_1: number | null
+          escalation_after_due_15: number | null
+          escalation_after_due_30: number | null
+          escalation_after_due_7: number | null
+          escalation_before_due: number | null
+          escalation_on_due: number | null
+          holidays: string[] | null
+          id: string
+          max_messages_per_day: number | null
+          message_delay: number | null
+          response_timeout: number | null
+          updated_at: string | null
+          user_id: string
+          work_days: number[] | null
+        }
+        Insert: {
+          check_times?: string[] | null
+          created_at?: string | null
+          enabled?: boolean | null
+          escalation_after_due_1?: number | null
+          escalation_after_due_15?: number | null
+          escalation_after_due_30?: number | null
+          escalation_after_due_7?: number | null
+          escalation_before_due?: number | null
+          escalation_on_due?: number | null
+          holidays?: string[] | null
+          id?: string
+          max_messages_per_day?: number | null
+          message_delay?: number | null
+          response_timeout?: number | null
+          updated_at?: string | null
+          user_id: string
+          work_days?: number[] | null
+        }
+        Update: {
+          check_times?: string[] | null
+          created_at?: string | null
+          enabled?: boolean | null
+          escalation_after_due_1?: number | null
+          escalation_after_due_15?: number | null
+          escalation_after_due_30?: number | null
+          escalation_after_due_7?: number | null
+          escalation_before_due?: number | null
+          escalation_on_due?: number | null
+          holidays?: string[] | null
+          id?: string
+          max_messages_per_day?: number | null
+          message_delay?: number | null
+          response_timeout?: number | null
+          updated_at?: string | null
+          user_id?: string
+          work_days?: number[] | null
+        }
+        Relationships: []
+      }
+      dividas: {
+        Row: {
+          cliente_id: string
+          created_at: string | null
+          data_vencimento: string | null
+          descricao: string
+          id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string | null
+          data_vencimento?: string | null
+          descricao: string
+          id?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          valor: number
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string | null
+          data_vencimento?: string | null
+          descricao?: string
+          id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dividas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mensagens_cobranca: {
         Row: {
           cliente_id: string
+          conversation_state: string | null
+          divida_id: string | null
           enviado_em: string | null
           erro_detalhes: string | null
           id: string
           mensagem_enviada: string
+          message_type: Database["public"]["Enums"]["message_type"] | null
+          response_received: boolean | null
+          retry_count: number | null
           status_entrega: string | null
           template_usado: string
           tipo_mensagem: string
           user_id: string
           whatsapp_message_id: string | null
+          whatsapp_phone: string | null
         }
         Insert: {
           cliente_id: string
+          conversation_state?: string | null
+          divida_id?: string | null
           enviado_em?: string | null
           erro_detalhes?: string | null
           id?: string
           mensagem_enviada: string
+          message_type?: Database["public"]["Enums"]["message_type"] | null
+          response_received?: boolean | null
+          retry_count?: number | null
           status_entrega?: string | null
           template_usado: string
           tipo_mensagem: string
           user_id: string
           whatsapp_message_id?: string | null
+          whatsapp_phone?: string | null
         }
         Update: {
           cliente_id?: string
+          conversation_state?: string | null
+          divida_id?: string | null
           enviado_em?: string | null
           erro_detalhes?: string | null
           id?: string
           mensagem_enviada?: string
+          message_type?: Database["public"]["Enums"]["message_type"] | null
+          response_received?: boolean | null
+          retry_count?: number | null
           status_entrega?: string | null
           template_usado?: string
           tipo_mensagem?: string
           user_id?: string
           whatsapp_message_id?: string | null
+          whatsapp_phone?: string | null
         }
         Relationships: [
           {
@@ -88,6 +246,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes_cobranca"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mensagens_cobranca_divida_id_fkey"
+            columns: ["divida_id"]
+            isOneToOne: false
+            referencedRelation: "dividas"
             referencedColumns: ["id"]
           },
         ]
@@ -152,6 +317,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          auto_backup_frequency: string | null
+          backup_enabled: boolean | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+          whatsapp_phone_id: string | null
+          whatsapp_token: string | null
+        }
+        Insert: {
+          auto_backup_frequency?: string | null
+          backup_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+          whatsapp_phone_id?: string | null
+          whatsapp_token?: string | null
+        }
+        Update: {
+          auto_backup_frequency?: string | null
+          backup_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+          whatsapp_phone_id?: string | null
+          whatsapp_token?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -160,7 +358,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      debt_status: "pendente" | "pago" | "atrasado"
+      message_status: "enviada" | "entregue" | "lida" | "erro"
+      message_type:
+        | "lembrete_amigavel"
+        | "urgencia_moderada"
+        | "tom_serio"
+        | "cobranca_formal"
+        | "ultimo_aviso"
+        | "ameaca_protesto"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -275,6 +481,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      debt_status: ["pendente", "pago", "atrasado"],
+      message_status: ["enviada", "entregue", "lida", "erro"],
+      message_type: [
+        "lembrete_amigavel",
+        "urgencia_moderada",
+        "tom_serio",
+        "cobranca_formal",
+        "ultimo_aviso",
+        "ameaca_protesto",
+      ],
+    },
   },
 } as const
