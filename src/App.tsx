@@ -8,13 +8,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
+import Login from "./pages/auth/Login";
 import Dashboard from "./pages/app/Dashboard";
-import Clientes from "./pages/app/Clientes";
-import Dividas from "./pages/app/Dividas";
-import Cobranca from "./pages/app/Cobranca";
-import Backup from "./pages/app/Backup";
-import Layout from "./components/Layout";
+import Clients from "./pages/app/Clients";
+import Debts from "./pages/app/Debts";
+import Reports from "./pages/app/Reports";
 
 const queryClient = new QueryClient();
 
@@ -63,23 +61,19 @@ const App = () => {
             {/* Protected Routes */}
             <Route
               path="/dashboard"
-              element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/login" />}
+              element={user ? <Dashboard /> : <Navigate to="/login" />}
             />
             <Route
-              path="/clientes"
-              element={user ? <Layout><Clientes /></Layout> : <Navigate to="/login" />}
+              path="/clients"
+              element={user ? <Clients /> : <Navigate to="/login" />}
             />
             <Route
-              path="/dividas"
-              element={user ? <Layout><Dividas /></Layout> : <Navigate to="/login" />}
+              path="/debts"
+              element={user ? <Debts /> : <Navigate to="/login" />}
             />
             <Route
-              path="/cobranca"
-              element={user ? <Layout><Cobranca /></Layout> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/backup"
-              element={user ? <Layout><Backup /></Layout> : <Navigate to="/login" />}
+              path="/reports"
+              element={user ? <Reports /> : <Navigate to="/login" />}
             />
             
             {/* Catch all route */}
