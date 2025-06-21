@@ -8,15 +8,26 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
+import Login from "./pages/auth/Login";
 import Dashboard from "./pages/app/Dashboard";
-import Clientes from "./pages/app/Clientes";
-import Dividas from "./pages/app/Dividas";
-import Cobranca from "./pages/app/Cobranca";
+import Clientes from "./pages/app/Clients";
+import Dividas from "./pages/app/Debts";
+import Cobranca from "./pages/app/Reports";
 import Backup from "./pages/app/Backup";
-import Layout from "./components/Layout";
+import Navbar from "./components/Navbar";
 
 const queryClient = new QueryClient();
+
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
