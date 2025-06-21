@@ -1,80 +1,94 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as Sonner } from '@/components/ui/sonner';
-import { Suspense, lazy } from 'react';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Dashboard from "./pages/app/Dashboard";
+import Clientes from "./pages/app/Clientes";
+import Dividas from "./pages/app/Dividas";
+import Cobranca from "./pages/app/Cobranca";
+import Backup from "./pages/app/Backup";
+import Layout from "./components/Layout";
 
-// Layouts carregados imediatamente (pequenos)
-import PrivateLayout from '@/components/layouts/PrivateLayout';
-import PublicLayout from '@/components/layouts/PublicLayout';
+const queryClient = new QueryClient();
 
-// Auth pages carregados imediatamente (críticos)
-import Login from '@/pages/auth/Login';
-import Register from '@/pages/auth/Register';
+const App = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-// Components carregados imediatamente
-import ProtectedRoute from '@/components/ProtectedRoute';
-import EnhancedLoading from '@/components/ui/enhanced-loading';
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-// Lazy loading das páginas principais
-const Dashboard = lazy(() => import('@/pages/app/Dashboard'));
-const Clients = lazy(() => import('@/pages/app/Clients'));
-const Debts = lazy(() => import('@/pages/app/Debts'));
-const WhatsApp = lazy(() => import('@/pages/app/WhatsApp'));
-const Reports = lazy(() => import('@/pages/app/Reports'));
-const Index = lazy(() => import('@/pages/Index'));
-const NotFound = lazy(() => import('@/pages/NotFound'));
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      gcTime: 10 * 60 * 1000, // 10 minutos
-    },
-  },
-});
+    return () => subscription.unsubscribe();
+  }, []);
 
-function App() {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="min-h-screen bg-background">
-          <Suspense fallback={<EnhancedLoading />}>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<PublicLayout />}>
-                <Route index element={<Index />} />
-                <Route path="login" element={<Login />} />
-                <Route path="entrar" element={<Login />} />
-                <Route path="register" element={<Register />} />
-                <Route path="registre-se" element={<Register />} />
-                <Route path="cadastro" element={<Register />} />
-              </Route>
-
-              {/* Private routes */}
-              <Route path="/app" element={
-                <ProtectedRoute>
-                  <PrivateLayout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<Dashboard />} />
-                <Route path="clients" element={<Clients />} />
-                <Route path="debts" element={<Debts />} />
-                <Route path="whatsapp" element={<WhatsApp />} />
-                <Route path="reports" element={<Reports />} />
-              </Route>
-
-              {/* Catch all */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </div>
-      </Router>
-      <Toaster />
-      <Sonner />
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route 
+              path="/login" 
+              element={user ? <Navigate to="/dashboard" /> : <Login />} 
+            />
+            
+            {/* Protected Routes */}
+            <Route
+              path="/dashboard"
+              element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/clientes"
+              element={user ? <Layout><Clientes /></Layout> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/dividas"
+              element={user ? <Layout><Dividas /></Layout> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/cobranca"
+              element={user ? <Layout><Cobranca /></Layout> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/backup"
+              element={user ? <Layout><Backup /></Layout> : <Navigate to="/login" />}
+            />
+            
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;
