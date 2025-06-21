@@ -10,11 +10,24 @@ import type { User } from "@supabase/supabase-js";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Dashboard from "./pages/app/Dashboard";
-import Clients from "./pages/app/Clients";
-import Debts from "./pages/app/Debts";
-import Reports from "./pages/app/Reports";
+import Clientes from "./pages/app/Clients";
+import Dividas from "./pages/app/Debts";
+import Cobranca from "./pages/app/Reports";
+import Backup from "./pages/app/Backup";
+import Navbar from "./components/Navbar";
 
 const queryClient = new QueryClient();
+
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -61,19 +74,23 @@ const App = () => {
             {/* Protected Routes */}
             <Route
               path="/dashboard"
-              element={user ? <Dashboard /> : <Navigate to="/login" />}
+              element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/login" />}
             />
             <Route
-              path="/clients"
-              element={user ? <Clients /> : <Navigate to="/login" />}
+              path="/clientes"
+              element={user ? <Layout><Clientes /></Layout> : <Navigate to="/login" />}
             />
             <Route
-              path="/debts"
-              element={user ? <Debts /> : <Navigate to="/login" />}
+              path="/dividas"
+              element={user ? <Layout><Dividas /></Layout> : <Navigate to="/login" />}
             />
             <Route
-              path="/reports"
-              element={user ? <Reports /> : <Navigate to="/login" />}
+              path="/cobranca"
+              element={user ? <Layout><Cobranca /></Layout> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/backup"
+              element={user ? <Layout><Backup /></Layout> : <Navigate to="/login" />}
             />
             
             {/* Catch all route */}
