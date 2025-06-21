@@ -1,6 +1,6 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAutomationData } from './useAutomationData';
-import { useWhatsAppCloudAPI } from './useWhatsAppCloudAPI';
 import { useMessageTemplates } from './useMessageTemplates';
 import { CommunicationLog, AutomationConfig, AutomationStats } from '@/types/automation';
 import { toast } from '@/hooks/use-toast';
@@ -30,7 +30,6 @@ const DEFAULT_CONFIG: AutomationConfig = {
 
 export const useLocalAutomation = () => {
   const { database, addCollectionMessage, updateSettings } = useAutomationData();
-  const { connection, sendMessage } = useWhatsAppCloudAPI();
   const { templates, calculateDebtValues, previewTemplate } = useMessageTemplates();
 
   const [config, setConfig] = useState<AutomationConfig>(DEFAULT_CONFIG);
@@ -128,9 +127,9 @@ export const useLocalAutomation = () => {
     return { canSend: true, reason: '' };
   };
 
-  // Processar cobranças automáticas
+  // Processar cobranças automáticas (sem WhatsApp)
   const processAutomaticCollections = useCallback(async () => {
-    if (!config.enabled || !connection.isConnected || isProcessing || !database) {
+    if (!config.enabled || isProcessing || !database) {
       return;
     }
 
@@ -139,7 +138,7 @@ export const useLocalAutomation = () => {
 
     try {
       const overdueDebts = getOverdueDebts();
-      console.log(`🔍 Processando ${overdueDebts.length} dívidas vencidas do Supabase...`);
+      console.log(`🔍 Processando ${overdueDebts.length} dívidas vencidas...`);
 
       for (const debt of overdueDebts.slice(0, 10)) {
         const client = database.clients.find((c: any) => c.id === debt.clientId);
@@ -176,28 +175,25 @@ export const useLocalAutomation = () => {
         const message = previewTemplate(template, templateVars);
 
         try {
-          if (client.whatsapp) {
-            await sendMessage(client.whatsapp, message);
-            
-            await addCollectionMessage({
-              clientId: client.id,
-              debtId: debt.id,
-              data: new Date().toISOString(),
-              tipoMensagem: messageType,
-              statusEntrega: 'enviada',
-              mensagem: message,
-              templateUsado: template.id
-            });
+          // Log da mensagem (sem envio real via WhatsApp)
+          await addCollectionMessage({
+            clientId: client.id,
+            debtId: debt.id,
+            data: new Date().toISOString(),
+            tipoMensagem: messageType,
+            statusEntrega: 'simulada',
+            mensagem: message,
+            templateUsado: template.id
+          });
 
-            console.log(`✅ Cobrança enviada para ${client.nome}: ${messageType}`);
-            messagesSent++;
-            
-            if (messagesSent < 10) {
-              await new Promise(resolve => setTimeout(resolve, config.messageDelay));
-            }
+          console.log(`✅ Mensagem preparada para ${client.nome}: ${messageType}`);
+          messagesSent++;
+          
+          if (messagesSent < 10) {
+            await new Promise(resolve => setTimeout(resolve, config.messageDelay));
           }
         } catch (error) {
-          console.error(`❌ Erro ao enviar mensagem para ${client.nome}:`, error);
+          console.error(`❌ Erro ao processar mensagem para ${client.nome}:`, error);
           
           await addCollectionMessage({
             clientId: client.id,
@@ -214,7 +210,7 @@ export const useLocalAutomation = () => {
 
       toast({
         title: "Processamento concluído!",
-        description: `${messagesSent} mensagens enviadas automaticamente`,
+        description: `${messagesSent} mensagens processadas (modo simulação)`,
         variant: messagesSent > 0 ? "default" : "destructive"
       });
 
@@ -230,11 +226,9 @@ export const useLocalAutomation = () => {
     }
   }, [
     config,
-    connection,
     database,
     communications,
     templates,
-    sendMessage,
     calculateDebtValues,
     previewTemplate,
     addCollectionMessage,
