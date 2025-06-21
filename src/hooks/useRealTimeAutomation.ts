@@ -6,7 +6,7 @@ import { useSupabaseData } from './useSupabaseData';
 export const useRealTimeAutomation = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [automationLog, setAutomationLog] = useState<string[]>([]);
-  const { data: dividas } = useSupabaseData();
+  const { dividas } = useSupabaseData();
 
   useEffect(() => {
     if (isMonitoring) {
@@ -15,7 +15,10 @@ export const useRealTimeAutomation = () => {
         .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'dividas' }, 
           (payload) => {
-            const logEntry = `${new Date().toISOString()}: Debt ${payload.eventType} - ID: ${payload.new?.id || payload.old?.id}`;
+            const newRecord = payload.new as any;
+            const oldRecord = payload.old as any;
+            const recordId = newRecord?.id || oldRecord?.id || 'unknown';
+            const logEntry = `${new Date().toISOString()}: Debt ${payload.eventType} - ID: ${recordId}`;
             setAutomationLog(prev => [logEntry, ...prev.slice(0, 49)]);
           }
         )
