@@ -21,7 +21,6 @@ import EnhancedLoading from '@/components/ui/enhanced-loading';
 const Dashboard = lazy(() => import('@/pages/app/Dashboard'));
 const Clients = lazy(() => import('@/pages/app/Clients'));
 const Debts = lazy(() => import('@/pages/app/Debts'));
-const WhatsApp = lazy(() => import('@/pages/app/WhatsApp'));
 const Reports = lazy(() => import('@/pages/app/Reports'));
 const Index = lazy(() => import('@/pages/Index'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
@@ -61,7 +60,6 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="clients" element={<Clients />} />
                 <Route path="debts" element={<Debts />} />
-                <Route path="whatsapp" element={<WhatsApp />} />
                 <Route path="reports" element={<Reports />} />
               </Route>
 

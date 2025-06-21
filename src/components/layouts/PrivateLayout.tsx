@@ -1,4 +1,3 @@
-
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +9,6 @@ import {
   LayoutDashboard, 
   Users, 
   Receipt, 
-  MessageSquare, 
   BarChart, 
   Settings,
   LogOut,
@@ -29,7 +27,6 @@ const PrivateLayout = () => {
     { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
     { name: 'Clientes', href: '/app/clients', icon: Users },
     { name: 'Dívidas', href: '/app/debts', icon: Receipt },
-    { name: 'WhatsApp', href: '/app/whatsapp', icon: MessageSquare },
     { name: 'Relatórios', href: '/app/reports', icon: BarChart },
   ];
 
