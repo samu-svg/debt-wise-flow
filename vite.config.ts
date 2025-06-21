@@ -21,7 +21,6 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     rollupOptions: {
-      external: mode === 'production' ? ['whatsapp-web.js'] : [],
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
@@ -39,7 +38,6 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode === 'development'
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-    exclude: mode === 'production' ? ['whatsapp-web.js'] : []
+    include: ['react', 'react-dom', 'react-router-dom']
   }
 }));
